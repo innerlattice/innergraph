@@ -29,6 +29,8 @@ DROP TABLE IF EXISTS view_evidence;
 CREATE TABLE view_nodes (id TEXT PRIMARY KEY, type TEXT, label TEXT, view_status TEXT, confirmed INTEGER, confidence REAL, attributes TEXT, derived_from TEXT);
 CREATE TABLE view_edges (id TEXT PRIMARY KEY, type TEXT, src TEXT, dst TEXT, sign INTEGER, view_status TEXT, confirmed INTEGER, confidence REAL, attributes TEXT);
 CREATE TABLE view_evidence (target TEXT, entry TEXT, start INTEGER, end INTEGER);
+-- Conversations with the assistant (UI messages as JSON). Not Events: the Log records what changed.
+CREATE TABLE IF NOT EXISTS chats (id TEXT PRIMARY KEY, title TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, context_tokens INTEGER NOT NULL, messages TEXT NOT NULL);
 -- Disposable computed values (e.g. embeddings), keyed by namespace and content hash.
 CREATE TABLE IF NOT EXISTS cache (namespace TEXT NOT NULL, key TEXT NOT NULL, value BLOB NOT NULL, PRIMARY KEY (namespace, key));
 `;

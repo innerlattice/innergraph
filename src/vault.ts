@@ -2,6 +2,7 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { type Db, openDatabase } from "./access/database.js";
+import { ChatAccess } from "./access/chatAccess.js";
 import { SchemaAccess, loadSchemaFile } from "./access/schemaAccess.js";
 import { VaultAccess } from "./access/vaultAccess.js";
 import { USER } from "./core/types.js";
@@ -9,6 +10,7 @@ import { AnalysisEngine } from "./engines/analysisEngine.js";
 import { InterpretationEngine } from "./engines/interpretationEngine.js";
 import { LlmReranker } from "./engines/llmReranker.js";
 import { RecallEngine, type Reranker } from "./engines/recallEngine.js";
+import { ChatManager } from "./managers/chatManager.js";
 import { ExploreManager } from "./managers/exploreManager.js";
 import { IngestManager } from "./managers/ingestManager.js";
 import { MapManager } from "./managers/mapManager.js";
@@ -21,6 +23,8 @@ export interface VaultOptions {
   key?: string;
   gateway?: ModelGateway;
   now?: () => number;
+  /** Environment for chat settings (e.g. OPENROUTER_API_KEY); defaults to process.env. */
+  env?: Record<string, string | undefined>;
   /** Search stages; null disables one, undefined uses the environment's default. */
   embedder?: Embedder | null;
   reranker?: Reranker | null;
@@ -30,6 +34,7 @@ export interface Vault {
   ingest: IngestManager;
   map: MapManager;
   explore: ExploreManager;
+  chat: ChatManager;
   queue: JobQueue;
   gateway: ModelGateway;
   close(): void;
@@ -94,6 +99,7 @@ export function openVault(options: VaultOptions): Vault {
       embedder: orDefault(options.embedder, defaultEmbedder),
       reranker: orDefault(options.reranker, () => defaultReranker(gateway)),
     }),
+    chat: new ChatManager({ chats: new ChatAccess(db), vault, env: options.env }),
     queue,
     gateway,
     close: () => db.close(),

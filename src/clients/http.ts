@@ -5,11 +5,14 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { InvariantError } from "../access/invariants.js";
 import { SchemaError } from "../access/schemaAccess.js";
 import { VIEW_STATUSES, type ViewStatus } from "../access/view.js";
+import { ChatFullError } from "../managers/chatManager.js";
 import { ForbiddenError, NotFoundError, requireFound } from "../managers/sessions.js";
 import type { Vault } from "../vault.js";
+import { respondToChat } from "./chat.js";
 
 const ERROR_STATUS: [new (...args: never[]) => Error, ContentfulStatusCode][] = [
   [NotFoundError, 404],
+  [ChatFullError, 409],
   [ForbiddenError, 403],
   [SchemaError, 400],
   [InvariantError, 400],
@@ -110,9 +113,29 @@ function registerWrites(app: Hono, vault: Vault): void {
   app.post("/api/related", route(async (c) => vault.explore.findRelated({ text: (await body(c)).text })));
 }
 
+function registerChat(app: Hono, vault: Vault): void {
+  const { chat } = vault;
+  const id = (c: Context) => c.req.param("id") ?? "";
+  app.get("/api/chats", route(() => chat.list()));
+  app.post("/api/chats", route(async (c) => chat.create(undefined, (await body(c)).title)));
+  app.get("/api/chats/:id", route((c) => chat.get(id(c))));
+  app.patch("/api/chats/:id", route(async (c) => chat.rename(id(c), (await body(c)).title ?? "")));
+  app.delete("/api/chats/:id", route((c) => chat.remove(id(c))));
+  app.get("/api/chat/settings", route(() => chat.publicSettings()));
+  app.put("/api/chat/settings", route(async (c) => chat.updateSettings(await body(c))));
+  app.post("/api/chat", async (c) => {
+    try {
+      return await respondToChat(vault, await body(c));
+    } catch (error) {
+      return c.json({ error: error instanceof Error ? error.message : String(error) }, statusFor(error));
+    }
+  });
+}
+
 export function createApp(vault: Vault): Hono {
   const app = new Hono();
   registerReads(app, vault);
   registerWrites(app, vault);
+  registerChat(app, vault);
   return app;
 }

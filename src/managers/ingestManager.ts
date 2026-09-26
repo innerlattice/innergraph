@@ -35,6 +35,8 @@ export interface WrittenItem {
   kind: "node" | "edge";
   label: string;
   evidence: Evidence[];
+  /** The cited text itself, in the same order as `evidence`. */
+  quotes: string[];
 }
 
 export interface ProposeResult {
@@ -51,11 +53,9 @@ export interface AmendResult {
   dropped: string[];
 }
 
-function written(result: Interpretation): WrittenItem[] {
-  return [
-    ...result.nodes.map((n) => ({ id: n.id, kind: "node" as const, label: n.label, evidence: n.evidence })),
-    ...result.edges.map((e) => ({ id: e.id, kind: "edge" as const, label: e.type, evidence: e.evidence })),
-  ];
+function written(result: Interpretation, quote: (e: Evidence) => string): WrittenItem[] {
+  const item = (id: string, kind: "node" | "edge", label: string, evidence: Evidence[]) => ({ id, kind, label, evidence, quotes: evidence.map(quote) });
+  return [...result.nodes.map((n) => item(n.id, "node", n.label, n.evidence)), ...result.edges.map((e) => item(e.id, "edge", e.type, e.evidence))];
 }
 
 function graphDrafts(result: Interpretation, actor: ActorId, session: string): AnyDraft[] {
@@ -168,7 +168,7 @@ export class IngestManager {
     const checked = this.deps.interpretation.check(raw, this.interpretInput(entry, "all"));
     const { result, merged } = resolveAgainst(this.deps.vault.state(), checked);
     const { session } = runSession(this.deps.vault, actor, "propose", (s) => graphDrafts(result, actor, s));
-    return { session, items: written(result), dropped: result.dropped, merged };
+    return { session, items: written(result, (e) => this.deps.vault.readSpan(e)), dropped: result.dropped, merged };
   }
 
   job(id: string): Job | undefined {

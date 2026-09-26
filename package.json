@@ -5,8 +5,11 @@
   "type": "module",
   "license": "MIT",
   "dependencies": {
+    "@ai-sdk/openai-compatible": "^3.0.48",
     "@hono/node-server": "^2.1.1",
     "@modelcontextprotocol/sdk": "^1.30.0",
+    "@openrouter/ai-sdk-provider": "^3.0.0",
+    "ai": "^7.0.99",
     "better-sqlite3-multiple-ciphers": "^13.0.3",
     "diff": "^9.0.0",
     "hono": "^4.13.7",
@@ -15,6 +18,7 @@
     "zod": "^4.6.2"
   },
   "devDependencies": {
+    "@ai-sdk/react": "^4.0.102",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.3",
@@ -31,6 +35,7 @@
     "jsdom": "^30.0.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "streamdown": "^2.6.0",
     "tailwindcss": "^4.3.3",
     "ts-api": "npm:typescript@^5.9.3",
     "tsx": "^4.23.13",
