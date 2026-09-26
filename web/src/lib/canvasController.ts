@@ -98,3 +98,13 @@ export function onKeyDown(cy: Core, e: KeyLike): void {
 export function onKeyUp(cy: Core, e: KeyLike): void {
   if (e.code === "Space") setPanMode(cy, false);
 }
+
+/** Nodes and edges are clickable, so the canvas shows a pointer over them. */
+export function pointerOnHover(cy: Core, container: HTMLElement): void {
+  cy.on("mouseover", "node, edge", () => {
+    container.style.cursor = "pointer";
+  });
+  cy.on("mouseout", "node, edge", () => {
+    container.style.cursor = "";
+  });
+}

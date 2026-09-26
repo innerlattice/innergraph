@@ -6,6 +6,7 @@ import { EntriesView } from "./views/EntriesView";
 import { LogView } from "./views/LogView";
 import { LoopsView } from "./views/LoopsView";
 import { MapView } from "./views/MapView";
+import { queueSize, reviewQueue } from "./views/ReviewPanel";
 import { WriteView } from "./views/WriteView";
 
 export type ViewName = "map" | "write" | "loops" | "entries" | "log";
@@ -50,8 +51,8 @@ export function App() {
   const [view, setView] = useState<ViewName>("map");
   const [focus, setFocus] = useState<string>();
   const status = useAsync(api.status);
-  const pending = useAsync(api.pending, [view]);
-  useLive(() => pending.reload());
+  const review = useAsync(async () => queueSize(reviewQueue(await api.view(), await api.duplicates())), [view]);
+  useLive(() => review.reload());
   const navigate: Navigate = (next, focusId) => {
     setFocus(focusId);
     setView(next);
@@ -61,7 +62,7 @@ export function App() {
       <aside className="flex w-56 shrink-0 flex-col gap-1 border-r border-stone-200 bg-stone-100/60 p-4">
         <h1 className="mb-4 px-3 font-serif text-lg text-stone-800">Inner Graph</h1>
         {NAV.map((item) => (
-          <NavButton key={item.view} item={item} active={view === item.view} badge={item.view === "map" ? pending.data?.assertions.length : undefined} onClick={() => navigate(item.view)} />
+          <NavButton key={item.view} item={item} active={view === item.view} badge={item.view === "map" ? review.data : undefined} onClick={() => navigate(item.view)} />
         ))}
         <p className="mt-auto px-3 text-xs text-stone-400">
           {status.data?.schema ? `${status.data.schema.name} v${status.data.schema.version}` : ""} · {status.data?.model}

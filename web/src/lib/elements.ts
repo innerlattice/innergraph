@@ -2,7 +2,7 @@
 // hints; edges are styled by Role and sign. No type names are hard-coded here.
 import type { ElementDefinition, StylesheetJson } from "cytoscape";
 import type { LabelStyle } from "../../../src/core/types";
-import type { Graph, GraphEdge, GraphNode, PendingItem, Schema } from "../api";
+import type { Schema, ViewEdge, ViewNode } from "../api";
 import { colorFor } from "./format";
 
 const MAX_LABEL = 60;
@@ -37,42 +37,38 @@ export function boxSize(label: string): { w: number; h: number } {
   return { w: Math.min(BOX_TEXT_WIDTH, textWidth) + 22, h: lines * 15 + 18 };
 }
 
-function nodeElement(n: GraphNode, schema: Schema | null): ElementDefinition {
+type ViewItem = { status: string; held: boolean };
+
+/** One class per View status, plus `held` for proposals kept off the map until approved. */
+function statusClasses(item: ViewItem): string {
+  return item.held ? `${item.status} held` : item.status;
+}
+
+function nodeElement(n: ViewNode, schema: Schema | null): ElementDefinition {
   const def = schema?.nodeTypes[n.type];
   const style = labelStyleOf(schema, n.type);
   const label = clip(n.label);
   return {
     data: { id: n.id, label, color: def?.display?.color ?? colorFor(n.type, schema), shape: def?.display?.shape ?? "ellipse", ...boxSize(label) },
-    classes: `${n.status} style-${style}`,
+    classes: `${statusClasses(n)} style-${style}`,
   };
 }
 
-export function edgeLabel(e: GraphEdge, schema: Schema | null): string {
+export function edgeLabel(e: { type: string; sign?: number }, schema: Schema | null): string {
   if (roleOf(schema, e.type) === "causal") return e.sign === -1 ? "−" : "+";
   return humanise(e.type);
 }
 
-function edgeElement(e: GraphEdge, schema: Schema | null): ElementDefinition {
+function edgeElement(e: ViewEdge, schema: Schema | null): ElementDefinition {
   return {
     data: { id: e.id, source: e.from, target: e.to, label: edgeLabel(e, schema) },
-    classes: [roleOf(schema, e.type), signClass(e.sign), e.status].join(" "),
+    classes: [roleOf(schema, e.type), signClass(e.sign), statusClasses(e)].filter(Boolean).join(" "),
   };
 }
 
-function asProposed(el: ElementDefinition): ElementDefinition {
-  return { ...el, classes: `${el.classes} proposed` };
-}
-
-/** Graph elements plus proposed (unreviewed) Nodes/Edges drawn as ghosts. */
-export function toElements(graph: Graph, schema: Schema | null, proposed: PendingItem[] = []): ElementDefinition[] {
-  const nodes = proposed.flatMap((p) => (p.kind === "node" ? [asProposed(nodeElement(p.item as GraphNode, schema))] : []));
-  const edges = proposed.flatMap((p) => (p.kind === "edge" ? [asProposed(edgeElement(p.item as GraphEdge, schema))] : []));
-  return [
-    ...Object.values(graph.nodes).map((n) => nodeElement(n, schema)),
-    ...nodes,
-    ...Object.values(graph.edges).map((e) => edgeElement(e, schema)),
-    ...edges,
-  ];
+/** Everything the materialized View contains, and nothing else. */
+export function toElements(view: { nodes: Record<string, ViewNode>; edges: Record<string, ViewEdge> }, schema: Schema | null): ElementDefinition[] {
+  return [...Object.values(view.nodes).map((n) => nodeElement(n, schema)), ...Object.values(view.edges).map((e) => edgeElement(e, schema))];
 }
 
 export const GRAPH_STYLE: StylesheetJson = [
@@ -110,13 +106,15 @@ export const GRAPH_STYLE: StylesheetJson = [
       "font-size": 11.5,
     },
   },
-  // Hypotheses read as lighter; only statement boxes get a dashed outline (dashes look ragged on small shapes).
-  { selector: "node.hypothesis", style: { "background-opacity": 0.55, "border-opacity": 0.6 } },
-  { selector: "node.hypothesis.style-statement", style: { "background-opacity": 0.1, "border-style": "dashed", "border-opacity": 1 } },
-  { selector: "node.accepted", style: { "border-style": "solid", "border-width": 2.5 } },
-  { selector: "node.parked", style: { opacity: 0.3 } },
-  { selector: "node.superseded", style: { opacity: 0.15 } },
-  { selector: "node:selected", style: { "overlay-color": "#1c1917", "overlay-opacity": 0.08, "overlay-padding": 6 } },
+  // Proposed: tentative, dashed amber outline. Held proposals (off the map until approved) more strongly.
+  { selector: "node.proposed", style: { "background-opacity": 0.45, "border-color": "#d97706", "border-style": "dashed", "border-width": 2 } },
+  { selector: "node.proposed.style-statement", style: { "background-opacity": 0.1 } },
+  { selector: "node.held", style: { "border-width": 3, "background-opacity": 0.2 } },
+  { selector: "node.approved", style: { "border-style": "solid", "border-width": 2.5 } },
+  { selector: "node.parked", style: { "background-color": "#d6d3d1", "border-color": "#a8a29e", opacity: 0.6 } },
+  { selector: "node.declined", style: { opacity: 0.3, "border-style": "dotted", "border-color": "#78716c" } },
+  // Selection: a strong dark ring that reads on every shape and status.
+  { selector: "node:selected", style: { "underlay-color": "#1c1917", "underlay-opacity": 0.22, "underlay-padding": 9, "underlay-shape": "ellipse" } },
   {
     selector: "edge",
     style: {
@@ -135,15 +133,16 @@ export const GRAPH_STYLE: StylesheetJson = [
       "text-rotation": "autorotate",
     },
   },
-  { selector: "edge.hypothesis", style: { "line-style": "dashed" } },
-  { selector: "edge.superseded", style: { opacity: 0.25, "line-style": "dotted" } },
+  { selector: "edge.proposed", style: { "line-style": "dashed" } },
+  { selector: "edge.held", style: { "line-color": "#d97706", "target-arrow-color": "#d97706", width: 2 } },
+  { selector: "edge.parked", style: { opacity: 0.5 } },
+  { selector: "edge.declined", style: { opacity: 0.25, "line-style": "dotted" } },
+  { selector: "edge:selected", style: { "underlay-color": "#1c1917", "underlay-opacity": 0.2, "underlay-padding": 5, width: 3 } },
   { selector: "edge.derivational", style: { width: 2.6, "line-color": "#57534e", "target-arrow-color": "#57534e" } },
   { selector: "edge.causal", style: { width: 2, "font-size": 13, "font-weight": 700 } },
   { selector: "edge.causal.positive", style: { "line-color": "#c2410c", "target-arrow-color": "#c2410c", color: "#c2410c" } },
   { selector: "edge.causal.negative", style: { "line-color": "#0369a1", "target-arrow-color": "#0369a1", color: "#0369a1" } },
   { selector: "edge.identity", style: { "line-style": "dotted", "target-arrow-shape": "none" } },
-  { selector: "node.proposed", style: { "background-opacity": 0.2, "border-color": "#d97706", "border-style": "dashed", "border-width": 2.5, "border-opacity": 1 } },
-  { selector: "edge.proposed", style: { "line-color": "#d97706", "target-arrow-color": "#d97706", "line-style": "dashed", width: 2 } },
   { selector: "node.appeared", style: { "underlay-color": "#16a34a", "underlay-opacity": 0.25, "underlay-padding": 7 } },
   { selector: "node.highlight", style: { "border-color": "#ca8a04", "border-width": 4, "border-style": "solid" } },
   { selector: "edge.highlight", style: { "line-color": "#ca8a04", "target-arrow-color": "#ca8a04", width: 3.5 } },

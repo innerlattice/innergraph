@@ -4,3 +4,20 @@
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-serif: ui-serif, Georgia, "Iowan Old Style", serif;
 }
+
+/* Anything clickable shows a pointer (Tailwind v4 resets buttons to the default cursor). */
+@layer base {
+  button:not(:disabled),
+  [role="button"],
+  a[href],
+  summary,
+  select,
+  label:has(input[type="checkbox"]),
+  input[type="checkbox"],
+  input[type="range"] {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}

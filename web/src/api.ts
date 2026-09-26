@@ -1,6 +1,7 @@
 // Typed client for the local HTTP API. Types come straight from the core.
 import type { Loop, RootTrace } from "../../src/engines/analysisEngine";
-import type { EdgeView, EntryView, EvidenceHit, LoopStepView, LoopView, NodeView, Selection } from "../../src/managers/exploreManager";
+import type { EdgeView, EntryView, EvidenceHit, ItemChange, LoopStepView, LoopView, MapGraphView, NodeView, Selection } from "../../src/managers/exploreManager";
+import type { ViewEdge, ViewNode, ViewStatus } from "../../src/access/view";
 import type { UndoResult } from "../../src/managers/mapManager";
 import type { DuplicateGroup } from "../../src/managers/resolve";
 import type { IngestResult, PendingChanges, PendingItem, ProposalView, ReviewDecision, RevisionResult } from "../../src/managers/ingestManager";
@@ -10,7 +11,7 @@ import type { RelatedItem } from "../../src/managers/recallCorpus";
 import type { AnyEvent, EntryRecord, Graph, GraphEdge, GraphNode, Schema, Status } from "../../src/core/types";
 import type { Job } from "../../src/utilities/jobQueue";
 
-export type { DuplicateGroup, EdgeView, LoopStepView, LoopView, UndoResult };
+export type { DuplicateGroup, EdgeView, ItemChange, LoopStepView, LoopView, MapGraphView, UndoResult, ViewEdge, ViewNode, ViewStatus };
 export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, GraphEdge, GraphNode, IngestResult, Job, Loop, NodeView, ProposalView, PendingChanges, PendingItem, RelatedItem, ReviewOutcome, RevisionResult, RootTrace, Schema, Selection, Status };
 
 export interface VaultStatus {
@@ -36,14 +37,15 @@ export const api = {
   graph: (withDeclined = false) => request<Graph>(withDeclined ? "/graph?superseded=1" : "/graph"),
   edge: (id: string) => request<EdgeView>(`/edges/${enc(id)}`),
   duplicates: () => request<DuplicateGroup[]>("/duplicates"),
-  mergeDuplicates: () => request<unknown[]>("/duplicates/merge", {}),
+  mergeDuplicates: (groups?: DuplicateGroup[]) => request<unknown[]>("/duplicates/merge", { groups }),
   undo: (eventId: string) => request<UndoResult>("/undo", { eventId }),
   restore: (id: string) => request<UndoResult>("/restore", { id }),
   revertPreview: (t: string) => request<UndoResult["summary"]>(`/revert/preview?t=${enc(t)}`),
   revert: (t: string) => request<UndoResult>("/revert", { t }),
   graphAt: (t: string) => request<GraphAt>(`/graph/at?t=${enc(t)}`),
   positions: () => request<string[]>("/positions"),
-  node: (id: string) => request<NodeView>(`/nodes/${enc(id)}`),
+  node: (id: string, statuses?: ViewStatus[]) => request<NodeView>(`/nodes/${enc(id)}${statuses ? `?statuses=${statuses.join(",")}` : ""}`),
+  view: (statuses?: ViewStatus[], t?: string) => request<MapGraphView>(`/view?${statuses ? `statuses=${statuses.join(",")}&` : ""}${t ? `t=${enc(t)}` : ""}`),
   roots: (id: string) => request<RootTrace>(`/nodes/${enc(id)}/roots`),
   relatedToNode: (id: string) => request<RelatedItem[]>(`/nodes/${enc(id)}/related`),
   loops: () => request<LoopView[]>("/loops"),

@@ -45,7 +45,13 @@ export function highlightSegments(text: string, spans: { target: string; start: 
   return segments.filter((s) => s.text.length > 0);
 }
 
-export function labelsFrom(graph: Graph, events: AnyEvent[] = []): Record<string, string> {
+/** Anything shaped like a graph: the raw Graph or the materialized View. */
+export interface GraphLike {
+  nodes: Record<string, { id: string; label: string }>;
+  edges: Record<string, { id: string; from: string; to: string; type: string }>;
+}
+
+export function labelsFrom(graph: GraphLike, events: AnyEvent[] = []): Record<string, string> {
   const labels: Record<string, string> = {};
   for (const node of Object.values(graph.nodes)) labels[node.id] = node.label;
   for (const e of events) if (e.type === "NodeAsserted") labels[e.body.id] = e.body.label;

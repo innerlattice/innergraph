@@ -1,6 +1,6 @@
 import cytoscape, { type Core, type ElementDefinition } from "cytoscape";
 import { useEffect, useRef, useState } from "react";
-import { applyHighlight, applySelection, onKeyDown, onKeyUp, remember, render, selectedIds, wheelToViewport } from "../lib/canvasController";
+import { applyHighlight, applySelection, onKeyDown, onKeyUp, pointerOnHover, remember, render, selectedIds, wheelToViewport } from "../lib/canvasController";
 import { GRAPH_STYLE } from "../lib/elements";
 import { type Positions, loadPositions } from "../lib/layoutCache";
 import { MiniMap } from "./MiniMap";
@@ -52,6 +52,7 @@ export function GraphCanvas({ elements, selection, highlight = [], onSelectionCh
       pending = window.setTimeout(() => report.current(selectedIds(instance)), 0);
     });
     instance.on("dragfree", "node", () => remember(instance, positions.current));
+    pointerOnHover(instance, el);
     const wheel = (e: WheelEvent) => (e.preventDefault(), wheelToViewport(instance, e));
     el.addEventListener("wheel", wheel, { passive: false });
     const resize = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(() => instance.resize());

@@ -46,12 +46,12 @@ export function ErrorNote(props: { error?: string }) {
   return <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-800">{props.error}</p>;
 }
 
+/** Pills for the four View statuses; the same colours as the map. */
 const STATUS_STYLE: Record<string, string> = {
-  hypothesis: "border-dashed border-stone-400 text-stone-600",
-  accepted: "border-emerald-300 bg-emerald-50 text-emerald-800",
-  parked: "border-stone-300 bg-stone-100 text-stone-500",
-  superseded: "border-stone-200 text-stone-400 line-through",
   proposed: "border-dashed border-amber-500 text-amber-800",
+  approved: "border-emerald-300 bg-emerald-50 text-emerald-800",
+  parked: "border-stone-300 bg-stone-100 text-stone-500",
+  declined: "border-stone-200 text-stone-400 line-through",
 };
 
 export function StatusPill(props: { status: string }) {
