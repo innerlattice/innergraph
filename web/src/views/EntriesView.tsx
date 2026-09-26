@@ -1,41 +1,66 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Navigate } from "../App";
 import { type EntryView, api } from "../api";
 import { Card, Empty, ErrorNote, Page } from "../components/ui";
-import { formatHlc, highlightSegments } from "../lib/format";
+import { formatHlc, highlightSegments, parseEntryFocus } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 
-export function EntryText(props: { view: EntryView; onOpen: (id: string) => void }) {
-  const { view, onOpen } = props;
+const FOCUS = "\u0000focus";
+
+type Span = { start: number; end: number };
+
+function markClass(focused: boolean): string {
+  const base = "cursor-pointer rounded text-inherit focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500";
+  return `${base} ${focused ? "bg-amber-300 ring-2 ring-amber-400" : "bg-amber-100/70 hover:bg-amber-200"}`;
+}
+
+export function EntryText(props: { view: EntryView; focus?: Span; onOpen: (id: string) => void }) {
+  const { view, focus, onOpen } = props;
+  const container = useRef<HTMLParagraphElement>(null);
   const labels = Object.fromEntries(view.citations.map((c) => [c.target, c.label]));
-  const segments = highlightSegments(view.text, view.citations.map((c) => ({ target: c.target, ...c.evidence })));
+  const spans = view.citations.map((c) => ({ target: c.target, ...c.evidence }));
+  const segments = highlightSegments(view.text, focus ? [...spans, { target: FOCUS, ...focus }] : spans);
+
+  useEffect(() => {
+    container.current?.querySelector("[data-focus]")?.scrollIntoView?.({ block: "center" });
+  }, [focus?.start, view.entry.id]);
+
   return (
-    <p className="whitespace-pre-wrap font-serif leading-relaxed text-stone-800">
-      {segments.map((s, i) =>
-        s.cited.length === 0 ? (
-          <span key={i}>{s.text}</span>
-        ) : (
+    <p ref={container} className="whitespace-pre-wrap font-serif leading-relaxed text-stone-800">
+      {segments.map((s, i) => {
+        const cited = s.cited.filter((id) => id !== FOCUS);
+        const focused = s.cited.includes(FOCUS);
+        if (cited.length === 0 && !focused) return <span key={i}>{s.text}</span>;
+        return (
           <mark
             key={i}
             role="button"
             tabIndex={0}
-            title={s.cited.map((id) => labels[id]).join(", ")}
-            className="cursor-pointer rounded bg-amber-100/70 text-inherit hover:bg-amber-200"
-            onClick={() => onOpen(s.cited[0])}
-            onKeyDown={(e) => e.key === "Enter" && onOpen(s.cited[0])}
+            data-focus={focused || undefined}
+            aria-label={`${s.text} — supports ${cited.map((id) => labels[id]).join(", ")}`}
+            title={cited.map((id) => labels[id]).join(", ")}
+            className={markClass(focused)}
+            onClick={() => cited[0] && onOpen(cited[0])}
+            onKeyDown={(e) => e.key === "Enter" && cited[0] && onOpen(cited[0])}
           >
             {s.text}
           </mark>
-        ),
-      )}
+        );
+      })}
     </p>
   );
 }
 
 export function EntriesView(props: { focus?: string; navigate: Navigate }) {
-  const [selected, setSelected] = useState(props.focus);
+  const initial = parseEntryFocus(props.focus);
+  const [selected, setSelected] = useState(initial.entry);
+  const [focus, setFocus] = useState(initial.span);
   const entries = useAsync(api.entries);
   const entry = useAsync(() => (selected ? api.entry(selected) : Promise.resolve(undefined)), [selected]);
+  const choose = (id: string) => {
+    setSelected(id);
+    setFocus(undefined);
+  };
   return (
     <Page title="Entries" subtitle="Highlighted passages are cited as evidence. Select one to open what it supports.">
       <ErrorNote error={entries.error} />
@@ -44,7 +69,7 @@ export function EntriesView(props: { focus?: string; navigate: Navigate }) {
         <ul className="space-y-1">
           {entries.data?.map((e) => (
             <li key={e.id}>
-              <button type="button" onClick={() => setSelected(e.id)} className={`w-full rounded-md px-3 py-2 text-left text-sm ${selected === e.id ? "bg-stone-200" : "hover:bg-stone-100"}`}>
+              <button type="button" onClick={() => choose(e.id)} className={`w-full rounded-md px-3 py-2 text-left text-sm ${selected === e.id ? "bg-stone-200" : "hover:bg-stone-100"}`}>
                 <span className="block truncate text-stone-800">{e.title}</span>
                 <span className="text-xs text-stone-400">{formatHlc(e.addedAt)}</span>
               </button>
@@ -53,7 +78,7 @@ export function EntriesView(props: { focus?: string; navigate: Navigate }) {
         </ul>
         {entry.data ? (
           <Card>
-            <EntryText view={entry.data} onOpen={(id) => props.navigate("map", id)} />
+            <EntryText view={entry.data} focus={focus} onOpen={(id) => props.navigate("map", id)} />
           </Card>
         ) : null}
       </div>

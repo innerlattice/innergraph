@@ -197,8 +197,9 @@ describe("LoopsView and LogView", () => {
 describe("EntriesView", () => {
   it("shows entry text with clickable citations", async () => {
     const navigate = vi.fn();
-    render(<EntriesView focus="h" navigate={navigate} />);
-    const mark = await screen.findByRole("button", { name: "needing things is unsafe" });
+    render(<EntriesView focus="h@0-9" navigate={navigate} />);
+    expect(await screen.findByText("I learned")).toBeTruthy();
+    const mark = await screen.findByRole("button", { name: /^needing things is unsafe — supports/ });
     fireEvent.click(mark);
     fireEvent.keyDown(mark, { key: "Enter" });
     expect(navigate).toHaveBeenCalledTimes(2);
@@ -234,7 +235,8 @@ describe("NodePanel", () => {
     fireEvent.click(screen.getByText(/needing things is unsafe/));
     await waitFor(() => expect(posted.map((p) => p.url)).toEqual(["/api/items/n1/status", "/api/items/n1/status", "/api/items/n1/attributes", "/api/nodes/n1/split", "/api/merge"]));
     expect(props.onHighlight).toHaveBeenCalledWith(["n2", "n1"]);
-    expect(props.navigate).toHaveBeenCalledWith("entries", "h");
+    expect(props.navigate).toHaveBeenCalledWith("entries", "h@15-39");
+    expect(screen.getByRole("button", { name: "Open “Tuesday” at this passage" })).toBeTruthy();
   });
 
   it("is read-only in the past and offers un-parking", async () => {

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { Navigate } from "../App";
 import { type NodeView, type RelatedItem, type RootTrace, api } from "../api";
-import { Button, ErrorNote, Quote, StatusPill } from "../components/ui";
-import { actorLabel } from "../lib/format";
+import { Button, ErrorNote, StatusPill } from "../components/ui";
+import { actorLabel, entryFocus } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 import { Related } from "./WriteView";
 
@@ -23,6 +23,32 @@ function Section(props: { title: string; children: React.ReactNode }) {
       <h4 className="text-xs font-medium uppercase tracking-wide text-stone-400">{props.title}</h4>
       {props.children}
     </section>
+  );
+}
+
+export function EvidenceCard(props: { evidence: NodeView["evidence"][number]; onOpen: () => void }) {
+  const { evidence: e, onOpen } = props;
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`Open “${e.entryTitle}” at this passage`}
+      className="group block w-full rounded-lg border border-stone-200 bg-stone-50 p-3 text-left transition hover:border-stone-400 hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+    >
+      <p className="font-serif text-sm leading-relaxed text-stone-500">
+        {e.before ? "…" : ""}
+        {e.before}
+        <mark className="rounded bg-amber-100 px-0.5 text-stone-900">{e.text}</mark>
+        {e.after}
+        {e.after ? "…" : ""}
+      </p>
+      <p className="mt-2 flex items-center justify-between text-xs text-stone-400">
+        <span className="truncate">{e.entryTitle}</span>
+        <span className="shrink-0 text-stone-500 underline-offset-2 group-hover:underline" aria-hidden="true">
+          Open in entry →
+        </span>
+      </p>
+    </button>
   );
 }
 
@@ -122,9 +148,7 @@ export function NodePanel(props: NodePanelProps) {
       {readOnly ? null : <StatusActions view={view.data} run={run} />}
       <Section title="Evidence">
         {view.data.evidence.map((e) => (
-          <button type="button" key={`${e.entry}-${e.start}`} className="block text-left" onClick={() => navigate("entries", e.entry)}>
-            <Quote source={e.entryTitle}>{e.text}</Quote>
-          </button>
+          <EvidenceCard key={`${e.entry}-${e.start}`} evidence={e} onOpen={() => navigate("entries", entryFocus(e.entry, e.start, e.end))} />
         ))}
       </Section>
       <Section title="Edges">

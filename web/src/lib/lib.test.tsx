@@ -3,6 +3,7 @@ import type { AnyEvent, Graph, Schema } from "../api";
 import { ApiError, request } from "../api";
 import { boxSize, clip, edgeLabel, humanise, labelStyleOf, roleOf, toElements } from "./elements";
 import { appeared, loadPositions, partition, savePositions } from "./layoutCache";
+import { entryFocus, parseEntryFocus } from "./format";
 import { actorLabel, charIndex, colorFor, describeEvent, formatHlc, highlightSegments, labelsFrom, spanText } from "./format";
 
 const schema = {
@@ -71,6 +72,12 @@ describe("format helpers", () => {
       ["SessionClosed", {}, "SessionClosed"],
     ];
     for (const [type, body, text] of cases) expect(describeEvent(ev(type, body), labels)).toBe(text);
+  });
+
+  it("encodes entry focus with an optional passage", () => {
+    expect(parseEntryFocus(entryFocus("h", 3, 9))).toEqual({ entry: "h", span: { start: 3, end: 9 } });
+    expect(parseEntryFocus("h")).toEqual({ entry: "h" });
+    expect(parseEntryFocus(undefined)).toEqual({});
   });
 
   it("formats actors and times", () => {

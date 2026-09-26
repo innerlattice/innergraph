@@ -17,6 +17,20 @@ export interface ExploreDeps {
 export interface EvidenceView extends Evidence {
   text: string;
   entryTitle: string;
+  /** Surrounding text, trimmed to word boundaries, so a quote can be read in context. */
+  before: string;
+  after: string;
+}
+
+const CONTEXT_BYTES = 160;
+
+/** Text around a byte span, cut back to whole words at the outer edges. */
+export function spanContext(bytes: Buffer, start: number, end: number): { before: string; after: string } {
+  const before = bytes.subarray(Math.max(0, start - CONTEXT_BYTES), start).toString("utf8");
+  const after = bytes.subarray(end, end + CONTEXT_BYTES).toString("utf8");
+  const trimmedBefore = start > CONTEXT_BYTES ? before.replace(/^\S*\s/, "") : before;
+  const trimmedAfter = end + CONTEXT_BYTES < bytes.length ? after.replace(/\s\S*$/, "") : after;
+  return { before: trimmedBefore.replace(/^\uFFFD+/, ""), after: trimmedAfter.replace(/\uFFFD+$/, "") };
 }
 
 export interface NodeView {
@@ -135,7 +149,8 @@ export class ExploreManager {
 
   private evidenceView(e: Evidence): EvidenceView {
     const title = this.deps.vault.state().entries[e.entry]?.title ?? e.entry;
-    return { ...e, text: this.deps.vault.readSpan(e), entryTitle: title };
+    const bytes = this.deps.vault.readBlob(e.entry) ?? Buffer.alloc(0);
+    return { ...e, text: this.deps.vault.readSpan(e), entryTitle: title, ...spanContext(bytes, e.start, e.end) };
   }
 
   private hitsIn(entry: EntryRecord, query: string, citations: ReturnType<typeof citationsOf>): EvidenceHit[] {

@@ -85,3 +85,15 @@ export function actorLabel(actor: string): string {
   if (actor === "user") return "you";
   return actor.replace(/^(agent|model):/, "");
 }
+
+/** Encodes "open this Entry at this passage" as a navigation focus string. */
+export function entryFocus(entry: string, start: number, end: number): string {
+  return `${entry}@${start}-${end}`;
+}
+
+export function parseEntryFocus(focus: string | undefined): { entry?: string; span?: { start: number; end: number } } {
+  if (!focus) return {};
+  const match = /^(.+)@(\d+)-(\d+)$/.exec(focus);
+  if (!match) return { entry: focus };
+  return { entry: match[1], span: { start: Number(match[2]), end: Number(match[3]) } };
+}

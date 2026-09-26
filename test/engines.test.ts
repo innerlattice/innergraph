@@ -225,3 +225,15 @@ describe("RecallEngine", () => {
     expect(cosine(new Map(), new Map()).score).toBe(0);
   });
 });
+
+describe("evidence context", () => {
+  it("returns surrounding text trimmed to whole words", async () => {
+    const { spanContext } = await import("../src/managers/exploreManager.js");
+    const text = Buffer.from(`${"word ".repeat(60)}QUOTE${" tail".repeat(60)}`);
+    const start = text.indexOf("QUOTE");
+    const ctx = spanContext(text, start, start + 5);
+    expect(ctx.before.startsWith("word")).toBe(true);
+    expect(ctx.after.endsWith("tail")).toBe(true);
+    expect(spanContext(Buffer.from("ab QUOTE cd"), 3, 8)).toEqual({ before: "ab ", after: " cd" });
+  });
+});
