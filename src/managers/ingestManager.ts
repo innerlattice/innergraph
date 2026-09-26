@@ -15,12 +15,14 @@ import {
   USER,
 } from "../core/types.js";
 import type { CitedItem, ContextNode, InterpretInput, Interpretation, InterpretationEngine, Revision } from "../engines/interpretationEngine.js";
+import type { Resolved } from "../engines/resolution.js";
 import type { RecallEngine } from "../engines/recallEngine.js";
 import { DEFAULT_POLICY, type ReviewEngine, type ReviewPolicy } from "../engines/reviewEngine.js";
 import { newId, utf8 } from "../utilities/crypto.js";
 import type { Job, JobQueue } from "../utilities/jobQueue.js";
 import { type RelatedItem, buildCorpus, describeMatches } from "./recallCorpus.js";
 import { pendingAssertions } from "./pending.js";
+import { contextFor, resolveAgainst } from "./resolve.js";
 import { citedItems, citedSpans, computeRemap } from "./revision.js";
 import { type ReviewOutcome, approve, decline } from "./reviewActions.js";
 import { NotFoundError, requireFound, runSession } from "./sessions.js";
@@ -80,6 +82,8 @@ export interface ProposeResult {
   accepted: string[];
   awaitingReview: string[];
   dropped: string[];
+  /** Proposed Nodes recognised as existing ones and re-asserted instead of duplicated. */
+  merged?: Resolved["merged"];
 }
 
 function graphDrafts(result: Interpretation, actor: ActorId, session: string): AnyDraft[] {
@@ -110,8 +114,10 @@ function amendmentDraft(change: Amendment, actor: ActorId, session: string): Any
   return { actor, session, type: "AttributesChanged", body: { target: change.id, patch: change.attributes ?? {}, label: change.label } };
 }
 
-function revisionDrafts(revision: Revision, actor: ActorId, session: string): AnyDraft[] {
-  const retractions = revision.retract.map((target) => ({
+/** A retraction of something the same revision re-asserts is a contradiction: keep the assertion. */
+function revisionDrafts(revision: Revision, actor: ActorId, session: string, added: Interpretation = revision.added): AnyDraft[] {
+  const reasserted = new Set([...added.nodes, ...added.edges].map((a) => a.id));
+  const retractions = revision.retract.filter((id) => !reasserted.has(id)).map((target) => ({
     actor,
     session,
     type: "StatusChanged" as const,
@@ -120,7 +126,7 @@ function revisionDrafts(revision: Revision, actor: ActorId, session: string): An
   return [...revision.updates.map((u) => amendmentDraft(u, actor, session)), ...retractions, ...graphDrafts(revision.added, actor, session)];
 }
 
-function contextNodes(state: ProjectionState): ContextNode[] {
+function allLive(state: ProjectionState): ContextNode[] {
   return Object.values(state.graph.nodes)
     .filter((n) => n.status === "hypothesis" || n.status === "accepted")
     .map(({ id, type, label }) => ({ id, type, label }));
@@ -197,12 +203,13 @@ export class IngestManager {
 
   /** An external agent proposes assertions citing quotes from an existing Entry. */
   propose(actor: ActorId, entry: string, raw: unknown): ProposeResult {
-    const result = this.deps.interpretation.check(raw, this.interpretInput(entry));
+    const checked = this.deps.interpretation.check(raw, this.interpretInput(entry, "all"));
+    const { result, merged } = resolveAgainst(this.deps.vault.state(), checked);
     const { session } = runSession(this.deps.vault, actor, "propose", (s) => graphDrafts(result, actor, s));
     const accepted = this.autoReview(session);
     const events = this.deps.vault.state().proposals[session].events;
     const awaitingReview = events.filter((i) => i.decision === "pending").map((i) => i.event.id);
-    return { session, accepted, awaitingReview, dropped: result.dropped };
+    return { session, accepted, awaitingReview, dropped: result.dropped, merged };
   }
 
   review(session: string, decision: ReviewDecision, actor: ActorId = USER): ProposalView {
@@ -260,15 +267,24 @@ export class IngestManager {
 
   // ---- internals ---------------------------------------------------------------------
 
-  private interpretInput(entry: string): InterpretInput {
-    const state = this.deps.vault.state();
+  /** "related" narrows existing Nodes to those relevant to the Entry (for prompts); "all" is for resolving ids. */
+  private interpretInput(entry: string, scope: "related" | "all" = "related", cites?: string): InterpretInput {
+    const { vault } = this.deps;
+    const state = vault.state();
     const record = state.entries[entry];
     if (!record) throw new NotFoundError(`Entry ${entry} not found`);
+    const text = vault.readText(entry);
     return {
-      entry: { id: entry, text: this.deps.vault.readText(entry), title: record.title },
+      entry: { id: entry, text, title: record.title },
       schema: this.deps.schemas.require(),
-      context: contextNodes(state),
+      context: scope === "all" ? allLive(state) : contextFor(vault, state, text, cites ?? entry),
     };
+  }
+
+  /** Resolves against everything that exists at write time, not when the model started. */
+  private appendResolved(result: Interpretation, actor: ActorId, session: string, extra: (resolved: Interpretation) => AnyDraft[] = () => []): void {
+    const { result: resolved } = resolveAgainst(this.deps.vault.state(), result);
+    this.deps.vault.append([...extra(resolved), ...graphDrafts(resolved, actor, session)]);
   }
 
   private enqueueInterpretation(session: string, entry: string): Job {
@@ -276,7 +292,7 @@ export class IngestManager {
     return this.deps.queue.enqueue(session, "interpret", async () => {
       try {
         const result = await this.deps.interpretation.interpret(this.interpretInput(entry));
-        this.deps.vault.append(graphDrafts(result, actor, session));
+        this.appendResolved(result, actor, session);
       } finally {
         this.close(session, actor);
         this.autoReview(session);
@@ -288,9 +304,9 @@ export class IngestManager {
     const actor = `model:${this.deps.interpretation.modelName}`;
     return this.deps.queue.enqueue(session, "revise", async () => {
       try {
-        const input = { ...this.interpretInput(entry), oldText: this.deps.vault.readText(previous), cited };
+        const input = { ...this.interpretInput(entry, "related", previous), oldText: this.deps.vault.readText(previous), cited };
         const revision = await this.deps.interpretation.revise(input);
-        this.deps.vault.append(revisionDrafts(revision, actor, session));
+        this.appendResolved(revision.added, actor, session, (added) => revisionDrafts({ ...revision, added: { ...added, nodes: [], edges: [] } }, actor, session, added));
       } finally {
         this.close(session, actor);
         this.autoReview(session);

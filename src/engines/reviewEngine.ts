@@ -56,7 +56,13 @@ const rules: Rule[] = [
   (_, e) => (e.type === "NodesSplit" || e.type === "NodesMerged" ? "refactor" : null),
   (_, e) => (e.type === "StatusChanged" ? "status change proposed by an agent" : null),
   (ctx, e) => (isLowConfidence(ctx, e) ? "confidence below auto-accept threshold" : null),
+  (ctx, e) => (e.type === "NodeAsserted" && e.body.similarTo?.length ? `may duplicate “${similarLabel(ctx, e.body.similarTo[0])}”` : null),
 ];
+
+function similarLabel(ctx: TriageContext, id: string): string {
+  const pending = ctx.events.find((e): e is VaultEvent<"NodeAsserted"> => e.type === "NodeAsserted" && e.body.id === id);
+  return ctx.graph.nodes[id]?.label ?? pending?.body.label ?? id;
+}
 
 function isLowConfidence(ctx: TriageContext, e: AnyEvent): boolean {
   if (e.type !== "NodeAsserted" && e.type !== "EdgeAsserted") return false;

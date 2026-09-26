@@ -27,7 +27,11 @@ you as the Actor; nothing is ever destroyed.
 1. `get_schema` once per conversation: node types, edge types, their Roles and label styles.
 2. `add_entry` with `interpret: false` to store their text. Keep the returned `entry` id.
 3. Before creating anything, `search_graph` for each part, belief or process you see, so you
-   reuse existing nodes (pass `existing_id`) instead of duplicating them.
+   reuse existing nodes (pass `existing_id`) instead of duplicating them. `propose` also
+   resolves every node against the graph: one citing the same passage or with a
+   near-identical label is re-asserted (reported under `merged`); a merely similar one is
+   held for review as "may duplicate …". Edges between the same nodes with the same type
+   are never duplicated.
 4. `propose` nodes and edges:
    - One thing is one node. A part stays the same node however its intensity changes;
      "X makes Y stronger" is a `causal` edge with `sign: "+"` between existing nodes.

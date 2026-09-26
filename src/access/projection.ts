@@ -181,8 +181,9 @@ function assertNode(graph: Graph, e: VaultEvent<"NodeAsserted">): void {
     reassert(existing, e.body, e);
     return;
   }
+  const { similarTo: _hint, ...body } = e.body;
   graph.nodes[e.body.id] = {
-    ...e.body,
+    ...body,
     status: statusFor(e.actor),
     derivedFrom: [],
     assertedBy: e.actor,

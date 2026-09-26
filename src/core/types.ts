@@ -109,6 +109,8 @@ export interface EventBodies {
     attributes: Attributes;
     confidence: number;
     evidence: Evidence[];
+    /** Existing Nodes this one may duplicate; set by entity resolution, shown at review. */
+    similarTo?: string[];
   };
   EdgeAsserted: {
     id: string;
