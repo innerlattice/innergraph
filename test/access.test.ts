@@ -202,7 +202,7 @@ describe("VaultAccess", () => {
     expect(vault.readText("missing")).toBe("");
     expect(vault.events(first.hlc)).toHaveLength(1);
     expect(Object.keys(vault.stateAt(first.hlc).graph.nodes)).toHaveLength(0);
-    expect(db.prepare("SELECT count(*) AS c FROM evidence").get()).toEqual({ c: 1 });
+    expect(db.prepare("SELECT count(*) AS c FROM view_evidence").get()).toEqual({ c: 1 });
     db.close();
 
     const reopened = new VaultAccess(openDatabase(file, KEY));

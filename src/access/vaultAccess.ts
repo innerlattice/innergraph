@@ -1,10 +1,11 @@
 // VaultAccess: atomic verbs over the Log, blobs and the derived Projection tables.
-import type { AnyDraft, AnyEvent, Evidence, Graph, ProjectionState } from "../core/types.js";
+import type { AnyDraft, AnyEvent, Evidence, ProjectionState } from "../core/types.js";
 import { newId, sha256 } from "../utilities/crypto.js";
 import { HlcClock } from "../utilities/hlc.js";
 import type { Db } from "./database.js";
 import { checkDraft } from "./invariants.js";
 import { applyEvent, fold } from "./projection.js";
+import { VIEW_STATUSES, materialize } from "./view.js";
 
 interface EventRow {
   id: string;
@@ -57,7 +58,7 @@ export class VaultAccess {
       for (const draft of drafts) events.push(this.seal(draft, events.at(-1)?.id ?? this.log.at(-1)?.id));
       events.forEach((e) => this.insert(e));
       events.forEach((e) => applyEvent(this.head, e));
-      this.writeDerived(this.head.graph);
+      this.writeDerived(this.head);
       this.log.push(...events);
       return events;
     }).immediate();
@@ -170,18 +171,21 @@ export class VaultAccess {
     return value;
   }
 
-  private writeDerived(graph: Graph): void {
-    this.db.exec("DELETE FROM nodes; DELETE FROM edges; DELETE FROM evidence;");
-    const node = this.db.prepare("INSERT INTO nodes VALUES (?, ?, ?, ?, ?, ?, ?)");
-    const edge = this.db.prepare("INSERT INTO edges VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    const evidence = this.db.prepare("INSERT INTO evidence VALUES (?, ?, ?, ?)");
-    for (const n of Object.values(graph.nodes)) {
-      node.run(n.id, n.type, n.label, n.status, n.confidence, JSON.stringify(n.attributes), JSON.stringify(n.derivedFrom));
+  /** Writes the materialized View (all statuses) for SQL consumers; a disposable cache. */
+  private writeDerived(state: ProjectionState): void {
+    const view = materialize(state, VIEW_STATUSES);
+    this.db.exec("DELETE FROM view_nodes; DELETE FROM view_edges; DELETE FROM view_evidence;");
+    const node = this.db.prepare("INSERT INTO view_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    const edge = this.db.prepare("INSERT INTO view_edges VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    const evidence = this.db.prepare("INSERT INTO view_evidence VALUES (?, ?, ?, ?)");
+    for (const n of Object.values(view.nodes)) {
+      node.run(n.id, n.type, n.label, n.status, Number(n.held), n.confidence, JSON.stringify(n.attributes), JSON.stringify(n.derivedFrom));
       n.evidence.forEach((ev) => evidence.run(n.id, ev.entry, ev.start, ev.end));
     }
-    for (const e of Object.values(graph.edges)) {
-      edge.run(e.id, e.type, e.from, e.to, e.sign ?? null, e.status, e.confidence, JSON.stringify(e.attributes));
+    for (const e of Object.values(view.edges)) {
+      edge.run(e.id, e.type, e.from, e.to, e.sign ?? null, e.status, Number(e.held), e.confidence, JSON.stringify(e.attributes));
       e.evidence.forEach((ev) => evidence.run(e.id, ev.entry, ev.start, ev.end));
     }
   }
+
 }

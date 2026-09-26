@@ -18,10 +18,13 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS events_hlc ON events(hlc);
 CREATE INDEX IF NOT EXISTS events_type ON events(type);
 CREATE TABLE IF NOT EXISTS blobs (hash TEXT PRIMARY KEY, media TEXT NOT NULL, bytes BLOB NOT NULL);
--- Derived, disposable caches of the Graph Projection at head.
-CREATE TABLE IF NOT EXISTS nodes (id TEXT PRIMARY KEY, type TEXT, label TEXT, status TEXT, confidence REAL, attributes TEXT, derived_from TEXT);
-CREATE TABLE IF NOT EXISTS edges (id TEXT PRIMARY KEY, type TEXT, src TEXT, dst TEXT, sign INTEGER, status TEXT, confidence REAL, attributes TEXT);
-CREATE TABLE IF NOT EXISTS evidence (target TEXT, entry TEXT, start INTEGER, end INTEGER);
+-- Derived, disposable: the materialized View at head (every status; filter on view_status).
+DROP TABLE IF EXISTS nodes;
+DROP TABLE IF EXISTS edges;
+DROP TABLE IF EXISTS evidence;
+CREATE TABLE IF NOT EXISTS view_nodes (id TEXT PRIMARY KEY, type TEXT, label TEXT, view_status TEXT, held INTEGER, confidence REAL, attributes TEXT, derived_from TEXT);
+CREATE TABLE IF NOT EXISTS view_edges (id TEXT PRIMARY KEY, type TEXT, src TEXT, dst TEXT, sign INTEGER, view_status TEXT, held INTEGER, confidence REAL, attributes TEXT);
+CREATE TABLE IF NOT EXISTS view_evidence (target TEXT, entry TEXT, start INTEGER, end INTEGER);
 -- Disposable computed values (e.g. embeddings), keyed by namespace and content hash.
 CREATE TABLE IF NOT EXISTS cache (namespace TEXT NOT NULL, key TEXT NOT NULL, value BLOB NOT NULL, PRIMARY KEY (namespace, key));
 `;

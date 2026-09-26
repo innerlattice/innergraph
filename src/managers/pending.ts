@@ -1,4 +1,5 @@
 // Read helpers over pending (unreviewed) Events in the Projection. Shared by Managers; not a Manager.
+import { pendingEvents } from "../access/view.js";
 import type { AnyEvent, GraphEdge, GraphNode, ProjectionState, VaultEvent } from "../core/types.js";
 
 export interface PendingAssertion {
@@ -8,9 +9,7 @@ export interface PendingAssertion {
   item: GraphNode | GraphEdge;
 }
 
-export function pendingEvents(state: ProjectionState): AnyEvent[] {
-  return Object.values(state.proposals).flatMap((p) => p.events.filter((i) => i.decision === "pending").map((i) => i.event));
-}
+export { pendingEvents } from "../access/view.js";
 
 function asItem(e: VaultEvent<"NodeAsserted"> | VaultEvent<"EdgeAsserted">): GraphNode | GraphEdge {
   const meta = { status: "hypothesis" as const, assertedBy: e.actor, assertedAt: e.hlc, updatedAt: e.hlc };
