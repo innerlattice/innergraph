@@ -5,7 +5,7 @@ import { ScriptedGateway } from "../src/utilities/modelGateway.js";
 import { type Vault, initVault, openVault } from "../src/vault.js";
 
 export const SCHEMA_FILE = join(import.meta.dirname, "..", "schema", "author.yaml");
-export const ENTRY_1 = readFileSync(join(import.meta.dirname, "fixtures", "entry-1.md"), "utf8");
+export const ENTRY_1 = readFileSync(join(import.meta.dirname, "fixtures", "synthetic.md"), "utf8");
 export const KEY = "a".repeat(64);
 
 export interface TestVault {
