@@ -14,13 +14,17 @@ import { Related, WriteView, useJob } from "./WriteView";
 vi.mock("../components/GraphCanvas", () => ({ GraphCanvas: () => <div data-testid="graph-canvas" /> }));
 
 const HLC = "001758800000000.000000.d";
-const base = { attributes: {}, confidence: 0.5, evidence: [], assertedBy: "model:m", assertedAt: HLC, updatedAt: HLC, derivedFrom: [] };
+const base = { attributes: {}, confidence: 0.5, evidence: [], assertedBy: "model:m", assertedAt: HLC, updatedAt: HLC, derivedFrom: [], held: false, staleEvidence: 0 };
 const graph = {
   nodes: {
-    n1: { ...base, id: "n1", type: "belief", label: "Needing is unsafe", status: "hypothesis" },
+    n1: { ...base, id: "n1", type: "belief", label: "Needing is unsafe", status: "proposed", held: true, proposedBy: "ev1" },
     n2: { ...base, id: "n2", type: "core_memory", label: "Dinner table", status: "parked" },
   },
   edges: {},
+  counts: { proposed: 1, approved: 0, parked: 1, declined: 0 },
+  position: HLC,
+  reasons: { n1: ["new root-level node"] },
+  changes: {},
 };
 const text = "I learned that needing things is unsafe.";
 const nodeEvent = { id: "ev1", hlc: HLC, device: "d", actor: "model:m", session: "s1", parents: [], type: "NodeAsserted", body: { id: "n3", type: "belief", label: "New one", attributes: {}, confidence: 0.7, evidence: [{ entry: "h", start: 15, end: 28 }] } };
@@ -33,10 +37,12 @@ const entryView: EntryView = {
 const nodeView = {
   node: graph.nodes.n1,
   evidence: [{ entry: "h", start: 15, end: 39, text: "needing things is unsafe", entryTitle: "Tuesday" }],
-  outgoing: [{ id: "e1", type: "scaffolds", from: "n1", to: "n2" }],
-  incoming: [{ id: "e2", type: "abduces", from: "n2", to: "n1" }],
+  outgoing: [{ id: "e1", type: "scaffolds", from: "n1", to: "n2", status: "approved" }],
+  incoming: [{ id: "e2", type: "abduces", from: "n2", to: "n1", status: "declined" }],
   derivedFrom: [{ ...graph.nodes.n2 }],
   derivedInto: [],
+  reasons: ["new root-level node"],
+  changes: [],
 } as unknown as NodeView;
 
 const step = (edge: string, from: string, to: string, sign: 1 | -1, confidence: number) => ({ edge, from, to, sign, confidence, fromLabel: from.toUpperCase(), toLabel: to.toUpperCase(), quotes: [`quote ${edge}`] });
@@ -55,8 +61,9 @@ const LOOP = {
 const routes: Record<string, unknown> = {
   "/api/status": { model: "gemma", hosted: true, schema: { name: "author", version: 1, nodeTypes: {}, edgeTypes: {} } },
   "/api/proposals": [proposal],
-  "/api/pending": { assertions: [{ eventId: "ev1", session: "s1", kind: "node", item: { ...nodeEvent.body, status: "hypothesis", derivedFrom: [], assertedBy: "model:m", assertedAt: HLC, updatedAt: HLC }, reasons: ["new root-level node"] }], other: [] },
+  "/api/view": graph,
   "/api/graph": graph,
+  "/api/duplicates": [],
   "/api/entries": [entryView.entry],
   "/api/entries/h": entryView,
   "/api/loops": [LOOP],
@@ -111,7 +118,7 @@ describe("App shell", () => {
   it("shows the hosted notice and navigates between views", async () => {
     render(<App />);
     expect(await screen.findByText(/entry text leaves this device/)).toBeTruthy();
-    expect(await screen.findByText("1")).toBeTruthy();
+    expect((await screen.findAllByText("1")).length).toBeGreaterThan(0);
     for (const label of ["Loops", "Entries", "Log", "Write", "Map"]) {
       fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${label}`) }));
     }
@@ -247,6 +254,8 @@ describe("NodePanel", () => {
     render(<NodePanel {...props} />);
     expect(await screen.findByText("Needing is unsafe", { selector: "h3" })).toBeTruthy();
     expect(screen.getByText("→ scaffolds → Dinner table")).toBeTruthy();
+    expect(screen.getByText("← abduces ← Dinner table").className).toContain("line-through");
+    expect(screen.getByText(/Not on the map until you approve it: new root-level node/)).toBeTruthy();
     expect(screen.getByText(/from “Dinner table”/)).toBeTruthy();
     fireEvent.click(screen.getByText("Approve"));
     fireEvent.click(screen.getByText("Not now (park)"));
@@ -254,8 +263,11 @@ describe("NodePanel", () => {
     expect(await screen.findByText(/supports 1 downstream/)).toBeTruthy();
     fireEvent.click(screen.getByText("Related"));
     expect(await screen.findByText(/may be related/)).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("Label"), { target: { value: "Renamed" } });
-    fireEvent.click(screen.getByText("Rename"));
+    fireEvent.doubleClick(screen.getByText("Needing is unsafe", { selector: "h3" }));
+    fireEvent.keyDown(screen.getByLabelText("Rename"), { key: "Escape" });
+    fireEvent.doubleClick(screen.getByText("Needing is unsafe", { selector: "h3" }));
+    fireEvent.change(screen.getByLabelText("Rename"), { target: { value: "Renamed" } });
+    fireEvent.keyDown(screen.getByLabelText("Rename"), { key: "Enter" });
     fireEvent.change(screen.getByLabelText("Split into"), { target: { value: "A, B" } });
     fireEvent.click(screen.getByText("Split"));
     fireEvent.change(screen.getByLabelText("Merge with"), { target: { value: "n2" } });

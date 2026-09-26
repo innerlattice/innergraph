@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AnyEvent, Graph, Schema } from "../api";
+import type { AnyEvent, MapGraphView, Schema } from "../api";
 import { ApiError, request } from "../api";
 import { boxSize, clip, edgeLabel, humanise, labelStyleOf, roleOf, toElements } from "./elements";
 import { appeared, loadPositions, partition, savePositions } from "./layoutCache";
@@ -13,16 +13,16 @@ const schema = {
   edgeTypes: { d: { from: "*", to: "*", role: "derivational", attributes: {} }, c: { from: "*", to: "*", role: "causal", attributes: {} } },
 } as Schema;
 
-const base = { attributes: {}, confidence: 0.5, evidence: [], assertedBy: "user", assertedAt: "", updatedAt: "" };
-const graph: Graph = {
+const base = { attributes: {}, confidence: 0.5, evidence: [], assertedBy: "user", assertedAt: "", updatedAt: "", held: false, staleEvidence: 0 };
+const graph: Pick<MapGraphView, "nodes" | "edges"> = {
   nodes: {
-    n1: { ...base, id: "n1", type: "a", label: "One", status: "hypothesis", derivedFrom: [] },
-    n2: { ...base, id: "n2", type: "b", label: "Two", status: "accepted", derivedFrom: [] },
+    n1: { ...base, id: "n1", type: "a", label: "One", status: "proposed", held: true, derivedFrom: [] },
+    n2: { ...base, id: "n2", type: "b", label: "Two", status: "approved", derivedFrom: [] },
   },
   edges: {
-    e1: { ...base, id: "e1", type: "c", from: "n1", to: "n2", sign: -1, status: "accepted" },
-    e2: { ...base, id: "e2", type: "d", from: "n2", to: "n1", sign: 1, status: "hypothesis" },
-    e3: { ...base, id: "e3", type: "x", from: "n2", to: "n1", status: "hypothesis" },
+    e1: { ...base, id: "e1", type: "c", from: "n1", to: "n2", sign: -1, status: "approved" },
+    e2: { ...base, id: "e2", type: "d", from: "n2", to: "n1", sign: 1, status: "proposed" },
+    e3: { ...base, id: "e3", type: "x", from: "n2", to: "n1", status: "proposed" },
   },
 };
 
@@ -98,19 +98,19 @@ describe("graph elements", () => {
   it("draws nodes from Schema display hints and label styles", () => {
     const elements = toElements(graph, schema);
     const n1 = elements.find((e) => e.data.id === "n1");
-    expect(n1?.classes).toBe("hypothesis style-statement");
+    expect(n1?.classes).toBe("proposed held style-statement");
     expect(n1?.data).toMatchObject({ shape: "round-rectangle", color: "#123456" });
     const n2 = elements.find((e) => e.data.id === "n2");
-    expect(n2?.classes).toBe("accepted style-name");
+    expect(n2?.classes).toBe("approved style-name");
     expect(n2?.data.shape).toBe("ellipse");
     expect(labelStyleOf(null, "a")).toBe("name");
   });
 
   it("classes edges by role and sign, labelling causal edges by sign", () => {
     const elements = toElements(graph, schema);
-    expect(elements.find((e) => e.data.id === "e1")).toMatchObject({ classes: "causal negative accepted", data: { label: "−" } });
-    expect(elements.find((e) => e.data.id === "e2")?.classes).toBe("derivational positive hypothesis");
-    expect(elements.find((e) => e.data.id === "e3")?.classes).toBe("plain  hypothesis");
+    expect(elements.find((e) => e.data.id === "e1")).toMatchObject({ classes: "causal negative approved", data: { label: "−" } });
+    expect(elements.find((e) => e.data.id === "e2")?.classes).toBe("derivational positive proposed");
+    expect(elements.find((e) => e.data.id === "e3")?.classes).toBe("plain proposed");
     expect(edgeLabel({ ...graph.edges.e1, sign: 1 }, schema)).toBe("+");
     expect(edgeLabel(graph.edges.e3, schema)).toBe("x");
     expect(roleOf(null, "c")).toBe("plain");

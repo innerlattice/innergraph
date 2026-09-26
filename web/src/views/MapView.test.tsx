@@ -21,8 +21,11 @@ vi.mock("../components/GraphCanvas", () => ({
 
 const HLC1 = "001758800000000.000000.d";
 const HLC2 = "001758800001000.000000.d";
-const node = { attributes: {}, confidence: 0.5, evidence: [], assertedBy: "user", assertedAt: HLC1, updatedAt: HLC1, derivedFrom: [], type: "t", status: "accepted" };
-const now = { nodes: { n1: { ...node, id: "n1", label: "One" }, n2: { ...node, id: "n2", label: "Two" } }, edges: {} };
+const node = { attributes: {}, confidence: 0.5, evidence: [], assertedBy: "user", assertedAt: HLC1, updatedAt: HLC1, derivedFrom: [], type: "t", status: "approved", held: false, staleEvidence: 0 };
+const nodes = { n1: { ...node, id: "n1", label: "One" }, n2: { ...node, id: "n2", label: "Two" }, p9: { ...node, id: "p9", label: "Ghost", status: "proposed", held: true, proposedBy: "e9" } };
+const counts = { proposed: 1, approved: 2, parked: 0, declined: 0 };
+const now = { nodes, edges: {}, counts, position: HLC2, reasons: { p9: ["new root-level node"] }, changes: {} };
+const past = { ...now, nodes: {}, counts: { proposed: 0, approved: 0, parked: 0, declined: 0 }, position: HLC1, reasons: {} };
 const routes: Record<string, unknown> = {
   "/api/positions": [HLC1, HLC2],
   "/api/status": {
@@ -30,19 +33,17 @@ const routes: Record<string, unknown> = {
     hosted: false,
     schema: { name: "s", version: 1, edgeTypes: {}, nodeTypes: { t: { attributes: {}, display: { shape: "round-rectangle", color: "#111111" } }, u: { attributes: {}, display: { shape: "barrel" } }, v: { attributes: {} } } },
   },
-  "/api/graph": now,
-  "/api/pending": {
-    assertions: [{ eventId: "e9", session: "s", kind: "node", reasons: ["new root-level node"], item: { ...node, id: "p9", label: "Ghost", status: "hypothesis", evidence: [] } }],
-    other: [],
-  },
-  "/api/graph/at": { position: HLC1, graph: { nodes: {}, edges: {} } },
-  "/api/nodes/n1": { node: now.nodes.n1, evidence: [], outgoing: [], incoming: [], derivedFrom: [], derivedInto: [] },
-  "/api/selection": { ids: ["n1", "n2"], at: "", items: [{ id: "n1", kind: "node", type: "t", label: "One", status: "accepted" }, { id: "n2", kind: "node", type: "t", label: "Two", status: "hypothesis" }] },
+  "/api/view": now,
+  "/api/duplicates": [],
+  "/api/nodes/n1": { node: nodes.n1, evidence: [], outgoing: [], incoming: [], derivedFrom: [], derivedInto: [], reasons: [], changes: [] },
+  "/api/nodes/p9": { node: nodes.p9, evidence: [], outgoing: [], incoming: [], derivedFrom: [], derivedInto: [], reasons: ["new root-level node"], changes: [] },
+  "/api/selection": { ids: ["n1", "n2"], at: "", items: [{ id: "n1", kind: "node", type: "t", label: "One", status: "approved" }, { id: "n2", kind: "node", type: "t", label: "Two", status: "proposed" }] },
   "/api/nodes/n1/roots": { node: "n1", upstream: ["n0"], roots: [{ id: "n0", support: 1, path: ["n0", "n1"] }] },
 };
+const respond = (url: string) => new Response(JSON.stringify(url.includes("t=") ? past : (routes[url.split("?")[0]] ?? { ok: true })));
 
 beforeEach(() => {
-  vi.stubGlobal("fetch", async (url: string) => new Response(JSON.stringify(routes[url.split("?")[0]] ?? { ok: true })));
+  vi.stubGlobal("fetch", async (url: string) => respond(url));
 });
 afterEach(() => {
   cleanup();
@@ -60,9 +61,9 @@ it("selects nodes, traces roots, and travels back in time", async () => {
   expect(screen.queryByText("One", { selector: "h3" })).toBeNull();
 
   fireEvent.change(screen.getByLabelText("Time travel"), { target: { value: "0" } });
-  expect(await screen.findByText(/The map is empty at this point/)).toBeTruthy();
+  expect(await screen.findByText(/Nothing to show with these filters/)).toBeTruthy();
   fireEvent.click(screen.getByText("Now"));
-  await waitFor(() => expect(screen.queryByText(/The map is empty/)).toBeNull());
+  await waitFor(() => expect(screen.queryByText(/Nothing to show/)).toBeNull());
   fireEvent.change(screen.getByLabelText("Time travel"), { target: { value: "1" } });
 });
 
@@ -70,7 +71,7 @@ it("shows a selection panel for several items and syncs the selection", async ()
   const calls: string[] = [];
   vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
     if (init?.method) calls.push(`${init.method} ${url}`);
-    return new Response(JSON.stringify(routes[url.split("?")[0]] ?? { ok: true }));
+    return respond(url);
   });
   render(<MapView navigate={vi.fn()} />);
   fireEvent.click(await screen.findByText("node:n1"));
@@ -83,23 +84,28 @@ it("shows a selection panel for several items and syncs the selection", async ()
 
 it("lists node types from the Schema in the legend", async () => {
   render(<MapView navigate={vi.fn()} />);
-  expect(await screen.findByText("t")).toBeTruthy();
+  fireEvent.click(await screen.findByText("Key"));
+  expect(screen.getByText("t")).toBeTruthy();
   expect(screen.getByText("u")).toBeTruthy();
 });
 
-it("shows proposed items and opens the proposal panel for one", async () => {
+it("opens the review queue from the status bar and filters by status", async () => {
+  const urls: string[] = [];
+  vi.stubGlobal("fetch", async (url: string) => (urls.push(url), respond(url)));
   render(<MapView navigate={vi.fn()} />);
-  fireEvent.click(await screen.findByText("node:p9"));
-  expect(await screen.findByText("Ghost")).toBeTruthy();
-  expect(screen.getByText(/Waiting for your review/)).toBeTruthy();
-  fireEvent.click(screen.getByText("Select proposed"));
+  fireEvent.click(await screen.findByText("Review 1"));
+  expect(await screen.findByText(/new root-level node/)).toBeTruthy();
+  fireEvent.click(screen.getByText("Ghost"));
+  expect(await screen.findByText("Ghost", { selector: "h3" })).toBeTruthy();
+  fireEvent.click(screen.getByText("Declined"));
+  await waitFor(() => expect(urls.some((u) => u.includes("declined"))).toBe(true));
 });
 
 it("drops selected items that leave the graph", async () => {
-  routes["/api/graph"] = { nodes: {}, edges: {} };
+  routes["/api/view"] = { ...now, nodes: {} };
   render(<MapView focus="n1" navigate={vi.fn()} />);
   await waitFor(() => expect(screen.queryByText("One", { selector: "h3" })).toBeNull());
-  routes["/api/graph"] = now;
+  routes["/api/view"] = now;
 });
 
 it("opens with a focused node", async () => {

@@ -1,23 +1,23 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { AnyEvent, Graph } from "../api";
+import type { AnyEvent } from "../api";
 import { EdgePanel } from "./EdgePanel";
 import { LogView, undoable } from "./LogView";
-import { visible } from "./MapView";
-import { ItemActions, PendingOnItem, UndoBar, pendingFor } from "./ReviewControls";
-import { kindsFor } from "./SelectionPanel";
+import { ItemActions, UndoBar } from "./ReviewControls";
 import { RevertControl, TimeBar, describeRevert } from "./TimeBar";
 
 const HLC = "001758800000000.000000.d";
-const base = { attributes: {}, confidence: 0.8, evidence: [], assertedBy: "agent:c", assertedAt: HLC, updatedAt: HLC };
+const base = { attributes: {}, confidence: 0.8, evidence: [], assertedBy: "agent:c", assertedAt: HLC, updatedAt: HLC, held: false, staleEvidence: 0 };
+const change = (id: string, body: object, type = "StatusChanged") => ({ event: { id, hlc: HLC, device: "d", actor: "model:g", session: "s", parents: [], type, body } as AnyEvent, reasons: ["status change proposed by an agent"] });
 const edgeView = {
-  edge: { ...base, id: "e1", type: "reinforces", from: "a", to: "b", sign: 1, status: "superseded" },
+  edge: { ...base, id: "e1", type: "reinforces", from: "a", to: "b", sign: 1 as number | undefined, status: "declined", staleEvidence: 2 },
   fromLabel: "A",
   toLabel: "B",
   evidence: [{ entry: "h", start: 0, end: 5, text: "quote", entryTitle: "T", before: "", after: "" }],
+  reasons: [] as string[],
+  changes: [change("p", { target: "e1", status: "approved" })],
 };
-const change = (id: string, body: object, type = "StatusChanged") => ({ event: { id, hlc: HLC, device: "d", actor: "model:g", session: "s", parents: [], type, body } as AnyEvent, decision: "pending" as const, reasons: ["status change proposed by an agent"] });
 
 let posted: { url: string; body: unknown }[];
 beforeEach(() => {
@@ -31,7 +31,7 @@ beforeEach(() => {
     }
     if (url.startsWith("/api/edges")) return new Response(JSON.stringify(edgeView));
     if (url.startsWith("/api/revert/preview")) return new Response(JSON.stringify({ retired: 1, restored: 2, changed: 0, declined: 1 }));
-    if (url.startsWith("/api/timeline")) return new Response(JSON.stringify([change("x1", { target: "a", status: "accepted" }).event, { ...change("bad", { target: "a", status: "parked" }).event }, { id: "w", hlc: HLC, type: "SessionOpened", actor: "user", body: { purpose: "x" } }]));
+    if (url.startsWith("/api/timeline")) return new Response(JSON.stringify([change("x1", { target: "a", status: "approved" }).event, { ...change("bad", { target: "a", status: "parked" }).event }, { id: "w", hlc: HLC, type: "SessionOpened", actor: "user", body: { purpose: "x" } }]));
     return new Response(JSON.stringify({ nodes: {}, edges: {} }));
   });
 });
@@ -40,38 +40,13 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("status-aware actions", () => {
-  it("offers what each status allows", () => {
-    expect(kindsFor(["superseded", "superseded"])).toEqual(["restore"]);
-    expect(kindsFor(["accepted"])).toEqual(["decline"]);
-    expect(kindsFor(["accepted", "hypothesis"])).toEqual(["approve", "decline"]);
-    expect(kindsFor([])).toEqual(["approve", "decline"]);
-    const { container } = render(<ItemActions id="x" status="parked" onDone={vi.fn()} />);
-    expect(container.innerHTML).toBe("");
-  });
-
+describe("item actions", () => {
   it("restores a declined item", async () => {
     const onDone = vi.fn();
-    render(<ItemActions id="x" status="superseded" onDone={onDone} />);
+    render(<ItemActions id="x" status="declined" onDone={onDone} />);
     fireEvent.click(screen.getByText("Restore"));
     await waitFor(() => expect(onDone).toHaveBeenCalledWith({ kind: "restore", ids: ["x"] }));
     expect(posted[0]).toEqual({ url: "/api/restore", body: { id: "x" } });
-  });
-});
-
-describe("pending changes on items", () => {
-  it("finds changes touching an item and reviews them by event id", async () => {
-    const pending = { assertions: [], other: [change("c1", { target: "a", status: "superseded" }), change("c2", { source: "b", into: [] }, "NodesSplit"), change("c3", { sources: ["a", "z"], into: { label: "M" } }, "NodesMerged")] };
-    expect(pendingFor(pending, "a").map((i) => i.event.id)).toEqual(["c1", "c3"]);
-    expect(pendingFor(undefined, "a")).toEqual([]);
-    const onDone = vi.fn();
-    render(<PendingOnItem items={pendingFor(pending, "a")} labels={{ a: "A" }} onDone={onDone} />);
-    expect(screen.getByText(/A → superseded/)).toBeTruthy();
-    fireEvent.click(screen.getAllByText("Decline")[0]);
-    await waitFor(() => expect(posted[0]).toEqual({ url: "/api/decline", body: { ids: ["c1"] } }));
-    cleanup();
-    const { container } = render(<PendingOnItem items={[]} labels={{}} onDone={vi.fn()} />);
-    expect(container.innerHTML).toBe("");
   });
 });
 
@@ -96,8 +71,9 @@ describe("edge panel", () => {
   it("shows a declined edge with Restore and lets you jump to its endpoints", async () => {
     const onSelect = vi.fn();
     const onReviewed = vi.fn();
-    render(<EdgePanel id="e1" labels={{}} readOnly={false} pending={[change("p", { target: "e1", status: "accepted" })]} onReviewed={onReviewed} onSelect={onSelect} navigate={vi.fn()} />);
-    expect(await screen.findByText(/Declined or retired/)).toBeTruthy();
+    render(<EdgePanel id="e1" labels={{ e1: "A → B" }} readOnly={false} onReviewed={onReviewed} onSelect={onSelect} navigate={vi.fn()} />);
+    expect(await screen.findByText(/Restore brings it back/)).toBeTruthy();
+    expect(screen.getByText(/A → B → approved/)).toBeTruthy();
     expect(screen.getByText(/reinforces \(increases\)/)).toBeTruthy();
     fireEvent.click(screen.getByText("A"));
     expect(onSelect).toHaveBeenCalledWith("a");
@@ -107,11 +83,13 @@ describe("edge panel", () => {
   });
 
   it("is read-only in the past and describes decreases", async () => {
-    edgeView.edge = { ...edgeView.edge, sign: -1, status: "accepted" };
+    edgeView.edge = { ...edgeView.edge, sign: -1, status: "approved", held: true };
+    edgeView.reasons = ["closes a feedback loop"];
     render(<EdgePanel id="e1" labels={{}} readOnly onReviewed={vi.fn()} onSelect={vi.fn()} navigate={vi.fn()} />);
     expect(await screen.findByText(/decreases/)).toBeTruthy();
+    expect(screen.getByText(/closes a feedback loop/)).toBeTruthy();
     expect(screen.queryByText("Decline")).toBeNull();
-    edgeView.edge = { ...edgeView.edge, sign: undefined as never };
+    edgeView.edge = { ...edgeView.edge, sign: undefined };
   });
 });
 
@@ -155,15 +133,5 @@ describe("log undo", () => {
     await waitFor(() => expect(posted[0]).toEqual({ url: "/api/undo", body: { eventId: "x1" } }));
     fireEvent.click(buttons[1]);
     expect(await screen.findByText("cannot")).toBeTruthy();
-  });
-});
-
-describe("declined items on the map", () => {
-  it("hides declined nodes and their edges unless asked", () => {
-    const n = (id: string, status: string) => ({ ...base, id, type: "t", label: id, status, derivedFrom: [] });
-    const graph = { nodes: { a: n("a", "accepted"), b: n("b", "superseded") }, edges: { ab: { ...base, id: "ab", type: "t", from: "a", to: "b", status: "accepted" } } } as unknown as Graph;
-    expect(Object.keys(visible(graph, false).nodes)).toEqual(["a"]);
-    expect(visible(graph, false).edges).toEqual({});
-    expect(visible(graph, true)).toBe(graph);
   });
 });
