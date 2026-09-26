@@ -4,10 +4,10 @@ import type { EntryView, EvidenceHit, NodeView } from "../../src/managers/explor
 import type { IngestResult, ProposalView, ReviewDecision } from "../../src/managers/ingestManager";
 import type { ChangeResult, GraphAt } from "../../src/managers/mapManager";
 import type { RelatedItem } from "../../src/managers/recallCorpus";
-import type { AnyEvent, EntryRecord, Graph, Schema, Status } from "../../src/core/types";
+import type { AnyEvent, EntryRecord, Graph, GraphEdge, GraphNode, Schema, Status } from "../../src/core/types";
 import type { Job } from "../../src/utilities/jobQueue";
 
-export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, IngestResult, Job, Loop, NodeView, ProposalView, RelatedItem, RootTrace, Schema, Status };
+export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, GraphEdge, GraphNode, IngestResult, Job, Loop, NodeView, ProposalView, RelatedItem, RootTrace, Schema, Status };
 
 export interface VaultStatus {
   model: string;

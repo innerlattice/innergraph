@@ -1,6 +1,8 @@
 import cytoscape, { type Core, type ElementDefinition } from "cytoscape";
 import { useEffect, useRef } from "react";
+import { applyHighlight, applySelection, remember, render } from "../lib/canvasController";
 import { GRAPH_STYLE } from "../lib/elements";
+import { type Positions, loadPositions } from "../lib/layoutCache";
 
 export interface GraphCanvasProps {
   elements: ElementDefinition[];
@@ -9,44 +11,29 @@ export interface GraphCanvasProps {
   onSelect: (id: string | undefined) => void;
 }
 
-function layout(cy: Core): void {
-  cy.layout({ name: "cose", animate: false, padding: 40, nodeRepulsion: () => 9000, idealEdgeLength: () => 90 }).run();
-}
-
-/** Thin wrapper: owns one Cytoscape instance and re-lays out when elements change. */
+/** Owns one Cytoscape instance. Node positions stay put across changes and time travel. */
 export function GraphCanvas({ elements, selected, highlight = [], onSelect }: GraphCanvasProps) {
   const container = useRef<HTMLDivElement>(null);
   const cy = useRef<Core>(undefined);
   const select = useRef(onSelect);
+  const positions = useRef<Positions>(loadPositions());
+  const shown = useRef<Set<string>>(undefined);
   select.current = onSelect;
 
   useEffect(() => {
     const instance = cytoscape({ container: container.current, style: GRAPH_STYLE, wheelSensitivity: 0.3 });
     instance.on("tap", (event) => select.current(event.target === instance ? undefined : event.target.id()));
+    instance.on("dragfree", "node", () => remember(instance, positions.current));
     cy.current = instance;
     return () => instance.destroy();
   }, []);
 
   useEffect(() => {
-    const instance = cy.current;
-    if (!instance) return;
-    instance.elements().remove();
-    instance.add(elements);
-    layout(instance);
+    if (cy.current) shown.current = render(cy.current, elements, positions.current, shown.current);
   }, [elements]);
 
-  useEffect(() => {
-    cy.current?.elements().unselect();
-    if (selected) cy.current?.getElementById(selected).select();
-  }, [selected]);
-
-  useEffect(() => {
-    const instance = cy.current;
-    instance?.elements().removeClass("highlight");
-    for (const id of highlight) instance?.getElementById(id).addClass("highlight");
-    const ids = new Set(highlight);
-    instance?.edges().filter((e) => ids.has(e.source().id()) && ids.has(e.target().id())).addClass("highlight");
-  }, [highlight, elements]);
+  useEffect(() => applySelection(cy.current, selected), [selected]);
+  useEffect(() => applyHighlight(cy.current, highlight), [highlight, elements]);
 
   return <div ref={container} className="h-full w-full" data-testid="graph-canvas" />;
 }

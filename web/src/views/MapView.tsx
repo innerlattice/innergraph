@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import type { Navigate } from "../App";
-import { type Graph, api } from "../api";
+import { type Graph, type Schema, api } from "../api";
 import { GraphCanvas } from "../components/GraphCanvas";
 import { Button, Empty, ErrorNote } from "../components/ui";
-import { toElements } from "../lib/elements";
-import { formatHlc, labelsFrom } from "../lib/format";
+import { humanise, toElements } from "../lib/elements";
+import { colorFor, formatHlc, labelsFrom } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 import { NodePanel } from "./NodePanel";
 
@@ -24,11 +24,27 @@ function TimeBar(props: { positions: string[]; index: number | undefined; onChan
   );
 }
 
-function Legend() {
+const SHAPE_CLASS: Record<string, string> = {
+  ellipse: "rounded-full",
+  "round-rectangle": "rounded-sm w-5",
+  "round-diamond": "rotate-45 rounded-[2px] scale-75",
+};
+
+export function Legend(props: { schema: Schema | null }) {
+  const types = Object.entries(props.schema?.nodeTypes ?? {});
   return (
-    <div className="pointer-events-none absolute bottom-3 left-3 space-y-0.5 rounded-md bg-white/85 px-3 py-2 text-xs text-stone-500">
-      <p>dashed = hypothesis · faded = parked</p>
-      <p><span className="text-orange-700">orange</span> increases · <span className="text-sky-700">blue</span> decreases · thick = derivation</p>
+    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-stone-200 bg-stone-50 px-5 py-1.5 text-xs text-stone-600">
+      <div className="flex flex-wrap gap-x-3 gap-y-1">
+        {types.map(([name, def]) => (
+          <span key={name} className="flex items-center gap-1.5">
+            <span className={`inline-block h-3 w-3 ${SHAPE_CLASS[def.display?.shape ?? "ellipse"] ?? "rounded"}`} style={{ backgroundColor: def.display?.color ?? colorFor(name, props.schema) }} />
+            {humanise(name)}
+          </span>
+        ))}
+      </div>
+      <p className="text-stone-400">
+        pale = hypothesis · faded = parked · green halo = new at this step · <span className="font-bold text-orange-700">+</span> increases · <span className="font-bold text-sky-700">−</span> decreases · thick = derivation
+      </p>
     </div>
   );
 }
@@ -54,12 +70,12 @@ export function MapView(props: { focus?: string; navigate: Navigate }) {
   return (
     <div className="flex h-full flex-col">
       <TimeBar positions={positions.data ?? []} index={index} onChange={setIndex} />
+      <Legend schema={schema} />
       <ErrorNote error={graph.error} />
       <div className="flex min-h-0 flex-1">
         <div className="relative min-w-0 flex-1">
           {empty ? <div className="p-8"><Empty>The map is empty at this point. Add an entry to begin.</Empty></div> : null}
           <GraphCanvas elements={elements} selected={selected} highlight={highlight} onSelect={select} />
-          <Legend />
         </div>
         {selected ? (
           <aside className="w-96 shrink-0 overflow-auto border-l border-stone-200 bg-white">

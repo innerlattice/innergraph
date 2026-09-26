@@ -25,7 +25,11 @@ const node = { attributes: {}, confidence: 0.5, evidence: [], assertedBy: "user"
 const now = { nodes: { n1: { ...node, id: "n1", label: "One" } }, edges: {} };
 const routes: Record<string, unknown> = {
   "/api/positions": [HLC1, HLC2],
-  "/api/status": { model: "m", hosted: false, schema: null },
+  "/api/status": {
+    model: "m",
+    hosted: false,
+    schema: { name: "s", version: 1, edgeTypes: {}, nodeTypes: { t: { attributes: {}, display: { shape: "round-rectangle", color: "#111111" } }, u: { attributes: {}, display: { shape: "barrel" } }, v: { attributes: {} } } },
+  },
   "/api/graph": now,
   "/api/graph/at": { position: HLC1, graph: { nodes: {}, edges: {} } },
   "/api/nodes/n1": { node: now.nodes.n1, evidence: [], outgoing: [], incoming: [], derivedFrom: [], derivedInto: [] },
@@ -55,6 +59,12 @@ it("selects nodes, traces roots, and travels back in time", async () => {
   fireEvent.click(screen.getByText("Now"));
   await waitFor(() => expect(screen.queryByText(/The map is empty/)).toBeNull());
   fireEvent.change(screen.getByLabelText("Time travel"), { target: { value: "1" } });
+});
+
+it("lists node types from the Schema in the legend", async () => {
+  render(<MapView navigate={vi.fn()} />);
+  expect(await screen.findByText("t")).toBeTruthy();
+  expect(screen.getByText("u")).toBeTruthy();
 });
 
 it("opens with a focused node", async () => {

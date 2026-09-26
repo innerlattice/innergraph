@@ -114,7 +114,7 @@ export function NodePanel(props: NodePanelProps) {
   return (
     <div className="space-y-5 p-5">
       <header className="space-y-1">
-        <p className="text-xs text-stone-400">{node.type} · {Math.round(node.confidence * 100)}% · by {actorLabel(node.assertedBy)}</p>
+        <p className="text-xs text-stone-400">{node.type.replace(/_/g, " ")} · {Math.round(node.confidence * 100)}% · by {actorLabel(node.assertedBy)}</p>
         <h3 className="font-serif text-xl text-stone-800">{node.label}</h3>
         <StatusPill status={node.status} />
       </header>

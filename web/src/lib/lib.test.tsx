@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { AnyEvent, Graph, Schema } from "../api";
 import { ApiError, request } from "../api";
-import { roleOf, toElements } from "./elements";
+import { boxSize, clip, edgeLabel, humanise, labelStyleOf, roleOf, toElements } from "./elements";
+import { appeared, loadPositions, partition, savePositions } from "./layoutCache";
 import { actorLabel, charIndex, colorFor, describeEvent, formatHlc, highlightSegments, labelsFrom, spanText } from "./format";
 
 const schema = {
   name: "s",
   version: 1,
-  nodeTypes: { a: { attributes: {} }, b: { attributes: {} } },
+  nodeTypes: { a: { attributes: {}, label: "statement", display: { shape: "round-rectangle", color: "#123456" } }, b: { attributes: {} } },
   edgeTypes: { d: { from: "*", to: "*", role: "derivational", attributes: {} }, c: { from: "*", to: "*", role: "causal", attributes: {} } },
 } as Schema;
 
@@ -80,13 +81,51 @@ describe("format helpers", () => {
 });
 
 describe("graph elements", () => {
-  it("classes nodes by status and edges by role and sign", () => {
+  it("draws nodes from Schema display hints and label styles", () => {
     const elements = toElements(graph, schema);
-    expect(elements.find((e) => e.data.id === "n1")?.classes).toBe("hypothesis");
-    expect(elements.find((e) => e.data.id === "e1")?.classes).toBe("causal negative accepted");
+    const n1 = elements.find((e) => e.data.id === "n1");
+    expect(n1?.classes).toBe("hypothesis style-statement");
+    expect(n1?.data).toMatchObject({ shape: "round-rectangle", color: "#123456" });
+    const n2 = elements.find((e) => e.data.id === "n2");
+    expect(n2?.classes).toBe("accepted style-name");
+    expect(n2?.data.shape).toBe("ellipse");
+    expect(labelStyleOf(null, "a")).toBe("name");
+  });
+
+  it("classes edges by role and sign, labelling causal edges by sign", () => {
+    const elements = toElements(graph, schema);
+    expect(elements.find((e) => e.data.id === "e1")).toMatchObject({ classes: "causal negative accepted", data: { label: "−" } });
     expect(elements.find((e) => e.data.id === "e2")?.classes).toBe("derivational positive hypothesis");
     expect(elements.find((e) => e.data.id === "e3")?.classes).toBe("plain  hypothesis");
+    expect(edgeLabel({ ...graph.edges.e1, sign: 1 }, schema)).toBe("+");
+    expect(edgeLabel(graph.edges.e3, schema)).toBe("x");
     expect(roleOf(null, "c")).toBe("plain");
+  });
+
+  it("clips long labels and sizes statement boxes to their text", () => {
+    expect(clip("x".repeat(80))).toHaveLength(60);
+    expect(clip("short")).toBe("short");
+    expect(humanise("core_memory")).toBe("core memory");
+    expect(boxSize("tiny")).toEqual({ w: 4 * 6.4 + 22, h: 33 });
+    expect(boxSize("x".repeat(60)).h).toBe(3 * 15 + 18);
+  });
+});
+
+describe("layout cache", () => {
+  it("round-trips positions through storage and tolerates failures", () => {
+    const store = new Map<string, string>();
+    const storage = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v) };
+    savePositions(new Map([["a", { x: 1, y: 2 }]]), storage);
+    expect(loadPositions(storage).get("a")).toEqual({ x: 1, y: 2 });
+    expect(loadPositions({ getItem: () => "{bad" }).size).toBe(0);
+    expect(() => savePositions(new Map(), { setItem: () => { throw new Error("quota"); } })).not.toThrow();
+  });
+
+  it("separates known from new nodes and reports what appeared", () => {
+    expect(partition(["a", "b"], new Map([["a", { x: 0, y: 0 }]]))).toEqual({ known: ["a"], unknown: ["b"] });
+    expect(appeared(undefined, ["a"])).toEqual([]);
+    expect(appeared(new Set(), ["a"])).toEqual([]);
+    expect(appeared(new Set(["a"]), ["a", "b"])).toEqual(["b"]);
   });
 });
 

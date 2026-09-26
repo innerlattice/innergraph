@@ -26,6 +26,7 @@
     "@vitest/coverage-istanbul": "^5.0.0",
     "concurrently": "^10.0.5",
     "cytoscape": "^3.34.3",
+    "cytoscape-fcose": "^2.2.0",
     "jsdom": "^30.0.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
