@@ -65,6 +65,7 @@ function registerReads(app: Hono, vault: Vault): void {
   app.get("/api/entries", route(() => explore.entries()));
   app.get("/api/entries/:id", route((c) => explore.entry(c.req.param("id") ?? "")));
   app.get("/api/search", route((c) => explore.searchEvidence(c.req.query("q") ?? "")));
+  app.get("/api/search/graph", route((c) => explore.searchGraph(c.req.query("q") ?? "", Number(c.req.query("limit") ?? 10))));
   app.get("/api/timeline", route(() => explore.timeline()));
   app.get("/api/pending", route(() => ingest.pendingChanges()));
   app.get("/api/selection", route(() => explore.selection()));

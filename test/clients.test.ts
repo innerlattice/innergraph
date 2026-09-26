@@ -64,6 +64,8 @@ describe("HTTP client", () => {
     expect((await call(app, `/api/diff?from=${positions[0]}&to=${positions.at(-1)}`)).json.nodes.added).toHaveLength(5);
     expect((await call(app, "/api/graph?superseded=1")).status).toBe(200);
     expect((await call(app, "/api/related", { text: "shame" })).status).toBe(200);
+    expect((await call(app, "/api/search/graph?q=shame&limit=5")).json.hits.map((h: { label: string }) => h.label)).toContain("Shame");
+    expect((await call(app, "/api/search/graph")).json.stages).toEqual(["lexical"]);
 
     const put = await app.request("/api/selection", { method: "PUT", body: JSON.stringify({ ids: [shame.id, "gone", shame.id] }), headers: { "content-type": "application/json" } });
     expect((await put.json()).ids).toEqual([shame.id, "gone"]);
@@ -131,6 +133,8 @@ describe("MCP client", () => {
     expect(proposed.accepted).toHaveLength(1);
     expect(JSON.parse((await text("get_schema")).body).name).toBe("author");
     expect(JSON.parse((await text("get_selection")).body).items).toEqual([]);
+    expect(JSON.parse((await text("search_graph", { query: "rest" })).body).hits[0].label).toBe("Rest");
+    expect(JSON.parse((await text("search_graph", { query: "rest", limit: 1 })).body).hits).toHaveLength(1);
     expect(JSON.parse((await text("find_loops")).body)).toEqual([]);
     expect(JSON.parse((await text("list_proposals", { all: true })).body).length).toBe(2);
     expect(JSON.parse((await text("search_evidence", { query: "froze" })).body).length).toBeGreaterThan(0);

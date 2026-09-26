@@ -120,6 +120,23 @@ export class VaultAccess {
     this.setMeta(`setting:${key}`, JSON.stringify(value));
   }
 
+  // ---- Disposable cache ------------------------------------------------------------
+
+  readCache(namespace: string, keys: string[]): Map<string, Buffer> {
+    const found = new Map<string, Buffer>();
+    const get = this.db.prepare("SELECT value FROM cache WHERE namespace = ? AND key = ?");
+    for (const key of keys) {
+      const row = get.get(namespace, key) as { value: Buffer } | undefined;
+      if (row) found.set(key, row.value);
+    }
+    return found;
+  }
+
+  writeCache(namespace: string, entries: Map<string, Uint8Array>): void {
+    const put = this.db.prepare("INSERT OR REPLACE INTO cache (namespace, key, value) VALUES (?, ?, ?)");
+    this.db.transaction(() => entries.forEach((value, key) => put.run(namespace, key, Buffer.from(value))))();
+  }
+
   // ---- internals -----------------------------------------------------------------
 
   private seal(draft: AnyDraft, parent: string | undefined): AnyEvent {

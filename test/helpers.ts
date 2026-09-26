@@ -29,12 +29,12 @@ export function steppingClock(start = Date.UTC(2026, 0, 1)): () => number {
 export function makeVault(responses: unknown[] = []): TestVault {
   const dir = tempDir();
   const gateway = new ScriptedGateway(responses);
-  const vault = initVault({ dir, key: KEY, gateway, schemaFile: SCHEMA_FILE, now: steppingClock() });
+  const vault = initVault({ dir, key: KEY, gateway, schemaFile: SCHEMA_FILE, now: steppingClock(), embedder: null, reranker: null });
   return {
     vault,
     gateway,
     dir,
-    reopen: () => openVault({ dir, key: KEY, gateway, now: steppingClock(Date.UTC(2027, 0, 1)) }),
+    reopen: () => openVault({ dir, key: KEY, gateway, now: steppingClock(Date.UTC(2027, 0, 1)), embedder: null, reranker: null }),
     cleanup: () => {
       vault.close();
       rmSync(dir, { recursive: true, force: true });

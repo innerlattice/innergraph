@@ -7,14 +7,15 @@ import { VaultAccess } from "./access/vaultAccess.js";
 import { USER } from "./core/types.js";
 import { AnalysisEngine } from "./engines/analysisEngine.js";
 import { InterpretationEngine } from "./engines/interpretationEngine.js";
-import { RecallEngine } from "./engines/recallEngine.js";
+import { LlmReranker } from "./engines/llmReranker.js";
+import { RecallEngine, type Reranker } from "./engines/recallEngine.js";
 import { DEFAULT_POLICY, ReviewEngine, type ReviewPolicy } from "./engines/reviewEngine.js";
 import { ExploreManager } from "./managers/exploreManager.js";
 import { IngestManager } from "./managers/ingestManager.js";
 import { MapManager } from "./managers/mapManager.js";
 import { newKey } from "./utilities/crypto.js";
 import { JobQueue } from "./utilities/jobQueue.js";
-import { type ModelGateway, OllamaGateway } from "./utilities/modelGateway.js";
+import { type Embedder, type ModelGateway, OllamaEmbedder, OllamaGateway } from "./utilities/modelGateway.js";
 
 export interface VaultOptions {
   dir: string;
@@ -22,6 +23,9 @@ export interface VaultOptions {
   gateway?: ModelGateway;
   policy?: ReviewPolicy;
   now?: () => number;
+  /** Search stages; null disables one, undefined uses the environment's default. */
+  embedder?: Embedder | null;
+  reranker?: Reranker | null;
 }
 
 export interface Vault {
@@ -59,6 +63,19 @@ function readPolicy(dir: string): ReviewPolicy {
   return { ...DEFAULT_POLICY, ...config.review };
 }
 
+function defaultEmbedder(): Embedder | undefined {
+  const model = process.env.INNER_GRAPH_EMBED_MODEL;
+  return model === "off" ? undefined : new OllamaEmbedder({ baseUrl: process.env.INNER_GRAPH_MODEL_URL, model });
+}
+
+function defaultReranker(gateway: ModelGateway): Reranker | undefined {
+  return process.env.INNER_GRAPH_RERANK === "off" ? undefined : new LlmReranker(gateway);
+}
+
+function orDefault<T>(value: T | null | undefined, fallback: () => T | undefined): T | undefined {
+  return value === null ? undefined : (value ?? fallback());
+}
+
 function defaultGateway(): ModelGateway {
   return new OllamaGateway({ baseUrl: process.env.INNER_GRAPH_MODEL_URL, model: process.env.INNER_GRAPH_MODEL });
 }
@@ -77,7 +94,13 @@ export function openVault(options: VaultOptions): Vault {
   return {
     ingest: new IngestManager({ vault, schemas, interpretation, review: new ReviewEngine(), recall, queue, policy }),
     map: new MapManager({ vault, schemas, interpretation, analysis }),
-    explore: new ExploreManager({ vault, analysis, recall }),
+    explore: new ExploreManager({
+      vault,
+      analysis,
+      recall,
+      embedder: orDefault(options.embedder, defaultEmbedder),
+      reranker: orDefault(options.reranker, () => defaultReranker(gateway)),
+    }),
     queue,
     gateway,
     close: () => db.close(),

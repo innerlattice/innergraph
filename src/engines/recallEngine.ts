@@ -3,7 +3,7 @@
 
 export interface RecallDoc {
   id: string;
-  kind: "entry" | "node";
+  kind: "entry" | "node" | "edge";
   text: string;
 }
 
@@ -68,6 +68,10 @@ function topTerms(shared: string[], query: Vector): string[] {
 }
 
 export class RecallEngine {
+  search(input: SearchInput, reranker: Reranker | undefined, limit = 10): Promise<SearchHit[]> {
+    return hybridSearch(input, reranker, limit);
+  }
+
   recall(query: string, corpus: RecallDoc[], options: RecallOptions = {}): RecallMatch[] {
     const exclude = new Set(options.exclude ?? []);
     const docs = corpus.filter((d) => !exclude.has(d.id));
@@ -82,4 +86,98 @@ export class RecallEngine {
       .slice(0, options.limit ?? 5)
       .map((m) => ({ id: m.doc.id, kind: m.doc.kind, score: Number(m.score.toFixed(3)), terms: topTerms(m.shared, q) }));
   }
+}
+
+// ---- hybrid search: lexical + dense, fused, then reranked ----------------------------
+
+export interface Ranked {
+  index: number;
+  score: number;
+}
+
+export interface SearchHit {
+  id: string;
+  kind: RecallDoc["kind"];
+  score: number;
+  /** Rank (1-based) in each stage the hit appeared in, plus the reranker's score. */
+  stages: { lexical?: number; dense?: number; rerank?: number };
+}
+
+export interface SearchInput {
+  query: string;
+  docs: RecallDoc[];
+  queryVector?: number[];
+  docVectors?: number[][];
+}
+
+/** Scores candidates for a query; higher is more relevant. Aligned with `docs`. */
+export interface Reranker {
+  readonly name: string;
+  rerank(query: string, docs: RecallDoc[]): Promise<number[]>;
+}
+
+const CANDIDATES = 50;
+const RRF_K = 60;
+
+export function lexicalRanking(query: string, docs: RecallDoc[]): Ranked[] {
+  const tfs = docs.map((d) => termFrequencies(tokenize(d.text)));
+  const queryTf = termFrequencies(tokenize(query));
+  const idf = inverseDocumentFrequency([...tfs, queryTf]);
+  const q = vectorise(queryTf, idf);
+  return rank(tfs.map((tf) => cosine(q, vectorise(tf, idf)).score));
+}
+
+function dot(a: number[], b: number[]): number {
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) sum += a[i] * (b[i] ?? 0);
+  return sum;
+}
+
+export function denseCosine(a: number[], b: number[]): number {
+  const denominator = Math.sqrt(dot(a, a)) * Math.sqrt(dot(b, b));
+  return denominator === 0 ? 0 : dot(a, b) / denominator;
+}
+
+export function denseRanking(queryVector: number[], docVectors: number[][]): Ranked[] {
+  return rank(docVectors.map((v) => denseCosine(queryVector, v)));
+}
+
+function rank(scores: number[]): Ranked[] {
+  return scores
+    .map((score, index) => ({ index, score }))
+    .filter((r) => r.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, CANDIDATES);
+}
+
+/** Reciprocal rank fusion: robust to incomparable score scales across stages. */
+export function fuse(rankings: Ranked[][]): Ranked[] {
+  const fused = new Map<number, number>();
+  for (const ranking of rankings) {
+    ranking.forEach((r, position) => fused.set(r.index, (fused.get(r.index) ?? 0) + 1 / (RRF_K + position + 1)));
+  }
+  return [...fused].map(([index, score]) => ({ index, score })).sort((a, b) => b.score - a.score);
+}
+
+function positions(ranking: Ranked[] | undefined): Map<number, number> {
+  return new Map((ranking ?? []).map((r, i) => [r.index, i + 1]));
+}
+
+/** Lexical and (when vectors are given) dense rankings, fused with RRF, then optionally reranked. */
+export async function hybridSearch(input: SearchInput, reranker: Reranker | undefined, limit: number, rerankDepth = 20): Promise<SearchHit[]> {
+  const lexical = lexicalRanking(input.query, input.docs);
+  const dense = input.queryVector && input.docVectors ? denseRanking(input.queryVector, input.docVectors) : undefined;
+  const fused = fuse(dense ? [lexical, dense] : [lexical]).slice(0, Math.max(rerankDepth, limit));
+  const lexPos = positions(lexical);
+  const densePos = positions(dense);
+  const hits = fused.map((r) => ({ index: r.index, score: r.score, stages: { lexical: lexPos.get(r.index), dense: densePos.get(r.index) } as SearchHit["stages"] }));
+  const reranked = reranker && hits.length > 1 ? await rerankHits(input, hits.slice(0, rerankDepth), reranker) : hits;
+  return reranked.slice(0, limit).map((h) => ({ id: input.docs[h.index].id, kind: input.docs[h.index].kind, score: Number(h.score.toFixed(4)), stages: h.stages }));
+}
+
+async function rerankHits(input: SearchInput, hits: (Ranked & { stages: SearchHit["stages"] })[], reranker: Reranker) {
+  const scores = await reranker.rerank(input.query, hits.map((h) => input.docs[h.index]));
+  return hits
+    .map((h, i) => ({ ...h, score: scores[i] ?? 0, stages: { ...h.stages, rerank: scores[i] ?? 0 } }))
+    .sort((a, b) => b.score - a.score);
 }

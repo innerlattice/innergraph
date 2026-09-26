@@ -66,6 +66,14 @@ export function toolSpecs(vault: Vault, actor: ActorId): ToolSpec[] {
   return [
     { name: "get_schema", tier: "read", description: "The Vault's current Schema: Node types, Edge types and Roles.", input: {}, run: () => explore.schema() },
     { name: "get_node", tier: "read", description: "A Node with its Evidence passages, Edges and lineage.", input: { id: z.string() }, run: (a) => explore.node(text(a, "id")) },
+    {
+      name: "search_graph",
+      tier: "read",
+      description:
+        "Find the Nodes and Edges most relevant to what the user is talking about: pass their words (or a paraphrase). Hybrid lexical + embedding retrieval, fused and reranked. Use this to resolve names ('the hiding part', 'that loop about control') to ids. Parked items never appear.",
+      input: { query: z.string(), limit: z.number().int().min(1).max(50).optional() },
+      run: (a) => explore.searchGraph(text(a, "query"), (a.limit as number | undefined) ?? 10),
+    },
     { name: "search_evidence", tier: "read", description: "Case-insensitive search over Entry text; returns spans and the Nodes/Edges citing them.", input: { query: z.string() }, run: (a) => explore.searchEvidence(text(a, "query")) },
     { name: "trace_roots", tier: "read", description: "Follow derivational Edges upstream from a Node and rank candidate roots by downstream support.", input: { id: z.string() }, run: (a) => explore.traceRoots(text(a, "id")) },
     { name: "find_loops", tier: "read", description: "Feedback loops over causal Edges: polarity, each step with sign, confidence and quotes, outside brakes/accelerators, what the loop drives, and its least certain link. Offer implications as questions, not verdicts.", input: {}, run: () => explore.loopDetails() },

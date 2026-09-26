@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS blobs (hash TEXT PRIMARY KEY, media TEXT NOT NULL, by
 CREATE TABLE IF NOT EXISTS nodes (id TEXT PRIMARY KEY, type TEXT, label TEXT, status TEXT, confidence REAL, attributes TEXT, derived_from TEXT);
 CREATE TABLE IF NOT EXISTS edges (id TEXT PRIMARY KEY, type TEXT, src TEXT, dst TEXT, sign INTEGER, status TEXT, confidence REAL, attributes TEXT);
 CREATE TABLE IF NOT EXISTS evidence (target TEXT, entry TEXT, start INTEGER, end INTEGER);
+-- Disposable computed values (e.g. embeddings), keyed by namespace and content hash.
+CREATE TABLE IF NOT EXISTS cache (namespace TEXT NOT NULL, key TEXT NOT NULL, value BLOB NOT NULL, PRIMARY KEY (namespace, key));
 `;
 
 export function openDatabase(file: string, key: string): Db {

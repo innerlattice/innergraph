@@ -77,3 +77,32 @@ export class ScriptedGateway implements ModelGateway {
     return this.responses.shift();
   }
 }
+
+/** Turns texts into vectors for dense retrieval. */
+export interface Embedder {
+  readonly name: string;
+  embed(texts: string[]): Promise<number[][]>;
+}
+
+export class OllamaEmbedder implements Embedder {
+  readonly name: string;
+  private readonly baseUrl: string;
+  private readonly fetchImpl: typeof fetch;
+
+  constructor(options: OllamaOptions = {}) {
+    this.baseUrl = options.baseUrl ?? "http://127.0.0.1:11434";
+    this.name = options.model ?? "qwen3-embedding:0.6b";
+    this.fetchImpl = options.fetchImpl ?? fetch;
+  }
+
+  async embed(texts: string[]): Promise<number[][]> {
+    if (texts.length === 0) return [];
+    const response = await this.fetchImpl(`${this.baseUrl}/api/embed`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ model: this.name, input: texts }),
+    });
+    if (!response.ok) throw new Error(`Embedding model ${this.name} unavailable (${response.status}); try: ollama pull ${this.name}`);
+    return ((await response.json()) as { embeddings: number[][] }).embeddings;
+  }
+}

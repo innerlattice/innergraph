@@ -3,7 +3,9 @@ import { rolesOf } from "../access/schemaAccess.js";
 import type { VaultAccess } from "../access/vaultAccess.js";
 import type { AnyEvent, EntryRecord, Evidence, Graph, GraphEdge, GraphNode, ProjectionState, Schema } from "../core/types.js";
 import { type AnalysisEngine, type Loop, type LoopDetail, type LoopStep, type RootTrace, activeGraph } from "../engines/analysisEngine.js";
-import type { RecallEngine } from "../engines/recallEngine.js";
+import type { RecallEngine, Reranker, SearchHit } from "../engines/recallEngine.js";
+import type { Embedder } from "../utilities/modelGateway.js";
+import { cachedVectors, graphDocs } from "./graphSearch.js";
 import { byteOffset } from "../utilities/crypto.js";
 import { type RelatedItem, buildCorpus, describeMatches } from "./recallCorpus.js";
 import { pendingAssertions } from "./pending.js";
@@ -13,6 +15,24 @@ export interface ExploreDeps {
   vault: VaultAccess;
   analysis: AnalysisEngine;
   recall: RecallEngine;
+  /** Optional dense retrieval; search falls back to lexical when absent or unavailable. */
+  embedder?: Embedder;
+  /** Optional reranking of the fused candidates. */
+  reranker?: Reranker;
+}
+
+export interface GraphSearchHit extends SearchHit {
+  label: string;
+  type: string;
+  status: string;
+  evidence?: string;
+}
+
+export interface GraphSearchResult {
+  hits: GraphSearchHit[];
+  /** Which stages ran: lexical always, dense and rerank when available. */
+  stages: string[];
+  notes: string[];
 }
 
 export interface EvidenceView extends Evidence {
@@ -120,6 +140,13 @@ export interface LoopView extends Omit<LoopDetail, "steps" | "inputs" | "outputs
   weakest: LoopStepView;
 }
 
+function describeHit(vault: VaultAccess, state: ProjectionState, hit: SearchHit): GraphSearchHit {
+  const item = describeInGraph(state.graph, hit.id) as SelectionItem;
+  const target = state.graph.nodes[hit.id] ?? state.graph.edges[hit.id];
+  const first = target?.evidence[0];
+  return { ...hit, label: item.label, type: item.type, status: item.status, evidence: first ? vault.readSpan(first) : undefined };
+}
+
 export class ExploreManager {
   constructor(private readonly deps: ExploreDeps) {}
 
@@ -189,6 +216,31 @@ export class ExploreManager {
     const text = node ? [node.label, ...node.evidence.map((e) => vault.readSpan(e))].join("\n") : (query.text ?? "");
     const exclude = node ? [node.id, ...node.evidence.map((e) => e.entry)] : [];
     return describeMatches(vault, state, recall.recall(text, buildCorpus(vault, state), { exclude }));
+  }
+
+  /** Hybrid search over Nodes and Edges: lexical + dense, fused, then reranked. Parked items never appear. */
+  async searchGraph(query: string, limit = 10): Promise<GraphSearchResult> {
+    const { vault, recall, embedder, reranker } = this.deps;
+    const state = vault.state();
+    const docs = graphDocs(vault, state);
+    const notes: string[] = [];
+    const vectors = embedder ? await this.vectors(embedder, query, docs, notes) : undefined;
+    const hits = await recall.search({ query, docs, ...vectors }, reranker, limit).catch((error: Error) => {
+      notes.push(`rerank skipped: ${error.message}`);
+      return recall.search({ query, docs, ...vectors }, undefined, limit);
+    });
+    const stages = ["lexical", ...(vectors ? ["dense"] : []), ...(hits.some((h) => h.stages.rerank !== undefined) ? ["rerank"] : [])];
+    return { hits: hits.map((h) => describeHit(vault, state, h)), stages, notes };
+  }
+
+  private async vectors(embedder: Embedder, query: string, docs: { text: string }[], notes: string[]) {
+    try {
+      const [queryVector, ...docVectors] = await cachedVectors(this.deps.vault, embedder, [query, ...docs.map((d) => d.text)]);
+      return { queryVector, docVectors };
+    } catch (error) {
+      notes.push(`dense retrieval skipped: ${(error as Error).message}`);
+      return undefined;
+    }
   }
 
   searchEvidence(query: string, limit = 50): EvidenceHit[] {
