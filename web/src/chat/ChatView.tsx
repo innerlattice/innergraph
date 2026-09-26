@@ -99,7 +99,7 @@ function MessageList(props: ListProps) {
         {messages.map((m, i) => (
           <MessageBoundary key={m.id}>
             {m.role === "user" ? (
-              <UserMessage message={m} replies={repliesTo(messages, i)} onSelect={props.onSelect} />
+              <UserMessage message={m} replies={repliesTo(messages, i)} later={messages.slice(i + 1)} onSelect={props.onSelect} />
             ) : (
               <AssistantMessage message={m} streaming={busy && i === messages.length - 1} labels={props.labels} onSelect={props.onSelect} onOpenEntry={props.onOpenEntry} />
             )}

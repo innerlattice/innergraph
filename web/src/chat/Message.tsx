@@ -5,7 +5,7 @@ import { Component, type ReactNode } from "react";
 import { Streamdown } from "streamdown";
 import type { ChatMessage } from "../api";
 import { ToolCard } from "./ToolCard";
-import { type Segment, isToolPart, marksFor, segments, textOf } from "./parts";
+import { type Segment, isToolPart, marksFor, recordedEntry, segments, textOf } from "./parts";
 
 export interface MessageActions {
   onSelect: (ids: string[]) => void;
@@ -30,9 +30,10 @@ function Highlight(props: { segment: Segment; onSelect: (ids: string[]) => void 
   );
 }
 
-export function UserMessage(props: { message: ChatMessage; replies: ChatMessage[]; onSelect: (ids: string[]) => void }) {
+/** `replies` answer this message (one may record it as an Entry); `later` is everything after it. */
+export function UserMessage(props: { message: ChatMessage; replies: ChatMessage[]; later: ChatMessage[]; onSelect: (ids: string[]) => void }) {
   const text = textOf(props.message);
-  const parts = segments(text, marksFor(text, props.replies));
+  const parts = segments(text, marksFor(text, recordedEntry(props.replies), props.later));
   return (
     <div className="flex animate-rise justify-end">
       <div className="max-w-[88%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-stone-100 px-4 py-3 font-serif text-[15px] leading-relaxed text-stone-800">

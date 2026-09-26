@@ -10,7 +10,7 @@ import { BudgetNotice, Composer, ContextMeter, FullNotice, SelectionChips } from
 import { MessageBoundary } from "./Message";
 import { SettingsDialog } from "./SettingsDialog";
 import { ToolCard } from "./ToolCard";
-import { describeTool, errorText, friendlyError, isFullError, isSilent, latestTokens, levelOf, marksFor, repliesTo, segments, textOf } from "./parts";
+import { describeTool, errorText, friendlyError, isFullError, isSilent, latestTokens, levelOf, marksFor, recordedEntry, repliesTo, segments, textOf } from "./parts";
 
 vi.mock("../components/GraphCanvas", () => ({ GraphCanvas: () => <div data-testid="graph-canvas" /> }));
 
@@ -101,17 +101,22 @@ describe("reading a conversation", () => {
     expect(friendlyError(`${"x".repeat(200)}\nmore`)).toHaveLength(158);
   });
 
-  it("finds the passages each reply quotes, pending or written", () => {
+  it("finds the passages later calls quote from the message's entry, pending or written", () => {
     const replies = [
       reply([
-        tool("add_to_graph", "output-available", { output: added }),
-        tool("add_to_graph", "input-streaming", { input: { nodes: [{ label: "Worse", quotes: ["made it worse"] }, { quotes: "half" }, null], edges: "partial" } }),
-        tool("add_to_graph", "output-error", { input: { nodes: [{ quotes: ["Today"] }] } }),
+        tool("record_entry", "output-available", { output: { entry: "h1", title: "T" } }),
+        tool("add_to_graph", "output-available", { input: { entry: "h1" }, output: added }),
+        tool("add_to_graph", "input-streaming", { input: { entry: "h1", nodes: [{ label: "Worse", quotes: ["made it worse"] }, { quotes: "half" }, null], edges: "partial" } }),
+        tool("add_to_graph", "output-error", { input: { entry: "h1", nodes: [{ quotes: ["Today"] }] } }),
+        tool("add_to_graph", "output-available", { input: { entry: "other", nodes: [{ quotes: ["Today"] }] } }),
         tool("add_to_graph", "input-streaming"),
-        tool("add_to_graph", "output-available"),
+        tool("add_to_graph", "output-available", { input: { entry: "h1" } }),
       ]),
     ];
-    const marks = marksFor(TEXT, replies);
+    expect(recordedEntry(replies)).toBe("h1");
+    expect(recordedEntry([])).toBeUndefined();
+    expect(marksFor(TEXT, undefined, replies)).toEqual([]);
+    const marks = marksFor(TEXT, "h1", replies);
     expect(marks.map((m) => TEXT.slice(m.start, m.end))).toEqual(["I froze in the meeting", "The shame", "made it worse"]);
     expect(marks[2]).toMatchObject({ ids: [], labels: ["Worse"] });
     const parts = segments("abcdef", [

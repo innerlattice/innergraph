@@ -135,18 +135,28 @@ function quotedIn(part: ToolPart): Quoted[] {
   return [...listOf<Quoted>(input.nodes), ...listOf<Quoted>(input.edges)].map((q) => ({ quotes: q.quotes, label: q.label }));
 }
 
-/** Where the replies' add_to_graph calls quote `text`: one Mark per found passage. */
-export function marksFor(text: string, replies: ChatMessage[]): Mark[] {
-  const marks: Mark[] = [];
-  for (const part of toolParts(replies).filter((p) => toolName(p) === "add_to_graph" && p.state !== "output-error")) {
-    for (const item of quotedIn(part)) {
-      for (const quote of (Array.isArray(item.quotes) ? item.quotes : []).filter((q) => typeof q === "string" && q.length > 0)) {
-        const start = text.indexOf(quote);
-        if (start >= 0) marks.push({ start, end: start + quote.length, ids: item.id ? [item.id] : [], labels: item.label ? [item.label] : [] });
-      }
-    }
-  }
-  return marks;
+/** The Entry a user message was saved as, if the replies to it recorded one. */
+export function recordedEntry(replies: ChatMessage[]): string | undefined {
+  const saved = toolParts(replies).find((p) => toolName(p) === "record_entry" && p.state === "output-available");
+  return (saved?.output as { entry?: string } | undefined)?.entry;
+}
+
+const cites = (part: ToolPart, entry: string) => toolName(part) === "add_to_graph" && part.state !== "output-error" && (part.input as { entry?: string } | undefined)?.entry === entry;
+
+/** Where later add_to_graph calls citing `entry` quote `text` (that message's words): one Mark per found passage. */
+export function marksFor(text: string, entry: string | undefined, later: ChatMessage[]): Mark[] {
+  if (!entry) return [];
+  return toolParts(later)
+    .filter((p) => cites(p, entry))
+    .flatMap(quotedIn)
+    .flatMap((item) => marksOf(text, item));
+}
+
+function marksOf(text: string, item: Quoted): Mark[] {
+  const quotes = (Array.isArray(item.quotes) ? item.quotes : []).filter((q) => typeof q === "string" && q.length > 0);
+  const ids = item.id ? [item.id] : [];
+  const labels = item.label ? [item.label] : [];
+  return quotes.map((q) => ({ q, start: text.indexOf(q) })).filter((m) => m.start >= 0).map((m) => ({ start: m.start, end: m.start + m.q.length, ids, labels }));
 }
 
 export interface Segment {
