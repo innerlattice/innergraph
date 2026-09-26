@@ -1,0 +1,21 @@
+{
+  "fixture": "entry-2-controller-hider.txt",
+  "author": "claude-opus-5.5",
+  "nodes": [
+    { "ref": "controller", "type": "part", "label": "The Controller", "attributes": { "intent": "do shadow work; keep the system stable", "policies": "controls internally" }, "confidence": 0.9, "quotes": ["one part that wants to control us internally in order to do shadow work", "the part that controls feels like it needs to have even more control in order to keep the system stable"] },
+    { "ref": "hider", "type": "part", "label": "The Hider", "attributes": { "intent": "protect the other parts", "policies": "hides, selective memory, blocks access to other parts" }, "confidence": 0.9, "quotes": ["another part that hides and has selective memory and prevents me from accessing other parts"] },
+    { "ref": "dissociator", "type": "part", "label": "The Dissociator", "attributes": {}, "confidence": 0.8, "quotes": ["the part that dissociates"] },
+    { "ref": "protected", "type": "part", "label": "Protected parts", "attributes": {}, "confidence": 0.6, "quotes": ["trying to protect the other parts"] },
+    { "ref": "control", "type": "policy", "label": "Control internally", "attributes": { "kind": "control" }, "confidence": 0.8, "quotes": ["wants to control us internally"] },
+    { "ref": "hide", "type": "policy", "label": "Hide and forget", "attributes": { "kind": "avoid" }, "confidence": 0.8, "quotes": ["hides and has selective memory"] }
+  ],
+  "edges": [
+    { "from": "controller", "to": "control", "type": "enacts", "confidence": 0.85, "quotes": ["wants to control us internally"] },
+    { "from": "hider", "to": "hide", "type": "enacts", "confidence": 0.85, "quotes": ["hides and has selective memory"] },
+    { "from": "hider", "to": "protected", "type": "protects", "confidence": 0.8, "quotes": ["prevents me from accessing other parts because it's trying to protect the other parts"] },
+    { "from": "controller", "to": "hider", "type": "polarized_with", "confidence": 0.6, "quotes": ["wants to control us internally in order to do shadow work", "prevents me from accessing other parts"] },
+    { "from": "hider", "to": "dissociator", "type": "reinforces", "sign": "+", "confidence": 0.8, "quotes": ["The part that hides often will enable the part that dissociates"] },
+    { "from": "dissociator", "to": "controller", "type": "reinforces", "sign": "+", "confidence": 0.75, "quotes": ["so the part that controls feels like it needs to have even more control"] },
+    { "from": "controller", "to": "hider", "type": "reinforces", "sign": "+", "confidence": 0.85, "quotes": ["which makes the part that hides hide even more"] }
+  ]
+}

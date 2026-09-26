@@ -1,0 +1,22 @@
+{
+  "fixture": "entry-1-scrolling.txt",
+  "author": "claude-opus-5.5",
+  "nodes": [
+    { "ref": "scroller", "type": "part", "label": "The Scroller", "attributes": { "policies": "keeps scrolling or doing something", "context": "hyperfixation" }, "confidence": 0.85, "quotes": ["the part of me that obsessively needs to keep scrolling or doing something because it's hyperfixated"] },
+    { "ref": "resister", "type": "part", "label": "The Resister", "attributes": { "policies": "resists", "context": "whenever it feels the need to do something" }, "confidence": 0.85, "quotes": ["the part of me that has resistance whenever it feels the need to do something"] },
+    { "ref": "keep_scrolling", "type": "policy", "label": "Keep scrolling", "attributes": { "kind": "other" }, "confidence": 0.7, "quotes": ["obsessively needs to keep scrolling or doing something"] },
+    { "ref": "resist", "type": "policy", "label": "Resist doing", "attributes": { "kind": "avoid" }, "confidence": 0.6, "quotes": ["has resistance whenever it feels the need to do something"] },
+    { "ref": "video", "type": "event", "label": "Making video", "attributes": { "time": "today" }, "confidence": 0.95, "quotes": ["I saw this making video"] },
+    { "ref": "can_hold", "type": "belief", "label": "I can hold creative energy and build it", "attributes": {}, "confidence": 0.7, "quotes": ["I can bring the energy to create within me and hold it within me to build it up"] },
+    { "ref": "pleasant", "type": "appraisal", "label": "Holding the urge to create = pleasant", "attributes": { "implication": "pleasant instead of unpleasant" }, "confidence": 0.65, "quotes": ["it can be pleasant instead of unpleasant"] },
+    { "ref": "held_energy", "type": "interoceptive", "label": "Building creative energy", "attributes": { "quality": "building, pleasant" }, "confidence": 0.55, "quotes": ["hold it within me to build it up"] }
+  ],
+  "edges": [
+    { "from": "scroller", "to": "keep_scrolling", "type": "enacts", "confidence": 0.8, "quotes": ["obsessively needs to keep scrolling"] },
+    { "from": "resister", "to": "resist", "type": "enacts", "confidence": 0.7, "quotes": ["has resistance whenever it feels the need to do something"] },
+    { "from": "scroller", "to": "resister", "type": "polarized_with", "confidence": 0.45, "quotes": ["needs to keep scrolling or doing something", "has resistance whenever it feels the need to do something"] },
+    { "from": "video", "to": "pleasant", "type": "triggers", "confidence": 0.7, "quotes": ["I saw this making video where I realized"] },
+    { "from": "can_hold", "to": "pleasant", "type": "constrains", "confidence": 0.6, "quotes": ["it can be pleasant instead of unpleasant"] },
+    { "from": "pleasant", "to": "held_energy", "type": "felt_as", "confidence": 0.5, "quotes": ["hold it within me to build it up"] }
+  ]
+}

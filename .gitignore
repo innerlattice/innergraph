@@ -7,3 +7,4 @@ coverage/
 *.key
 .claude/launch.json
 .DS_Store
+.experiments/
