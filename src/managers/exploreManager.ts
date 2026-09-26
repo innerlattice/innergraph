@@ -253,7 +253,8 @@ export class ExploreManager {
 
   private async vectors(embedder: Embedder, query: string, docs: { text: string }[], notes: string[]) {
     try {
-      const [queryVector, ...docVectors] = await cachedVectors(this.deps.vault, embedder, [query, ...docs.map((d) => d.text)]);
+      const docVectors = await cachedVectors(this.deps.vault, embedder, docs.map((d) => d.text));
+      const queryVector = embedder.embedQuery ? await embedder.embedQuery(query) : (await embedder.embed([query]))[0];
       return { queryVector, docVectors };
     } catch (error) {
       notes.push(`dense retrieval skipped: ${(error as Error).message}`);

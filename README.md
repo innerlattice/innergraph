@@ -34,8 +34,11 @@ agent to.
 
 Local models: interpretation uses Ollama at `http://127.0.0.1:11434` with `gemma4:latest`
 (`INNER_GRAPH_MODEL`, `INNER_GRAPH_MODEL_URL`). Graph search embeds with
-`qwen3-embedding:0.6b` (`INNER_GRAPH_EMBED_MODEL`, or `off`) and reranks with the chat model
-(`INNER_GRAPH_RERANK=off` to disable). Missing models degrade to lexical search with a note.
+`qwen3-embedding:0.6b` (`INNER_GRAPH_EMBED_MODEL`, or `off`) and can rerank with the chat model
+(`INNER_GRAPH_RERANK=llm` to enable; off by default because a general chat model is a slow,
+coarse reranker). Missing models degrade to lexical search with a note. The embedder is
+configurable; `qwen3-embedding:0.6b` was chosen as the default for its Apache-2.0 license and
+official Ollama support (jina-embeddings-v5-text-small scores higher but is CC BY-NC).
 
 ### Other commands
 

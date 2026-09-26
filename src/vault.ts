@@ -68,8 +68,12 @@ function defaultEmbedder(): Embedder | undefined {
   return model === "off" ? undefined : new OllamaEmbedder({ baseUrl: process.env.INNER_GRAPH_MODEL_URL, model });
 }
 
+/**
+ * Off by default: a general chat model is a slow, coarse reranker (seconds per query, tied
+ * scores). Opt in with INNER_GRAPH_RERANK=llm; a dedicated cross-encoder would replace it.
+ */
 function defaultReranker(gateway: ModelGateway): Reranker | undefined {
-  return process.env.INNER_GRAPH_RERANK === "off" ? undefined : new LlmReranker(gateway);
+  return process.env.INNER_GRAPH_RERANK === "llm" ? new LlmReranker(gateway) : undefined;
 }
 
 function orDefault<T>(value: T | null | undefined, fallback: () => T | undefined): T | undefined {

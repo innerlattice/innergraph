@@ -81,7 +81,17 @@ export class ScriptedGateway implements ModelGateway {
 /** Turns texts into vectors for dense retrieval. */
 export interface Embedder {
   readonly name: string;
+  /** Embeds documents (the things being searched). */
   embed(texts: string[]): Promise<number[][]>;
+  /** Embeds a search query; instruction-tuned models get their query instruction here. */
+  embedQuery?(text: string): Promise<number[]>;
+}
+
+/** Qwen3-Embedding is trained with an instruction on the query side only. */
+export const QUERY_INSTRUCTION = "Instruct: Given what a person is describing, retrieve the items in their graph (things, beliefs, patterns and the relations between them) that it refers to\nQuery: ";
+
+export function queryInstructionFor(model: string): string {
+  return model.startsWith("qwen3-embedding") ? QUERY_INSTRUCTION : "";
 }
 
 export class OllamaEmbedder implements Embedder {
@@ -104,5 +114,10 @@ export class OllamaEmbedder implements Embedder {
     });
     if (!response.ok) throw new Error(`Embedding model ${this.name} unavailable (${response.status}); try: ollama pull ${this.name}`);
     return ((await response.json()) as { embeddings: number[][] }).embeddings;
+  }
+
+  async embedQuery(text: string): Promise<number[]> {
+    const [vector] = await this.embed([`${queryInstructionFor(this.name)}${text}`]);
+    return vector;
   }
 }

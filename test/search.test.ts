@@ -125,3 +125,15 @@ describe("Ollama embedder", () => {
     await expect(missing.embed(["x"])).rejects.toThrow("ollama pull qwen3-embedding:0.6b");
   });
 });
+
+describe("query instructions", async () => {
+  const { queryInstructionFor } = await import("../src/utilities/modelGateway.js");
+  it("prefixes queries only for instruction-tuned models", async () => {
+    expect(queryInstructionFor("qwen3-embedding:0.6b")).toContain("Instruct:");
+    expect(queryInstructionFor("embeddinggemma")).toBe("");
+    const bodies: string[] = [];
+    const embedder = new OllamaEmbedder({ model: "qwen3-embedding:0.6b", fetchImpl: (async (_u: string, init: RequestInit) => (bodies.push(String(init.body)), new Response(JSON.stringify({ embeddings: [[1]] })))) as typeof fetch });
+    expect(await embedder.embedQuery("hello")).toEqual([1]);
+    expect(JSON.parse(bodies[0]).input[0]).toMatch(/^Instruct: .*\nQuery: hello$/s);
+  });
+});
