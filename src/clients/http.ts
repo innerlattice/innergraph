@@ -1,5 +1,6 @@
 // HTTP Client for the desktop UI. Calls Managers only.
 import { type Context, Hono } from "hono";
+import { streamSSE } from "hono/streaming";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { InvariantError } from "../access/invariants.js";
 import { SchemaError } from "../access/schemaAccess.js";
@@ -33,6 +34,21 @@ function route(handler: Handler) {
 
 const body = (c: Context) => c.req.json();
 
+const STREAM_INTERVAL_MS = 400;
+
+/** Server-sent events: emits the Log position whenever any process appends, so views update live. */
+export function streamPositions(c: Context, vault: Vault, intervalMs = STREAM_INTERVAL_MS) {
+  return streamSSE(c, async (stream) => {
+    let last = "";
+    while (!stream.aborted) {
+      const position = vault.explore.position();
+      if (position !== last) await stream.writeSSE({ event: "position", data: position });
+      last = position;
+      await stream.sleep(intervalMs);
+    }
+  });
+}
+
 function registerReads(app: Hono, vault: Vault): void {
   const { explore, map, ingest } = vault;
   app.get("/api/status", route(() => ({ model: vault.gateway.name, hosted: vault.gateway.hosted, schema: explore.schema() })));
@@ -50,6 +66,8 @@ function registerReads(app: Hono, vault: Vault): void {
   app.get("/api/entries/:id", route((c) => explore.entry(c.req.param("id") ?? "")));
   app.get("/api/search", route((c) => explore.searchEvidence(c.req.query("q") ?? "")));
   app.get("/api/timeline", route(() => explore.timeline()));
+  app.get("/api/selection", route(() => explore.selection()));
+  app.get("/api/stream", (c) => streamPositions(c, vault));
   app.get("/api/jobs/:id", route((c) => requireFound(ingest.job(c.req.param("id") ?? ""), "Job")));
   app.get("/api/proposals", route((c) => ingest.listProposals(c.req.query("filter") === "all" ? "all" : "pending")));
   app.get("/api/proposals/:session", route((c) => ingest.proposal(c.req.param("session") ?? "")));
@@ -72,6 +90,7 @@ function registerWrites(app: Hono, vault: Vault): void {
     const input = await body(c);
     return map.merge(input.sources, input.into);
   }));
+  app.put("/api/selection", route(async (c) => vault.explore.setSelection((await body(c)).ids ?? [])));
   app.post("/api/related", route(async (c) => vault.explore.findRelated({ text: (await body(c)).text })));
 }
 
