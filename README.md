@@ -11,45 +11,50 @@ v1 scope: single device, offline, local model (Ollama), one user-defined Schema.
 
 ```bash
 npm install
-npm run build                       # web UI → web/dist
+npm run build                       # graph view → web/dist
 npx tsx src/bin.ts init             # creates ~/.inner-graph/default with schema/author.yaml
-npm start                           # http://127.0.0.1:4317
+npm run chat                        # graph view on :4317 + your agent harness
 ```
 
-Interpretation uses Ollama at `http://127.0.0.1:11434` with `gemma4:latest` by default.
-Override with `INNER_GRAPH_MODEL`, `INNER_GRAPH_MODEL_URL`, and the vault location with
-`--vault <dir>` or `INNER_GRAPH_VAULT`. If the model URL is not local, the UI shows a
-one-line notice that entry text leaves the device.
+`inner-graph` (or `inner-graph chat`) is the main interface. It serves the graph view and
+boots an agent harness wired to the Inner Graph MCP server and skill:
 
-For UI development, run `npm run dev` (API on 4317, Vite on 5173 with a proxy).
+- `--harness claude` (default) runs Claude Code with the plugin in `plugin/` (the
+  `inner-graph` skill) and the MCP server via `--mcp-config`.
+- `--harness "<any command>"` runs another harness with `INNER_GRAPH_MCP_CONFIG` (an
+  `mcpServers` JSON file written to `<vault>/agent/mcp.json`), `INNER_GRAPH_SKILL` (the
+  skill's `SKILL.md`) and `INNER_GRAPH_VIEW` in its environment.
+- Chat connections use the `commit` tier so "approve the selected ones" works; pass
+  `--tier propose` to require approvals in the graph view.
 
-### CLI
+The graph view updates live as the agent works: proposed items appear as amber ghosts,
+merged hypotheses as pale nodes. Select with click, shift-click or a drag box; the agent
+sees the selection through `get_selection`. Approve or decline in the side panel, or ask the
+agent to.
+
+Local models: interpretation uses Ollama at `http://127.0.0.1:11434` with `gemma4:latest`
+(`INNER_GRAPH_MODEL`, `INNER_GRAPH_MODEL_URL`). Graph search embeds with
+`qwen3-embedding:0.6b` (`INNER_GRAPH_EMBED_MODEL`, or `off`) and reranks with the chat model
+(`INNER_GRAPH_RERANK=off` to disable). Missing models degrade to lexical search with a note.
+
+### Other commands
 
 ```bash
-npx tsx src/bin.ts add journal.md               # ingest a file (.md, .json chat export, or text)
-npx tsx src/bin.ts add note.txt --no-interpret  # store without interpretation
+npx tsx src/bin.ts serve                        # graph view only
+npx tsx src/bin.ts add journal.md               # ingest a file with the local model
 npx tsx src/bin.ts mcp --tier read|propose|commit --agent <name>
 npx tsx src/bin.ts schema schema/author.yaml    # apply a newer Schema version to a Vault
 ```
 
-### MCP
+### MCP tools
 
-Any agent can operate the Vault through the MCP server (stdio). Example client config:
+| Tier | Tools |
+| --- | --- |
+| read | `get_schema`, `get_node`, `get_entry`, `list_entries`, `search_graph`, `search_evidence`, `trace_roots`, `find_loops`, `find_related`, `graph_at`, `get_selection`, `list_proposals` |
+| propose | `add_entry`, `propose`, `revise_entry`, `amend` |
+| commit | `approve`, `decline`, `review` |
 
-```json
-{
-  "mcpServers": {
-    "inner-graph": {
-      "command": "npx",
-      "args": ["tsx", "/path/to/belief-graph/src/bin.ts", "mcp", "--tier", "propose", "--agent", "claude"]
-    }
-  }
-}
-```
-
-Tools: `get_schema`, `get_node`, `search_evidence`, `trace_roots`, `find_loops`,
-`find_related`, `graph_at`, `list_proposals` (read); `add_entry`, `propose` (propose);
-`review` (commit). Tools above the connection's tier are not registered at all.
+Tools above a connection's tier are not registered at all.
 
 ## Architecture
 

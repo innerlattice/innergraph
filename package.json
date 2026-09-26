@@ -53,6 +53,7 @@
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "metrics": "tsx scripts/metrics.ts",
-    "quality": "npm run typecheck && npm run coverage && npm run metrics"
+    "quality": "npm run typecheck && npm run coverage && npm run metrics",
+    "chat": "tsx src/bin.ts chat"
   }
 }

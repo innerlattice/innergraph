@@ -4,7 +4,8 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { InvariantError } from "../src/access/invariants.js";
-import { formatFor, runCli } from "../src/clients/cli.js";
+import { formatFor, runCli, spawnInForeground } from "../src/clients/cli.js";
+import type { LaunchPlan } from "../src/clients/launcher.js";
 import { createApp, statusFor } from "../src/clients/http.js";
 import { allowedTools, connectionNotice, createMcpServer, toolSpecs } from "../src/clients/mcp.js";
 import { ForbiddenError, NotFoundError } from "../src/managers/sessions.js";
@@ -187,8 +188,32 @@ describe("CLI client", () => {
 
   it("explains usage and missing Vaults", async () => {
     const env = { log: () => {} };
-    await expect(runCli([], env)).rejects.toThrow("Usage");
+    await expect(runCli(["bogus"], env)).rejects.toThrow("Usage");
     await expect(runCli(["serve", "--vault", join(tempDir(), "none")], env)).rejects.toThrow("No Vault");
+  });
+
+  it("chat serves the graph view, writes agent files and runs the harness", async () => {
+    const dir = tempDir();
+    const env = { log: () => {}, key: KEY, gateway: new ScriptedGateway([]) };
+    await runCli(["init", "--vault", dir, "--schema", SCHEMA_FILE], env);
+    const plans: LaunchPlan[] = [];
+    const spawnFake = async (plan: LaunchPlan) => {
+      plans.push(plan);
+      const res = await fetch("http://127.0.0.1:43918/api/status");
+      expect(res.status).toBe(200);
+      return 0;
+    };
+    await runCli(["--vault", dir, "--port", "43918", "--harness", "my-agent --flag"], { ...env, spawn: spawnFake });
+    expect(plans[0]).toMatchObject({ command: "my-agent", args: ["--flag"], env: { INNER_GRAPH_VAULT: dir, INNER_GRAPH_VIEW: "http://127.0.0.1:43918" } });
+    const config = JSON.parse(readFileSync(join(dir, "agent", "mcp.json"), "utf8"));
+    expect(config.mcpServers["inner-graph"].args).toEqual(expect.arrayContaining(["mcp", "--tier", "commit", "--agent", "my-agent --flag"]));
+    await expect(fetch("http://127.0.0.1:43918/api/status")).rejects.toThrow();
+    rmSync(dir, { recursive: true });
+  });
+
+  it("runs a harness in the foreground and reports its exit code", async () => {
+    expect(await spawnInForeground({ command: process.execPath, args: ["-e", "process.exit(3)"], env: { X: "1" } })).toBe(3);
+    await expect(spawnInForeground({ command: "/nonexistent/harness", args: [], env: {} })).rejects.toThrow();
   });
 
   it("infers input formats from file extensions", () => {
