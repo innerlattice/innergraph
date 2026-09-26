@@ -29,6 +29,7 @@ For UI development, run `npm run dev` (API on 4317, Vite on 5173 with a proxy).
 npx tsx src/bin.ts add journal.md               # ingest a file (.md, .json chat export, or text)
 npx tsx src/bin.ts add note.txt --no-interpret  # store without interpretation
 npx tsx src/bin.ts mcp --tier read|propose|commit --agent <name>
+npx tsx src/bin.ts schema schema/author.yaml    # apply a newer Schema version to a Vault
 ```
 
 ### MCP
@@ -90,6 +91,20 @@ Review policy is configurable per Vault in `<vault>/config.json`:
 ```json
 { "review": { "autoAccept": true, "minAutoConfidence": 0.4 } }
 ```
+
+## Experiments
+
+`experiments/best-case/` holds Claude's own decomposition of the real fixtures and a script
+that writes them into a fresh Vault through the MCP server:
+
+```bash
+npx tsx experiments/best-case/decompose.ts        # → .experiments/best-case
+npx tsx src/bin.ts serve --vault .experiments/best-case --port 4318
+```
+
+`test/golden.test.ts` pins these down (e.g. entry 2 must yield the reinforcing
+Hider → Dissociator → Controller loop), so interpretation pipelines can be compared
+against them.
 
 ## Quality gate
 
