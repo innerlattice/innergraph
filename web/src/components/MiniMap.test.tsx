@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import cytoscape from "cytoscape";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { MiniMap, snapshot } from "./MiniMap";
 
 afterEach(cleanup);
@@ -28,8 +28,14 @@ it("snapshots nodes, edges and the viewport", () => {
   expect(snapshot(cytoscape({ headless: true })).nodes).toEqual([]);
 });
 
+it("hides on a narrow canvas", () => {
+  const { container } = render(<MiniMap cy={graph()} />);
+  expect(container.innerHTML).toBe("");
+});
+
 it("renders an overview and pans the graph on click and drag", () => {
   const cy = graph();
+  vi.spyOn(cy, "width").mockReturnValue(800);
   render(<MiniMap cy={cy} />);
   const map = screen.getByRole("img", { name: /Minimap/ });
   expect(map.querySelectorAll("circle")).toHaveLength(2);

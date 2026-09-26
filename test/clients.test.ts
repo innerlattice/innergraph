@@ -84,6 +84,9 @@ describe("HTTP client", () => {
     const merged = await call(app, "/api/merge", { sources: [shame.id, memory.id], into: { label: "m" } });
     expect(merged.status).toBe(400);
     expect((await call(app, "/api/nodes/missing")).status).toBe(404);
+    const anEdge = Object.keys(graph.edges)[0];
+    expect((await call(app, `/api/edges/${anEdge}`)).json.fromLabel).toBeTruthy();
+    expect((await call(app, "/api/edges/missing")).status).toBe(404);
     expect((await call(app, `/api/revert/preview?t=${positions[0]}`)).json).toHaveProperty("retired");
     const undoTarget = (await call(app, "/api/timeline")).json.find((e: { type: string }) => e.type === "AttributesChanged");
     expect((await call(app, "/api/undo", { eventId: undoTarget.id })).status).toBe(200);

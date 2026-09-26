@@ -136,6 +136,7 @@ export const GRAPH_STYLE: StylesheetJson = [
     },
   },
   { selector: "edge.hypothesis", style: { "line-style": "dashed" } },
+  { selector: "edge.superseded", style: { opacity: 0.25, "line-style": "dotted" } },
   { selector: "edge.derivational", style: { width: 2.6, "line-color": "#57534e", "target-arrow-color": "#57534e" } },
   { selector: "edge.causal", style: { width: 2, "font-size": 13, "font-weight": 700 } },
   { selector: "edge.causal.positive", style: { "line-color": "#c2410c", "target-arrow-color": "#c2410c", color: "#c2410c" } },

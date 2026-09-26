@@ -63,6 +63,13 @@ export interface NodeView {
   derivedInto: GraphNode[];
 }
 
+export interface EdgeView {
+  edge: GraphEdge;
+  fromLabel: string;
+  toLabel: string;
+  evidence: EvidenceView[];
+}
+
 export interface EvidenceHit extends Evidence {
   entryTitle: string;
   text: string;
@@ -170,6 +177,17 @@ export class ExploreManager {
       incoming: edges.filter((e) => e.to === id),
       derivedFrom: node.derivedFrom.map((p) => graph.nodes[p]).filter(Boolean),
       derivedInto: Object.values(graph.nodes).filter((n) => n.derivedFrom.includes(id)),
+    };
+  }
+
+  edge(id: string): EdgeView {
+    const graph = this.deps.vault.state().graph;
+    const edge = requireFound(graph.edges[id], `Edge ${id}`);
+    return {
+      edge,
+      fromLabel: graph.nodes[edge.from]?.label ?? edge.from,
+      toLabel: graph.nodes[edge.to]?.label ?? edge.to,
+      evidence: edge.evidence.map((e) => this.evidenceView(e)),
     };
   }
 

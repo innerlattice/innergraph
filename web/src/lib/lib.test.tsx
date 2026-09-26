@@ -51,7 +51,14 @@ describe("format helpers", () => {
   });
 
   it("labels nodes from the graph and proposed events", () => {
-    expect(labelsFrom(graph, [ev("NodeAsserted", { id: "n3", label: "Three" }), ev("SessionClosed", {})])).toEqual({ n1: "One", n2: "Two", n3: "Three" });
+    expect(labelsFrom(graph, [ev("NodeAsserted", { id: "n3", label: "Three" }), ev("SessionClosed", {})])).toEqual({
+      n1: "One",
+      n2: "Two",
+      n3: "Three",
+      e1: "One —c→ Two",
+      e2: "Two —d→ One",
+      e3: "Two —x→ One",
+    });
   });
 
   it("describes every event type in plain words", () => {

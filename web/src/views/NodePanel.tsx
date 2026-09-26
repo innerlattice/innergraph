@@ -1,10 +1,10 @@
 import { useState } from "react";
 import type { Navigate } from "../App";
-import { type NodeView, type RelatedItem, type RootTrace, api } from "../api";
+import { type NodeView, type ProposalView, type RelatedItem, type RootTrace, api } from "../api";
 import { Button, ErrorNote, StatusPill } from "../components/ui";
 import { actorLabel, entryFocus } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
-import { ReviewActions } from "./ReviewControls";
+import { ItemActions, PendingOnItem, type Reviewed } from "./ReviewControls";
 import { Related } from "./WriteView";
 
 export interface NodePanelProps {
@@ -16,9 +16,14 @@ export interface NodePanelProps {
   navigate: Navigate;
   /** Changes when the Log moves, so the panel refreshes live. */
   version?: string;
+  /** Waiting changes to this node (renames, status changes, refactors). */
+  pending?: ProposalItem[];
+  onReviewed?: (done: Reviewed) => void;
+  onSelect?: (id: string) => void;
 }
 
 type Run = (work: () => Promise<unknown>) => void;
+type ProposalItem = ProposalView["items"][number];
 
 function Section(props: { title: string; children: React.ReactNode }) {
   return (
@@ -55,30 +60,47 @@ export function EvidenceCard(props: { evidence: NodeView["evidence"][number]; on
   );
 }
 
-function EdgeList(props: { view: NodeView; labels: Record<string, string> }) {
+function EdgeList(props: { view: NodeView; labels: Record<string, string>; onSelect?: (id: string) => void }) {
   const { view, labels } = props;
   const rows = [
-    ...view.outgoing.map((e) => ({ id: e.id, text: `→ ${e.type} → ${labels[e.to] ?? e.to}` })),
-    ...view.incoming.map((e) => ({ id: e.id, text: `← ${e.type} ← ${labels[e.from] ?? e.from}` })),
+    ...view.outgoing.map((e) => ({ id: e.id, status: e.status, text: `→ ${e.type} → ${labels[e.to] ?? e.to}` })),
+    ...view.incoming.map((e) => ({ id: e.id, status: e.status, text: `← ${e.type} ← ${labels[e.from] ?? e.from}` })),
   ];
   if (rows.length === 0) return <p className="text-sm text-stone-400">No edges.</p>;
   return (
     <ul className="space-y-1 text-sm text-stone-600">
       {rows.map((r) => (
-        <li key={r.id}>{r.text}</li>
+        <li key={r.id}>
+          <button type="button" className={`text-left hover:underline ${r.status === "superseded" ? "text-stone-400 line-through" : ""}`} onClick={() => props.onSelect?.(r.id)}>
+            {r.text}
+          </button>
+        </li>
       ))}
     </ul>
   );
 }
 
-function StatusActions(props: { view: NodeView; run: Run; onDone: () => void }) {
+function StatusActions(props: { view: NodeView; run: Run; onDone: (done: Reviewed) => void }) {
   const { node } = props.view;
   const set = (status: "parked" | "hypothesis") => props.run(() => api.setStatus(node.id, status));
+  const parkable = node.status !== "superseded";
   return (
     <div className="flex flex-wrap items-start gap-2">
-      {node.status === "hypothesis" ? <ReviewActions ids={[node.id]} onDone={props.onDone} approveLabel="Approve" /> : null}
-      {node.status === "parked" ? <Button onClick={() => set("hypothesis")}>Un-park</Button> : <Button onClick={() => set("parked")}>Not now (park)</Button>}
+      <ItemActions id={node.id} status={node.status} onDone={props.onDone} />
+      {node.status === "parked" ? <Button onClick={() => set("hypothesis")}>Un-park</Button> : null}
+      {parkable && node.status !== "parked" ? <Button onClick={() => set("parked")}>Not now (park)</Button> : null}
     </div>
+  );
+}
+
+function ReviewSection(props: { view: NodeView; readOnly: boolean; run: Run; pending?: ProposalItem[]; labels: Record<string, string>; onDone: (done: Reviewed) => void }) {
+  const retired = props.view.node.status === "superseded";
+  return (
+    <>
+      {retired ? <p className="text-sm text-stone-500">Declined or retired. Restore brings it back as it was.</p> : null}
+      {props.readOnly ? null : <StatusActions view={props.view} run={props.run} onDone={props.onDone} />}
+      {props.readOnly ? null : <PendingOnItem items={props.pending ?? []} labels={props.labels} onDone={props.onDone} />}
+    </>
   );
 }
 
@@ -148,14 +170,14 @@ export function NodePanel(props: NodePanelProps) {
         <StatusPill status={node.status} />
       </header>
       <ErrorNote error={error} />
-      {readOnly ? null : <StatusActions view={view.data} run={run} onDone={() => (view.reload(), onChanged())} />}
+      <ReviewSection view={view.data} readOnly={readOnly} run={run} pending={props.pending} labels={labels} onDone={(done) => (view.reload(), onChanged(), props.onReviewed?.(done))} />
       <Section title="Evidence">
         {view.data.evidence.map((e) => (
           <EvidenceCard key={`${e.entry}-${e.start}`} evidence={e} onOpen={() => navigate("entries", entryFocus(e.entry, e.start, e.end))} />
         ))}
       </Section>
       <Section title="Edges">
-        <EdgeList view={view.data} labels={labels} />
+        <EdgeList view={view.data} labels={labels} onSelect={props.onSelect} />
       </Section>
       {view.data.derivedFrom.length + view.data.derivedInto.length > 0 ? (
         <Section title="Lineage">

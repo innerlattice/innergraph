@@ -2,10 +2,27 @@ import { api } from "../api";
 import { Button, ErrorNote, StatusPill } from "../components/ui";
 import { humanise } from "../lib/elements";
 import { useAsync } from "../lib/useAsync";
-import { ReviewActions } from "./ReviewControls";
+import type { ProposalView } from "../api";
+import { PendingOnItem, ReviewActions, type ReviewKind, type Reviewed } from "./ReviewControls";
+
+type ProposalItem = ProposalView["items"][number];
+
+/** Actions that make sense for the whole selection: restore declined, decline accepted, else review. */
+export function kindsFor(statuses: string[]): ReviewKind[] {
+  if (statuses.length > 0 && statuses.every((s) => s === "superseded")) return ["restore"];
+  if (statuses.length > 0 && statuses.every((s) => s === "accepted")) return ["decline"];
+  return ["approve", "decline"];
+}
 
 /** Several selected Nodes/Edges. The selection is shared with agents over MCP (get_selection). */
-export function SelectionPanel(props: { ids: string[]; version?: string; onClear: () => void; onDone: () => void }) {
+export function SelectionPanel(props: {
+  ids: string[];
+  version?: string;
+  pending?: ProposalItem[];
+  labels?: Record<string, string>;
+  onClear: () => void;
+  onDone: (done: Reviewed) => void;
+}) {
   const selection = useAsync(api.selection, [props.ids.join(), props.version]);
   const items = selection.data?.items ?? [];
   return (
@@ -15,7 +32,11 @@ export function SelectionPanel(props: { ids: string[]; version?: string; onClear
         <Button onClick={props.onClear}>Clear</Button>
       </header>
       <p className="text-xs text-stone-500">Your agent can see this selection: ask it about “the selected items”.</p>
-      <ReviewActions ids={props.ids} onDone={props.onDone} approveLabel={`Approve ${props.ids.length}`} />
+      <PendingOnItem items={props.pending ?? []} labels={props.labels ?? {}} onDone={props.onDone} />
+      <div className="space-y-1">
+        <p className="text-xs text-stone-500">The selected items themselves:</p>
+        <ReviewActions ids={props.ids} kinds={kindsFor(items.map((i) => i.status))} onDone={props.onDone} approveLabel={`Approve ${props.ids.length}`} />
+      </div>
       <ErrorNote error={selection.error} />
       <ul className="space-y-2">
         {items.map((item) => (

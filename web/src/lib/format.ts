@@ -49,6 +49,8 @@ export function labelsFrom(graph: Graph, events: AnyEvent[] = []): Record<string
   const labels: Record<string, string> = {};
   for (const node of Object.values(graph.nodes)) labels[node.id] = node.label;
   for (const e of events) if (e.type === "NodeAsserted") labels[e.body.id] = e.body.label;
+  const name = (id: string) => labels[id] ?? id.slice(-6);
+  for (const edge of Object.values(graph.edges)) labels[edge.id] = `${name(edge.from)} —${edge.type.replace(/_/g, " ")}→ ${name(edge.to)}`;
   return labels;
 }
 

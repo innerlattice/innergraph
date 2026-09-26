@@ -4,12 +4,15 @@ import { type Box, fit, panToCentre, toMini, toModel, union } from "../lib/minim
 
 const WIDTH = 180;
 const HEIGHT = 120;
+/** Below this canvas width the minimap would cover what it summarises. */
+const MIN_CANVAS_WIDTH = 480;
 
 interface Snapshot {
   nodes: { id: string; x: number; y: number; color: string; selected: boolean }[];
   edges: { id: string; x1: number; y1: number; x2: number; y2: number }[];
   view: Box;
   bounds: Box;
+  width: number;
 }
 
 export function snapshot(cy: Core): Snapshot {
@@ -21,6 +24,7 @@ export function snapshot(cy: Core): Snapshot {
     edges: cy.edges().map((e) => ({ id: e.id(), x1: e.source().position().x, y1: e.source().position().y, x2: e.target().position().x, y2: e.target().position().y })),
     view,
     bounds,
+    width: cy.width(),
   };
 }
 
@@ -35,13 +39,14 @@ export function MiniMap(props: { cy: Core }) {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => setSnap(snapshot(cy)));
     };
-    cy.on("render viewport add remove position select unselect", update);
+    cy.on("render viewport add remove position select unselect resize", update);
     return () => {
       cancelAnimationFrame(frame);
-      cy.off("render viewport add remove position select unselect", update);
+      cy.off("render viewport add remove position select unselect resize", update);
     };
   }, [cy]);
 
+  if (snap.width < MIN_CANVAS_WIDTH) return null;
   const t = fit(snap.bounds, WIDTH, HEIGHT);
   const moveTo = (event: PointerEvent<SVGSVGElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();

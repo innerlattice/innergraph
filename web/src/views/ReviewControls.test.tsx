@@ -46,7 +46,7 @@ describe("review bar", () => {
     expect(hypothesisIds(undefined)).toEqual([]);
     const onSelect = vi.fn();
     render(<ReviewBar proposed={[nodeItem]} graph={graph} onSelect={onSelect} />);
-    expect(screen.getByText("1 proposed · 1 hypotheses to confirm")).toBeTruthy();
+    expect(screen.getByText("1 proposed · 0 with proposed changes · 1 hypotheses to confirm")).toBeTruthy();
     fireEvent.click(screen.getByText("Select proposed"));
     fireEvent.click(screen.getByText("Select hypotheses"));
     expect(onSelect.mock.calls).toEqual([[["p1"]], [["a"]]]);
