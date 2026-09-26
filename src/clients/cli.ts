@@ -14,12 +14,12 @@ import type { ModelGateway } from "../utilities/modelGateway.js";
 import { type Vault, initVault, openVault, vaultExists } from "../vault.js";
 import { createApp } from "./http.js";
 import { type LaunchPlan, launchContext, planFor, writeAgentFiles } from "./launcher.js";
-import { type Tier, connectionNotice, createMcpServer } from "./mcp.js";
+import { connectionNotice, createMcpServer, tierOf } from "./mcp.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 export const USAGE =
-  "Usage: inner-graph [chat|init|serve|mcp|add|schema] [--vault dir] [--harness claude|<command>] [--schema file] [--port n] [--tier read|propose|commit] [--agent name]";
+  "Usage: inner-graph [chat|init|serve|mcp|add|schema] [--vault dir] [--harness claude|<command>] [--schema file] [--port n] [--tier read|write] [--agent name]";
 
 export interface CliEnv {
   log: (message: string) => void;
@@ -98,7 +98,7 @@ const commands: Record<string, Command> = {
   serve: (args, env) => startView(args, env),
   chat: async (args, env) => {
     const view = startView(args, env);
-    const ctx = launchContext(ROOT, args.values.vault, { tier: (args.values.tier ?? "commit") as Tier, agent: args.values.harness, port: args.values.port });
+    const ctx = launchContext(ROOT, args.values.vault, { tier: tierOf(args.values.tier), agent: args.values.harness, port: args.values.port });
     writeAgentFiles(ctx);
     const plan = planFor(args.values.harness, ctx);
     env.log(`Starting ${args.values.harness} with the inner-graph skill and MCP (tier "${ctx.tier}"). Graph view: ${ctx.viewUrl}`);
@@ -110,7 +110,7 @@ const commands: Record<string, Command> = {
     return undefined;
   },
   mcp: async (args, env) => {
-    const options = { tier: (args.values.tier ?? "propose") as Tier, agent: args.values.agent };
+    const options = { tier: tierOf(args.values.tier), agent: args.values.agent };
     const vault = open(args, env);
     const server = createMcpServer(vault, options);
     env.log(connectionNotice(options));

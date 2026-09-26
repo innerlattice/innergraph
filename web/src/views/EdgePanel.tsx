@@ -5,7 +5,7 @@ import { humanise } from "../lib/elements";
 import { actorLabel, entryFocus } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 import { EvidenceCard, StaleNote } from "./NodePanel";
-import { ItemActions, PendingChanges, type Reviewed } from "./ReviewControls";
+import { type Done, ItemActions } from "./ItemControls";
 
 function signText(sign: number | undefined): string {
   if (sign === -1) return " (decreases)";
@@ -17,7 +17,7 @@ export interface EdgePanelProps {
   labels: Record<string, string>;
   readOnly: boolean;
   version?: string;
-  onReviewed: (done: Reviewed) => void;
+  onDone: (done: Done) => void;
   onSelect: (id: string) => void;
   navigate: Navigate;
 }
@@ -26,8 +26,8 @@ export interface EdgePanelProps {
 export function EdgePanel(props: EdgePanelProps) {
   const view = useAsync(() => api.edge(props.id), [props.id, props.version]);
   if (!view.data) return <ErrorNote error={view.error} />;
-  const { edge, fromLabel, toLabel, evidence, reasons, changes } = view.data;
-  const done = (d: Reviewed) => (view.reload(), props.onReviewed(d));
+  const { edge, fromLabel, toLabel, evidence } = view.data;
+  const done = (d: Done) => (view.reload(), props.onDone(d));
   return (
     <div className="space-y-5 p-5">
       <header className="space-y-1">
@@ -44,12 +44,10 @@ export function EdgePanel(props: EdgePanelProps) {
             {toLabel}
           </button>
         </h3>
-        <StatusPill status={edge.status} />
+        <StatusPill status={edge.status} confirmed={edge.confirmed} />
       </header>
-      {edge.status === "declined" ? <p className="text-sm text-stone-500">Declined. Restore brings it back as it was.</p> : null}
-      {edge.held ? <p className="text-sm text-amber-800">Not on the map until you approve it: {reasons.join("; ") || "high-impact change"}.</p> : null}
-      {props.readOnly ? null : <ItemActions id={edge.id} status={edge.status} onDone={done} />}
-      {props.readOnly ? null : <PendingChanges changes={changes} labels={props.labels} onDone={done} />}
+      {edge.status === "removed" ? <p className="text-sm text-stone-500">Removed. Restore puts it back as it was.</p> : null}
+      {props.readOnly ? null : <ItemActions ids={[edge.id]} items={[edge]} onDone={done} />}
       <section className="space-y-2">
         <h4 className="text-xs font-medium uppercase tracking-wide text-stone-400">Evidence</h4>
         {evidence.map((e) => (

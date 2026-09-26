@@ -1,22 +1,20 @@
-import { type ItemChange, type ViewStatus, api } from "../api";
+import { type ViewStatus, api } from "../api";
 import { Button, ErrorNote, StatusPill } from "../components/ui";
 import { humanise } from "../lib/elements";
 import { useAsync } from "../lib/useAsync";
-import { PendingChanges, ReviewActions, type Reviewed, kindsFor } from "./ReviewControls";
+import { type Done, ItemActions } from "./ItemControls";
 
 /** Several selected Nodes/Edges. The selection is shared with agents over MCP (get_selection). */
 export function SelectionPanel(props: {
   ids: string[];
   version?: string;
-  changes?: ItemChange[];
-  labels?: Record<string, string>;
   onClear: () => void;
   onFocus: (id: string) => void;
-  onDone: (done: Reviewed) => void;
+  onDone: (done: Done) => void;
 }) {
   const selection = useAsync(api.selection, [props.ids.join(), props.version]);
   const items = selection.data?.items ?? [];
-  const kinds = kindsFor(items.map((i) => i.status as ViewStatus));
+  const states = items.map((i) => ({ status: i.status as ViewStatus, confirmed: i.confirmed }));
   return (
     <div className="space-y-4 p-5">
       <header className="flex items-center justify-between">
@@ -24,8 +22,7 @@ export function SelectionPanel(props: {
         <Button onClick={props.onClear}>Clear</Button>
       </header>
       <p className="text-xs text-stone-500">Your agent can see this selection: ask it about “the selected items”.</p>
-      {kinds.length > 0 ? <ReviewActions ids={props.ids} kinds={kinds} onDone={props.onDone} labels={{ approve: `Approve ${props.ids.length}`, decline: `Decline ${props.ids.length}`, restore: `Restore ${props.ids.length}` }} /> : null}
-      <PendingChanges changes={props.changes ?? []} labels={props.labels ?? {}} onDone={props.onDone} />
+      {items.length > 0 ? <ItemActions ids={props.ids} items={states} onDone={props.onDone} count /> : null}
       <ErrorNote error={selection.error} />
       <ul className="space-y-1">
         {items.map((item) => (
@@ -37,7 +34,7 @@ export function SelectionPanel(props: {
                   {humanise(item.type)} · {item.kind}
                 </span>
               </span>
-              <StatusPill status={item.status} />
+              <StatusPill status={item.status} confirmed={item.confirmed} />
             </button>
           </li>
         ))}

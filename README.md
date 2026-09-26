@@ -1,7 +1,8 @@
 # Inner Graph
 
 A local-first, versioned, typed graph of a person's inner landscape, built from their own
-writing by AI agents and reviewed at session boundaries: git for the psyche. See
+writing by AI agents: git for the psyche. Agents' changes land at once, and every change
+can be undone. See
 [SPEC.md](docs/SPEC.md) for the ubiquitous language and architecture, and
 [context.md](docs/context.md) for the product principles.
 
@@ -24,13 +25,12 @@ boots an agent harness wired to the Inner Graph MCP server and skill:
 - `--harness "<any command>"` runs another harness with `INNER_GRAPH_MCP_CONFIG` (an
   `mcpServers` JSON file written to `<vault>/agent/mcp.json`), `INNER_GRAPH_SKILL` (the
   skill's `SKILL.md`) and `INNER_GRAPH_VIEW` in its environment.
-- Chat connections use the `commit` tier so "approve the selected ones" works; pass
-  `--tier propose` to require approvals in the graph view.
+- Chat connections use the `write` tier; pass `--tier read` for a look-only agent.
 
-The graph view updates live as the agent works: proposed items appear as amber ghosts,
-merged hypotheses as pale nodes. Select with click, shift-click or a drag box; the agent
-sees the selection through `get_selection`. Approve or decline in the side panel, or ask the
-agent to.
+The graph view updates live as the agent works. Select with click, shift-click or a drag
+box; the agent sees the selection through `get_selection`. "What changed" lists recent
+changes, each undoable as a whole; the side panel can confirm ("Looks right"), remove,
+restore and rename (double-click the title).
 
 Local models: interpretation uses Ollama at `http://127.0.0.1:11434` with `gemma4:latest`
 (`INNER_GRAPH_MODEL`, `INNER_GRAPH_MODEL_URL`). Graph search embeds with
@@ -45,7 +45,7 @@ official Ollama support (jina-embeddings-v5-text-small scores higher but is CC B
 ```bash
 npx tsx src/bin.ts serve                        # graph view only
 npx tsx src/bin.ts add journal.md               # ingest a file with the local model
-npx tsx src/bin.ts mcp --tier read|propose|commit --agent <name>
+npx tsx src/bin.ts mcp --tier read|write --agent <name>
 npx tsx src/bin.ts schema schema/author.yaml    # apply a newer Schema version to a Vault
 ```
 
@@ -53,11 +53,10 @@ npx tsx src/bin.ts schema schema/author.yaml    # apply a newer Schema version t
 
 | Tier | Tools |
 | --- | --- |
-| read | `get_schema`, `get_node`, `get_entry`, `list_entries`, `search_graph`, `search_evidence`, `trace_roots`, `find_loops`, `find_related`, `graph_at`, `get_selection`, `list_proposals`, `find_duplicates` |
-| propose | `add_entry`, `propose`, `revise_entry`, `amend`, `merge_duplicates` |
-| commit | `approve`, `decline`, `review`, `restore`, `undo`, `revert` |
+| read | `get_schema`, `get_node`, `get_entry`, `list_entries`, `search_graph`, `search_evidence`, `trace_roots`, `find_loops`, `find_related`, `graph_at`, `get_selection`, `recent_changes`, `find_duplicates` |
+| write | `add_entry`, `add_to_graph`, `revise_entry`, `amend`, `remove`, `merge_nodes`, `split_node`, `merge_duplicates`, `restore`, `undo`, `undo_session`, `revert` |
 
-Tools above a connection's tier are not registered at all.
+Write tools are not registered on a read connection.
 
 ## Architecture
 
@@ -67,38 +66,31 @@ Layers follow SPEC.md; calls go down only, and every Client calls Managers.
 | --- | --- |
 | Clients | `src/clients/` — HTTP API for the UI, MCP server, CLI; `web/` React + Tailwind UI |
 | Managers | `src/managers/` — `IngestManager`, `MapManager`, `ExploreManager` |
-| Engines | `src/engines/` — `InterpretationEngine`, `ReviewEngine`, `AnalysisEngine`, `RecallEngine` |
+| Engines | `src/engines/` — `InterpretationEngine`, `AnalysisEngine`, `RecallEngine` |
 | Resource access | `src/access/` — `VaultAccess` (Log, blobs, Projection), `SchemaAccess`, `IngestAccess` |
 | Resources | SQLCipher database (`better-sqlite3-multiple-ciphers`), Ollama |
 | Utilities | `src/utilities/` — HLC, ULID/crypto, `ModelGateway`, `JobQueue`, graph algorithms |
 
 Key decisions:
 
-- **Log is canonical.** `events` is append-only; `nodes`, `edges`, `evidence` tables are a
-  disposable cache rewritten on every append. The Graph at any HLC is `fold(Log[≤T])`
+- **Log is canonical.** `events` is append-only; the `view_*` tables are a disposable
+  cache of the materialized View, rewritten on every append. The Graph at any HLC is `fold(Log[≤T])`
   (`src/access/projection.ts`).
-- **Proposals are branches.** Graph events from any Actor other than `user` stay pending in
-  their Session until a `ProposalReviewed` event merges them. The `ReviewEngine`
-  auto-merges low-impact events; new root-level Nodes, new causal loops, Refactors and
-  agent status changes wait for review. Rejecting a Node rejects its dependent Edges.
+- **Every change is a Session.** Any Actor's graph Events apply as written; each Session
+  (an ingest, a rename, a merge) can be undone as a whole. The person's own assertions are
+  confirmed; agents' are unconfirmed until the person says "Looks right".
+- **One View.** Every item is `active` (optionally `confirmed`) or `removed`; clients render
+  the materialized View (`src/access/view.ts`) and "Show removed" only widens its filter.
 - **Roles, not type names.** Engines read only `derivational`, `causal`, `identity` from the
   Schema. Theory vocabulary lives only in `schema/author.yaml`.
 - **Evidence is verified.** Models cite verbatim quotes; `evidenceLocator` turns them into
   UTF-8 byte ranges and drops any quote not found in the Entry. Assertions left without
   Evidence are dropped (Invariant 2 is also enforced at the Log boundary).
-- **Park.** Parked Nodes are excluded from Recall and from the interpretation context; no
-  Actor other than `user` can un-park.
 - **Encryption.** The whole database is SQLCipher-encrypted. The key comes from
   `INNER_GRAPH_KEY` or `<vault>/vault.key` (created with mode 0600). Per-Event body
   encryption for sync is designed for, not built.
 - **Concurrency.** The UI server and MCP server may share a Vault; appends take an
   immediate write lock and each process reloads the Log when another has appended.
-
-Review policy is configurable per Vault in `<vault>/config.json`:
-
-```json
-{ "review": { "autoAccept": true, "minAutoConfidence": 0.4 } }
-```
 
 ## Experiments
 
@@ -116,25 +108,25 @@ against them.
 
 ## Look up before writing
 
-Every write path (local model, entry revisions, agents over MCP) resolves proposals against
+Every write path (local model, entry revisions, agents over MCP) resolves new items against
 the graph before appending:
 
 - The model is shown the existing Nodes related to the Entry (all of them up to 60, then
   per-sentence retrieval plus everything the Entry already supports).
 - A proposed Node that cites the same passage as an existing Node of the same type, or has
-  a near-identical label, is re-asserted instead of duplicated; a merely similar one is held
-  for review as "may duplicate X".
+  a near-identical label, is re-asserted instead of duplicated; a merely similar one is
+  noted as `similarTo`.
 - Edges are identified by (from, type, to); re-asserting one merges evidence.
 - Existing duplicates can be found and cleaned up (`find_duplicates`, `merge_duplicates`, or
-  "Clean up" in the graph view).
+  "What changed" → Merge in the graph view).
 
 ## Undo
 
 The Log is append-only, so undo is a compensating Event and can itself be undone:
-`restore` brings back anything declined, `undo` reverses one Log Event (and the edges
-attached to what it touched), and `revert` returns the whole graph to any past point
-(with a preview). Declining in the graph view shows an Undo bar; "Show declined" makes
-retired items selectable.
+`restore` brings back anything removed, `undo` reverses one Log Event (and the edges
+attached to what it touched), `undo_session` reverses a whole change, and `revert` returns
+the whole graph to any past point (with a preview). Removing in the graph view shows an Undo
+bar; "Show removed" makes removed items selectable.
 
 ## Quality gate
 

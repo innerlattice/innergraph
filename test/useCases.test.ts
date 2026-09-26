@@ -17,12 +17,6 @@ async function ingestFirst() {
   return result;
 }
 
-async function ingestAndAcceptAll() {
-  const result = await ingestFirst();
-  const proposal = t.vault.ingest.proposal(result.session);
-  t.vault.ingest.review(result.session, { accept: proposal.items.filter((i) => i.decision === "pending").map((i) => i.event.id) });
-  return result;
-}
 
 beforeEach(() => {
   t = makeVault([INTERPRETATION_1]);
@@ -30,26 +24,20 @@ beforeEach(() => {
 afterEach(() => t.cleanup());
 
 describe("1. Ingest", () => {
-  it("interprets an Entry into a Proposal and auto-accepts only low-impact Events", async () => {
+  it("interprets an Entry straight onto the map, unconfirmed, as one undoable Session", async () => {
     const result = await ingestFirst();
     expect(result.job?.state).toBe("done");
-    const proposal = t.vault.ingest.proposal(result.session);
-    expect(proposal.closed).toBe(true);
-    expect(proposal.entryTitle).toBe("Tuesday evening");
 
     const graph = t.vault.explore.graph();
     const labels = Object.values(graph.nodes).map((n) => n.label).sort();
-    expect(labels).toEqual(["Freezing", "Needing things makes people turn away", "Rest", "Shame"]);
+    expect(labels).toEqual(["Father laughed when I cried", "Freezing", "Needing things makes people turn away", "Rest", "Shame"]);
     expect(Object.values(graph.nodes).every((n) => n.status === "hypothesis")).toBe(true);
     expect(Object.values(graph.nodes).every((n) => n.assertedBy === "model:scripted")).toBe(true);
 
-    const held = proposal.items.filter((i) => i.decision === "pending");
-    const reasons = held.flatMap((i) => i.reasons);
-    expect(held).toHaveLength(4);
-    expect(reasons).toContain("new root-level node");
-    expect(reasons).toContain("closes a feedback loop");
-    expect(reasons).toContain("depends on a node awaiting review");
-    expect(t.vault.ingest.listProposals()).toHaveLength(1);
+    const [latest] = t.vault.explore.changes();
+    expect(latest).toMatchObject({ session: result.session, purpose: "ingest", entry: result.entry });
+    expect(latest.rows[0]).toMatchObject({ kind: "entry", label: "Tuesday evening", action: "added" });
+    expect(latest.rows.filter((r) => r.kind === "node" && r.action === "added")).toHaveLength(5);
   });
 
   it("drops assertions without Evidence or outside the Schema", async () => {
@@ -59,24 +47,20 @@ describe("1. Ingest", () => {
     expect(labels).not.toContain("Unsupported");
   });
 
-  it("merges surfaced Events on review and cascades rejections to dependent Edges", async () => {
+  it("undoes a whole ingest at once", async () => {
     const result = await ingestFirst();
-    const held = t.vault.ingest.proposal(result.session).items.filter((i) => i.decision === "pending");
-    const memory = held.find((i) => i.event.type === "NodeAsserted") as (typeof held)[number];
-    const view = t.vault.ingest.review(result.session, { reject: [memory.event.id] });
-    expect(view.items.filter((i) => i.decision === "rejected")).toHaveLength(2);
-    expect(view.pending).toBe(2);
-    t.vault.ingest.review(result.session, { accept: view.items.filter((i) => i.decision === "pending").map((i) => i.event.id) });
-    expect(t.vault.ingest.listProposals()).toHaveLength(0);
-    expect(t.vault.ingest.listProposals("all")).toHaveLength(1);
+    t.vault.map.undoSession(result.session);
+    expect(t.vault.explore.graph().nodes).toEqual({});
+    expect(t.vault.explore.view({ removed: true }).counts.removed).toBe(9);
+    expect(() => t.vault.map.undoSession("nope")).toThrow("not found");
   });
 
-  it("applies amendments as user Events after accepting", async () => {
-    const result = await ingestFirst();
-    const memory = t.vault.ingest.proposal(result.session).items.find((i) => i.event.type === "NodeAsserted" && i.decision === "pending");
-    t.vault.ingest.review(result.session, { amend: [{ eventId: memory?.event.id as string, label: "Dinner table memory", confidence: 0.9 }] });
-    const node = byLabel("Dinner table memory");
-    expect(node.confidence).toBe(0.9);
+  it("applies agents' amendments at once", async () => {
+    await ingestFirst();
+    const result = t.vault.ingest.amend("agent:test", [{ id: byLabel("Father laughed when I cried").id, label: "Dinner table memory" }, { id: "missing" }]);
+    expect(result.changed).toHaveLength(1);
+    expect(result.dropped).toEqual(["missing: not found"]);
+    expect(byLabel("Dinner table memory").status).toBe("hypothesis");
   });
 
   it("records a failed interpretation and still closes the Session", async () => {
@@ -84,7 +68,7 @@ describe("1. Ingest", () => {
     const second = t.vault.ingest.addEntry({ content: "Another entry entirely." });
     await t.vault.queue.idle();
     expect(second.job?.state).toBe("failed");
-    expect(t.vault.ingest.proposal(second.session).closed).toBe(true);
+    expect(t.vault.explore.timeline().some((e) => e.session === second.session && e.type === "SessionClosed")).toBe(true);
   });
 
   it("can store an Entry without interpretation", () => {
@@ -96,7 +80,7 @@ describe("1. Ingest", () => {
 
 describe("2. Recall", () => {
   it("offers related Entries and Nodes on ingest", async () => {
-    await ingestAndAcceptAll();
+    await ingestFirst();
     const result = t.vault.ingest.addEntry({ content: "In the meeting I froze again and felt the shame." }, { interpret: false });
     expect(result.related.length).toBeGreaterThan(0);
     expect(result.related.map((r) => r.title)).toContain("Tuesday evening");
@@ -104,7 +88,7 @@ describe("2. Recall", () => {
   });
 
   it("finds material related to a Node", async () => {
-    await ingestAndAcceptAll();
+    await ingestFirst();
     const related = t.vault.explore.findRelated({ nodeId: byLabel("Freezing").id });
     expect(related.map((r) => r.title)).toContain("Shame (process_node)");
   });
@@ -112,7 +96,7 @@ describe("2. Recall", () => {
 
 describe("3. Trace roots", () => {
   it("ranks upstream roots along derivational Edges", async () => {
-    await ingestAndAcceptAll();
+    await ingestFirst();
     const belief = byLabel("Needing things makes people turn away");
     const trace = t.vault.explore.traceRoots(belief.id);
     expect(trace.roots).toEqual([{ id: byLabel("Father laughed when I cried").id, support: 1, path: [byLabel("Father laughed when I cried").id, belief.id] }]);
@@ -121,7 +105,7 @@ describe("3. Trace roots", () => {
 
 describe("4. Find loops", () => {
   it("returns reinforcing loops over causal Edges", async () => {
-    await ingestAndAcceptAll();
+    await ingestFirst();
     const loops = t.vault.explore.findLoops();
     expect(loops).toHaveLength(1);
     expect(loops[0].polarity).toBe("reinforcing");
@@ -134,12 +118,12 @@ describe("4. Find loops", () => {
 
 describe("5. Refactor", () => {
   it("splits a Node, reassigning Evidence and Edges with lineage", async () => {
-    await ingestAndAcceptAll();
+    await ingestFirst();
     const shame = byLabel("Shame");
     const edges = Object.values(t.vault.explore.graph().edges).filter((e) => e.from === shame.id || e.to === shame.id);
     t.gateway.generateJson = async () => ({ parts: [{ evidence: [0], edges: [0, 1] }, { evidence: [], edges: [2] }] });
     const result = await t.vault.map.split(shame.id, [{ label: "Social shame" }, { label: "Body shame" }]);
-    expect(result.applied).toBe(true);
+    expect(result.session).toBeTruthy();
     expect(byLabel("Shame").status).toBe("superseded");
     const social = t.vault.explore.node(byLabel("Social shame").id);
     expect(social.derivedFrom.map((n) => n.id)).toEqual([shame.id]);
@@ -150,7 +134,7 @@ describe("5. Refactor", () => {
   });
 
   it("merges Nodes and keeps ids stable", async () => {
-    await ingestAndAcceptAll();
+    await ingestFirst();
     const freezing = byLabel("Freezing");
     const rest = byLabel("Rest");
     t.vault.map.merge([freezing.id, rest.id], { label: "Arousal regulation" });
@@ -160,16 +144,17 @@ describe("5. Refactor", () => {
     expect(t.vault.explore.graph({ includeSuperseded: true }).nodes[freezing.id].status).toBe("superseded");
   });
 
-  it("holds agent refactors for review", async () => {
-    await ingestAndAcceptAll();
+  it("lands agents' refactors at once", async () => {
+    await ingestFirst();
     const result = t.vault.map.merge([byLabel("Freezing").id, byLabel("Rest").id], { label: "X" }, "agent:test");
-    expect(result.applied).toBe(false);
-    const proposal = t.vault.ingest.proposal(result.session);
-    expect(proposal.items[0].reasons).toContain("refactor");
+    expect(byLabel("X").assertedBy).toBe("agent:test");
+    t.vault.map.undoSession(result.session);
+    expect(byLabel("Freezing").status).toBe("hypothesis");
+    expect(byLabel("X").status).toBe("superseded");
   });
 
   it("rejects malformed refactors", async () => {
-    await ingestAndAcceptAll();
+    await ingestFirst();
     await expect(t.vault.map.split(byLabel("Rest").id, [{ label: "only one" }])).rejects.toThrow();
     expect(() => t.vault.map.merge([byLabel("Rest").id], { label: "x" })).toThrow();
   });
@@ -177,30 +162,30 @@ describe("5. Refactor", () => {
 
 describe("6. Time travel", () => {
   it("renders the Graph at a past position and diffs two positions", async () => {
-    await ingestFirst();
     const before = t.vault.map.positions().at(-1) as string;
-    const proposal = t.vault.ingest.listProposals()[0];
-    t.vault.ingest.review(proposal.session, { accept: proposal.items.map((i) => i.event.id) });
+    await ingestFirst();
     const after = t.vault.map.positions().at(-1) as string;
-    expect(Object.keys(t.vault.map.graphAt(before).graph.nodes)).toHaveLength(4);
+    expect(Object.keys(t.vault.map.graphAt(before).graph.nodes)).toHaveLength(0);
     expect(Object.keys(t.vault.map.graphAt(after).graph.nodes)).toHaveLength(5);
     const diff = t.vault.map.diff(before, after);
-    expect(diff.nodes.added.map((n) => n.label)).toEqual(["Father laughed when I cried"]);
-    expect(diff.edges.added).toHaveLength(3);
+    expect(diff.nodes.added).toHaveLength(5);
+    expect(diff.edges.added).toHaveLength(4);
     expect(t.vault.map.graphAt("2020-01-01").graph.nodes).toEqual({});
     expect(() => t.vault.map.graphAt("not a date")).toThrow();
   });
 });
 
-describe("7. Park", () => {
-  it("excludes parked Nodes from Recall and forbids agents from un-parking", async () => {
-    await ingestAndAcceptAll();
+describe("7. Remove and confirm", () => {
+  it("removes items from Recall, lets only the person confirm, and restores", async () => {
+    await ingestFirst();
     const shame = byLabel("Shame");
-    t.vault.map.setStatus(shame.id, "parked");
-    const related = t.vault.explore.findRelated({ text: "shame" });
-    expect(related.map((r) => r.id)).not.toContain(shame.id);
-    expect(() => t.vault.map.setStatus(shame.id, "accepted", "agent:any")).toThrow("No agent may un-park");
-    t.vault.map.setStatus(shame.id, "hypothesis");
-    expect(byLabel("Shame").status).toBe("hypothesis");
+    expect(t.vault.map.remove([shame.id, shame.id]).removed).toEqual([shame.id]);
+    expect(t.vault.map.remove([shame.id]).removed).toEqual([]);
+    expect(t.vault.explore.findRelated({ text: "shame" }).map((r) => r.id)).not.toContain(shame.id);
+    t.vault.map.restore(shame.id);
+    expect(() => t.vault.map.confirm([shame.id], "agent:any")).toThrow("Only the person");
+    expect(t.vault.map.confirm([shame.id, shame.id]).confirmed).toHaveLength(1);
+    expect(byLabel("Shame").status).toBe("accepted");
+    expect(t.vault.explore.view().nodes[shame.id].confirmed).toBe(true);
   });
 });

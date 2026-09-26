@@ -5,7 +5,6 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { InvariantError } from "../access/invariants.js";
 import { SchemaError } from "../access/schemaAccess.js";
 import { VIEW_STATUSES, type ViewStatus } from "../access/view.js";
-import type { Status } from "../core/types.js";
 import { ForbiddenError, NotFoundError, requireFound } from "../managers/sessions.js";
 import type { Vault } from "../vault.js";
 
@@ -35,7 +34,7 @@ function route(handler: Handler) {
 
 const body = (c: Context) => c.req.json();
 
-/** `?statuses=proposed,approved` → the View filter; unknown words are ignored. */
+/** `?statuses=active,removed` → the View filter; unknown words are ignored. */
 export function statusesOf(c: Context): ViewStatus[] | undefined {
   const raw = c.req.query("statuses");
   return raw ? raw.split(",").filter((s): s is ViewStatus => (VIEW_STATUSES as readonly string[]).includes(s)) : undefined;
@@ -78,12 +77,10 @@ function registerReads(app: Hono, vault: Vault): void {
   app.get("/api/timeline", route(() => explore.timeline()));
   app.get("/api/revert/preview", route((c) => map.revertPreview(c.req.query("t") ?? "")));
   app.get("/api/duplicates", route(() => map.duplicates()));
-  app.get("/api/pending", route(() => ingest.pendingChanges()));
+  app.get("/api/changes", route((c) => explore.changes(Number(c.req.query("limit") ?? 30))));
   app.get("/api/selection", route(() => explore.selection()));
   app.get("/api/stream", (c) => streamPositions(c, vault));
   app.get("/api/jobs/:id", route((c) => requireFound(ingest.job(c.req.param("id") ?? ""), "Job")));
-  app.get("/api/proposals", route((c) => ingest.listProposals(c.req.query("filter") === "all" ? "all" : "pending")));
-  app.get("/api/proposals/:session", route((c) => ingest.proposal(c.req.param("session") ?? "")));
 }
 
 function registerWrites(app: Hono, vault: Vault): void {
@@ -91,11 +88,6 @@ function registerWrites(app: Hono, vault: Vault): void {
   app.post("/api/entries", route(async (c) => {
     const input = await body(c);
     return ingest.addEntry(input, { interpret: input.interpret !== false });
-  }));
-  app.post("/api/proposals/:session/review", route(async (c) => ingest.review(c.req.param("session") ?? "", await body(c))));
-  app.post("/api/items/:id/status", route(async (c) => {
-    const input = (await body(c)) as { status: Status; reason?: string };
-    return map.setStatus(c.req.param("id") ?? "", input.status, "user", input.reason);
   }));
   app.post("/api/items/:id/attributes", route(async (c) => map.changeAttributes(c.req.param("id") ?? "", await body(c))));
   app.post("/api/nodes/:id/split", route(async (c) => map.split(c.req.param("id") ?? "", (await body(c)).parts)));
@@ -111,8 +103,9 @@ function registerWrites(app: Hono, vault: Vault): void {
   app.post("/api/undo", route(async (c) => map.undo((await body(c)).eventId)));
   app.post("/api/restore", route(async (c) => map.restore((await body(c)).id)));
   app.post("/api/revert", route(async (c) => map.revert((await body(c)).t)));
-  app.post("/api/approve", route(async (c) => ingest.approve((await body(c)).ids ?? [])));
-  app.post("/api/decline", route(async (c) => ingest.decline((await body(c)).ids ?? [])));
+  app.post("/api/remove", route(async (c) => map.remove((await body(c)).ids ?? [])));
+  app.post("/api/confirm", route(async (c) => map.confirm((await body(c)).ids ?? [])));
+  app.post("/api/undo-session", route(async (c) => map.undoSession((await body(c)).session)));
   app.put("/api/selection", route(async (c) => vault.explore.setSelection((await body(c)).ids ?? [])));
   app.post("/api/related", route(async (c) => vault.explore.findRelated({ text: (await body(c)).text })));
 }

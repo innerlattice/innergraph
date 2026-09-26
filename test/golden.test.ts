@@ -12,7 +12,6 @@ function ingestGolden(t: TestVault, file: string) {
   const plan = JSON.parse(readFileSync(join(EXPERIMENT, file), "utf8"));
   const { entry } = t.vault.ingest.addEntry({ content: readFileSync(join(FIXTURES, plan.fixture), "utf8") }, { interpret: false });
   const result = t.vault.ingest.propose("agent:golden", entry, plan);
-  t.vault.ingest.review(result.session, { accept: result.awaitingReview });
   return { plan, result };
 }
 
@@ -40,13 +39,5 @@ describe("golden decompositions", () => {
     expect(loops).toHaveLength(1);
     expect(loops[0].polarity).toBe("reinforcing");
     expect(loops[0].nodes.map((id) => labelOf(t, id))).toEqual(expect.arrayContaining(["The Controller", "The Hider", "The Dissociator"]));
-  });
-
-  it("surfaces the loop-closing edge for review", () => {
-    const plan = JSON.parse(readFileSync(join(EXPERIMENT, "entry-2-controller-hider.json"), "utf8"));
-    const { entry } = t.vault.ingest.addEntry({ content: readFileSync(join(FIXTURES, plan.fixture), "utf8") }, { interpret: false });
-    const result = t.vault.ingest.propose("agent:golden", entry, plan);
-    const reasons = t.vault.ingest.proposal(result.session).items.flatMap((i) => i.reasons);
-    expect(reasons).toContain("closes a feedback loop");
   });
 });

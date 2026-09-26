@@ -22,15 +22,16 @@ open-source tool others can use, so the core must stay theory-agnostic.
   version vectors, SQLCipher) over custom machinery. Avoid bloat in the core model.
 
 ## Product principles
-- Agents write by default; humans review at session end like a PR. Editing the map by
-  hand is optional, for power users.
+- Chat first: the person writes and talks, the agent changes the map, and every change
+  lands at once and can be undone. Editing the map by hand is a secondary escape hatch,
+  added only where talking proves frustrating.
 - Every agent assertion carries Evidence and Confidence. Hypotheses stay labeled
-  `hypothesis` until accepted. The map acts as a prior on the user's self-understanding,
+  unconfirmed until the person confirms them. The map acts as a prior on the user's self-understanding,
   so unsupported claims must never look settled.
 - Nothing is destroyed; corrections and Refactors are new Events with lineage.
 - Recall and suggestions are offered, never pushed. No scores, streaks, grades or
-  "you still haven't done X" messaging. `parked` Nodes are excluded from Recall and
-  no agent may un-park them. The tool must feel safe to a user's protective, cautious side.
+  "you still haven't done X" messaging. Removed items never come back through Recall.
+  The tool must feel safe to a user's protective, cautious side.
 - Scope discipline: v1 = single device, offline, local model, ingestion + graph.
   Sync, hosting, mobile, Activities are designed-for only. Push back on scope creep.
 

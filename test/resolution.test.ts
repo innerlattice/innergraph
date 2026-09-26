@@ -98,11 +98,11 @@ describe("resolution on every write path", () => {
     expect(counts()).toEqual({ nodes: 2, edges: 1 });
   });
 
-  it("holds a merely similar node for review, naming what it may duplicate", () => {
+  it("lands a merely similar node, noting what it may duplicate", () => {
     const result = t.vault.ingest.propose("agent:b", entry, { nodes: [{ ref: "x", type: "process_node", label: "Shame spiral", confidence: 0.9, quotes: ["Resting helped"] }], edges: [] });
-    const reasons = t.vault.ingest.proposal(result.session).items.flatMap((i) => i.reasons);
-    expect(reasons).toContain("may duplicate “Shame”");
-    expect(t.vault.ingest.pendingChanges().assertions[0].item).not.toHaveProperty("similarTo", undefined);
+    const asserted = t.vault.explore.timeline(5).find((e) => e.session === result.session && e.type === "NodeAsserted");
+    expect(asserted?.body).toHaveProperty("similarTo");
+    expect(counts().nodes).toBe(3);
   });
 
   it("a revision that re-asserts everything (renamed, retracted) creates no duplicates", async () => {
@@ -121,7 +121,6 @@ describe("resolution on every write path", () => {
     t.vault.ingest.reviseEntry(entry, `${TEXT} Tomorrow I rest again.`);
     await t.vault.queue.idle();
     expect(counts()).toEqual({ nodes: 2, edges: 1 });
-    expect(t.vault.ingest.pendingChanges().other).toEqual([]);
     expect(t.vault.explore.graph().nodes[video].label).toBe("Video on energy management");
   });
 });

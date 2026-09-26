@@ -29,7 +29,7 @@ export function GraphKey(props: { schema: Schema | null }) {
             ))}
           </div>
           <p className="text-stone-500">
-            <span className="font-bold text-orange-700">+</span> increases · <span className="font-bold text-sky-700">−</span> decreases · thick line = derivation · green halo = just changed
+            <span className="font-bold text-orange-700">+</span> increases · <span className="font-bold text-sky-700">−</span> decreases · thick line = derivation · firmer outline = confirmed · green halo = just changed
           </p>
           <p className="text-stone-400">Drag to select · shift-click to add · scroll to pan · pinch to zoom · double-click a title to rename</p>
         </div>

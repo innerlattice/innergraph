@@ -4,21 +4,20 @@ import { type NodeView, type RelatedItem, type RootTrace, type ViewStatus, api }
 import { Button, ErrorNote, StatusPill } from "../components/ui";
 import { actorLabel, entryFocus } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
-import { ItemActions, PendingChanges, type Reviewed } from "./ReviewControls";
+import { type Done, ItemActions } from "./ItemControls";
 import { Related } from "./WriteView";
 
 export interface NodePanelProps {
   id: string;
   labels: Record<string, string>;
   readOnly: boolean;
-  onChanged: () => void;
+  onDone: (done: Done) => void;
   onHighlight: (ids: string[]) => void;
   navigate: Navigate;
   /** Changes when the Log moves, so the panel refreshes live. */
   version?: string;
   /** Which statuses the map shows; the edge list follows the same filter. */
   statuses?: ViewStatus[];
-  onReviewed?: (done: Reviewed) => void;
   onSelect?: (id: string) => void;
 }
 
@@ -75,7 +74,7 @@ function EdgeList(props: { view: NodeView; labels: Record<string, string>; onSel
     <ul className="space-y-1 text-sm text-stone-600">
       {rows.map((r) => (
         <li key={r.id}>
-          <button type="button" className={`text-left hover:underline ${r.status === "declined" ? "text-stone-400 line-through" : ""}`} onClick={() => props.onSelect?.(r.id)}>
+          <button type="button" className={`text-left hover:underline ${r.status === "removed" ? "text-stone-400 line-through" : ""}`} onClick={() => props.onSelect?.(r.id)}>
             {r.text}
           </button>
         </li>
@@ -84,31 +83,12 @@ function EdgeList(props: { view: NodeView; labels: Record<string, string>; onSel
   );
 }
 
-const STATUS_NOTE: Partial<Record<ViewStatus, string>> = {
-  declined: "Declined. Restore brings it back as it was.",
-  parked: "Parked: set aside, and never brought up by suggestions or recall.",
-};
-
-function StatusActions(props: { view: NodeView; run: Run; onDone: (done: Reviewed) => void }) {
+function StatusSection(props: { view: NodeView; readOnly: boolean; onDone: (done: Done) => void }) {
   const { node } = props.view;
-  const set = (status: "parked" | "hypothesis") => props.run(() => api.setStatus(node.id, status));
-  return (
-    <div className="flex flex-wrap items-start gap-2">
-      <ItemActions id={node.id} status={node.status} onDone={props.onDone} />
-      {node.status === "parked" ? <Button onClick={() => set("hypothesis")}>Un-park</Button> : null}
-      {node.status === "proposed" || node.status === "approved" ? <Button onClick={() => set("parked")}>Not now (park)</Button> : null}
-    </div>
-  );
-}
-
-function ReviewSection(props: { view: NodeView; readOnly: boolean; run: Run; labels: Record<string, string>; onDone: (done: Reviewed) => void }) {
-  const { node, reasons, changes } = props.view;
   return (
     <>
-      {STATUS_NOTE[node.status] ? <p className="text-sm text-stone-500">{STATUS_NOTE[node.status]}</p> : null}
-      {node.held ? <p className="text-sm text-amber-800">Not on the map until you approve it: {reasons.join("; ") || "high-impact change"}.</p> : null}
-      {props.readOnly ? null : <StatusActions view={props.view} run={props.run} onDone={props.onDone} />}
-      {props.readOnly ? null : <PendingChanges changes={changes} labels={props.labels} onDone={props.onDone} />}
+      {node.status === "removed" ? <p className="text-sm text-stone-500">Removed. Restore puts it back as it was.</p> : null}
+      {props.readOnly ? null : <ItemActions ids={[node.id]} items={[node]} onDone={props.onDone} />}
     </>
   );
 }
@@ -181,14 +161,14 @@ function RootsList(props: { trace?: RootTrace; labels: Record<string, string> })
 }
 
 export function NodePanel(props: NodePanelProps) {
-  const { id, labels, readOnly, onChanged, onHighlight, navigate, version } = props;
+  const { id, labels, readOnly, onDone, onHighlight, navigate, version } = props;
   const view = useAsync(() => api.node(id, props.statuses), [id, version, props.statuses?.join()]);
   const [trace, setTrace] = useState<RootTrace>();
   const [related, setRelated] = useState<RelatedItem[]>();
   const [error, setError] = useState<string>();
   const run: Run = (work) => {
     setError(undefined);
-    work().then(() => (view.reload(), onChanged())).catch((e: Error) => setError(e.message));
+    work().then(() => (view.reload(), onDone({ kind: "confirm", ids: [] }))).catch((e: Error) => setError(e.message));
   };
   const traceRoots = () => api.roots(id).then((t) => (setTrace(t), onHighlight([...t.upstream, id]))).catch((e: Error) => setError(e.message));
 
@@ -199,10 +179,10 @@ export function NodePanel(props: NodePanelProps) {
       <header className="space-y-1">
         <p className="text-xs text-stone-400">{node.type.replace(/_/g, " ")} · {Math.round(node.confidence * 100)}% · by {actorLabel(node.assertedBy)}</p>
         <EditableTitle value={node.label} readOnly={readOnly} onSave={(label) => run(() => api.rename(node.id, label))} />
-        <StatusPill status={node.status} />
+        <StatusPill status={node.status} confirmed={node.confirmed} />
       </header>
       <ErrorNote error={error} />
-      <ReviewSection view={view.data} readOnly={readOnly} run={run} labels={labels} onDone={(done) => (view.reload(), onChanged(), props.onReviewed?.(done))} />
+      <StatusSection view={view.data} readOnly={readOnly} onDone={(done) => (view.reload(), onDone(done))} />
       <Section title="Evidence">
         {view.data.evidence.map((e) => (
           <EvidenceCard key={`${e.entry}-${e.start}`} evidence={e} onOpen={() => navigate("entries", entryFocus(e.entry, e.start, e.end))} />

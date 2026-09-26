@@ -50,10 +50,8 @@ describe("duplicates", () => {
     expect(t.vault.map.duplicates()).toEqual([]);
   });
 
-  it("an agent's cleanup waits for review", () => {
-    const results = t.vault.map.mergeDuplicates("agent:claude");
-    expect(results.every((r) => !r.applied)).toBe(true);
-    expect(t.vault.map.duplicates()).toHaveLength(2);
-    expect(t.vault.ingest.pendingChanges().other.length).toBeGreaterThan(0);
+  it("an agent's cleanup lands at once", () => {
+    t.vault.map.mergeDuplicates("agent:claude");
+    expect(t.vault.map.duplicates()).toEqual([]);
   });
 });

@@ -1,40 +1,25 @@
-// IngestManager: Entry in -> Session -> InterpretationEngine -> Proposal -> ReviewEngine -> commit.
+// IngestManager: Entry in -> Session -> InterpretationEngine -> resolved against the graph -> written.
+// Everything lands at once as one Session; the person undoes what they do not want.
 import { type RawInput, normalise } from "../access/ingestAccess.js";
 import type { SchemaAccess } from "../access/schemaAccess.js";
 import type { VaultAccess } from "../access/vaultAccess.js";
-import {
-  type ActorId,
-  type AnyDraft,
-  type AnyEvent,
-  type Decision,
-  type GraphEdge,
-  type GraphNode,
-  type ProjectionState,
-  type Proposal,
-  REVIEW_POLICY_ACTOR,
-  USER,
-} from "../core/types.js";
+import { type ActorId, type AnyDraft, type Evidence, type ProjectionState, USER } from "../core/types.js";
 import type { CitedItem, ContextNode, InterpretInput, Interpretation, InterpretationEngine, Revision } from "../engines/interpretationEngine.js";
 import type { Resolved } from "../engines/resolution.js";
 import type { RecallEngine } from "../engines/recallEngine.js";
-import { DEFAULT_POLICY, type ReviewEngine, type ReviewPolicy } from "../engines/reviewEngine.js";
 import { newId, utf8 } from "../utilities/crypto.js";
 import type { Job, JobQueue } from "../utilities/jobQueue.js";
 import { type RelatedItem, buildCorpus, describeMatches } from "./recallCorpus.js";
-import { pendingAssertions } from "./pending.js";
 import { contextFor, resolveAgainst } from "./resolve.js";
 import { citedItems, citedSpans, computeRemap } from "./revision.js";
-import { type ReviewOutcome, approve, decline } from "./reviewActions.js";
-import { NotFoundError, requireFound, runSession } from "./sessions.js";
+import { NotFoundError, openSession, requireFound, runSession } from "./sessions.js";
 
 export interface IngestDeps {
   vault: VaultAccess;
   schemas: SchemaAccess;
   interpretation: InterpretationEngine;
-  review: ReviewEngine;
   recall: RecallEngine;
   queue: JobQueue;
-  policy?: ReviewPolicy;
 }
 
 export interface IngestResult {
@@ -44,46 +29,33 @@ export interface IngestResult {
   job?: Job;
 }
 
-export interface ReviewDecision {
-  accept?: string[];
-  reject?: string[];
-  amend?: { eventId: string; patch?: Record<string, unknown>; label?: string; confidence?: number }[];
-}
-
-export interface ProposalItem {
-  event: AnyEvent;
-  decision: Decision;
-  reasons: string[];
-}
-
-export interface ProposalView extends Omit<Proposal, "events"> {
-  entryTitle?: string;
-  pending: number;
-  items: ProposalItem[];
-}
-
-export interface PendingItem {
-  eventId: string;
-  session: string;
+/** A Node or Edge a write touched, with the passages it cites (so a Client can highlight them). */
+export interface WrittenItem {
+  id: string;
   kind: "node" | "edge";
-  item: GraphNode | GraphEdge;
-  reasons: string[];
-}
-
-export interface PendingChanges {
-  /** Proposed Nodes/Edges not yet in the Graph, drawn as ghosts. */
-  assertions: PendingItem[];
-  /** Other waiting Events (refactors, status changes, re-assertions). */
-  other: ProposalItem[];
+  label: string;
+  evidence: Evidence[];
 }
 
 export interface ProposeResult {
   session: string;
-  accepted: string[];
-  awaitingReview: string[];
+  items: WrittenItem[];
   dropped: string[];
   /** Proposed Nodes recognised as existing ones and re-asserted instead of duplicated. */
   merged?: Resolved["merged"];
+}
+
+export interface AmendResult {
+  session: string;
+  changed: string[];
+  dropped: string[];
+}
+
+function written(result: Interpretation): WrittenItem[] {
+  return [
+    ...result.nodes.map((n) => ({ id: n.id, kind: "node" as const, label: n.label, evidence: n.evidence })),
+    ...result.edges.map((e) => ({ id: e.id, kind: "edge" as const, label: e.type, evidence: e.evidence })),
+  ];
 }
 
 function graphDrafts(result: Interpretation, actor: ActorId, session: string): AnyDraft[] {
@@ -132,16 +104,8 @@ function allLive(state: ProjectionState): ContextNode[] {
     .map(({ id, type, label }) => ({ id, type, label }));
 }
 
-function pendingEvents(proposal: Proposal): AnyEvent[] {
-  return proposal.events.filter((item) => item.decision === "pending").map((item) => item.event);
-}
-
 export class IngestManager {
-  private readonly policy: ReviewPolicy;
-
-  constructor(private readonly deps: IngestDeps) {
-    this.policy = deps.policy ?? DEFAULT_POLICY;
-  }
+  constructor(private readonly deps: IngestDeps) {}
 
   addEntry(input: RawInput, options: { interpret?: boolean; actor?: ActorId } = {}): IngestResult {
     const { vault } = this.deps;
@@ -151,7 +115,7 @@ export class IngestManager {
     const session = newId();
     const actor = options.actor ?? USER;
     vault.append([
-      { actor, session, type: "SessionOpened", body: { purpose: "ingest", entry: hash } },
+      openSession(actor, session, "ingest", hash),
       { actor, session, type: "EntryAdded", body: { entry: hash, source: entry.source, title: entry.title, bytes: bytes.length } },
     ]);
     const related = this.related(entry.text, [hash]);
@@ -177,22 +141,20 @@ export class IngestManager {
     const session = newId();
     const actor = options.actor ?? USER;
     vault.append([
-      { actor, session, type: "SessionOpened", body: { purpose: "revise", entry: hash } },
+      openSession(actor, session, "revise", hash),
       { actor, session, type: "EntryAdded", body: { entry: hash, source: next.source, title: next.title, bytes: bytes.length, revises: entry, remap } },
     ]);
     const job = options.interpret === false ? this.close(session, actor) : this.enqueueRevision(session, entry, hash, cited);
     return { session, entry: hash, previous: entry, remapped: remap.length, cited, job };
   }
 
-  /** Label/attribute corrections by any Actor; low impact, so the review policy usually merges them. */
-  amend(actor: ActorId, changes: Amendment[]): ProposeResult {
+  /** Label/attribute corrections by any Actor. */
+  amend(actor: ActorId, changes: Amendment[]): AmendResult {
     const known = this.deps.vault.state().graph;
     const valid = changes.filter((c) => known.nodes[c.id] || known.edges[c.id]);
     const { session } = runSession(this.deps.vault, actor, "amend", (s) => valid.map((c) => amendmentDraft(c, actor, s)));
-    const accepted = actor === USER ? [] : this.autoReview(session);
     const dropped = changes.filter((c) => !valid.includes(c)).map((c) => `${c.id}: not found`);
-    const pending = this.deps.vault.state().proposals[session].events.filter((i) => i.decision === "pending");
-    return { session, accepted, awaitingReview: pending.map((i) => i.event.id), dropped };
+    return { session, changed: valid.map((c) => c.id), dropped };
   }
 
   related(text: string, exclude: string[] = []): RelatedItem[] {
@@ -201,64 +163,12 @@ export class IngestManager {
     return describeMatches(this.deps.vault, state, matches);
   }
 
-  /** An external agent proposes assertions citing quotes from an existing Entry. */
+  /** An agent writes Nodes and Edges citing quotes from an existing Entry, resolved against the graph first. */
   propose(actor: ActorId, entry: string, raw: unknown): ProposeResult {
     const checked = this.deps.interpretation.check(raw, this.interpretInput(entry, "all"));
     const { result, merged } = resolveAgainst(this.deps.vault.state(), checked);
     const { session } = runSession(this.deps.vault, actor, "propose", (s) => graphDrafts(result, actor, s));
-    const accepted = this.autoReview(session);
-    const events = this.deps.vault.state().proposals[session].events;
-    const awaitingReview = events.filter((i) => i.decision === "pending").map((i) => i.event.id);
-    return { session, accepted, awaitingReview, dropped: result.dropped, merged };
-  }
-
-  review(session: string, decision: ReviewDecision, actor: ActorId = USER): ProposalView {
-    const { vault, review } = this.deps;
-    const state = vault.state();
-    const proposal = requireFound(state.proposals[session], `Proposal ${session}`);
-    const pending = pendingEvents(proposal);
-    const pendingIds = new Set(pending.map((e) => e.id));
-    const amend = (decision.amend ?? []).filter((a) => pendingIds.has(a.eventId));
-    const accepted = [...(decision.accept ?? []), ...amend.map((a) => a.eventId)].filter((id) => pendingIds.has(id));
-    const rejected = review.cascadeRejections(pending, (decision.reject ?? []).filter((id) => pendingIds.has(id)), state.graph);
-    vault.append([
-      { actor, session: newId(), type: "ProposalReviewed", body: { session, accepted: accepted.filter((id) => !rejected.includes(id)), rejected } },
-      ...amend.map((a) => this.amendment(pending, a, actor)),
-    ]);
-    return this.view(vault.state(), vault.state().proposals[session]);
-  }
-
-  listProposals(filter: "pending" | "all" = "pending"): ProposalView[] {
-    const state = this.deps.vault.state();
-    return Object.values(state.proposals)
-      .map((p) => this.view(state, p))
-      .filter((p) => p.items.length > 0 && (filter === "all" || p.pending > 0))
-      .sort((a, b) => b.openedAt.localeCompare(a.openedAt));
-  }
-
-  proposal(session: string): ProposalView {
-    const state = this.deps.vault.state();
-    return this.view(state, requireFound(state.proposals[session], `Proposal ${session}`));
-  }
-
-  /** Everything waiting for review, with the reasons it was surfaced. */
-  pendingChanges(): PendingChanges {
-    const state = this.deps.vault.state();
-    const items = this.listProposals().flatMap((p) => p.items.filter((i) => i.decision === "pending"));
-    const reasons = new Map(items.map((i) => [i.event.id, i.reasons]));
-    const assertions = pendingAssertions(state).map((a) => ({ ...a, reasons: reasons.get(a.eventId) ?? [] }));
-    const shown = new Set(assertions.map((a) => a.eventId));
-    return { assertions, other: items.filter((i) => !shown.has(i.event.id)) };
-  }
-
-  /** Approve by Node, Edge or Event id: merges what is pending and marks it accepted. */
-  approve(ids: string[], actor: ActorId = USER): ReviewOutcome {
-    return approve(this.deps.vault, ids, actor);
-  }
-
-  /** Decline by Node, Edge or Event id: rejects what is pending, retires merged hypotheses. */
-  decline(ids: string[], actor: ActorId = USER): ReviewOutcome {
-    return decline(this.deps.vault, this.deps.review, ids, actor);
+    return { session, items: written(result), dropped: result.dropped, merged };
   }
 
   job(id: string): Job | undefined {
@@ -295,7 +205,6 @@ export class IngestManager {
         this.appendResolved(result, actor, session);
       } finally {
         this.close(session, actor);
-        this.autoReview(session);
       }
     });
   }
@@ -309,7 +218,6 @@ export class IngestManager {
         this.appendResolved(revision.added, actor, session, (added) => revisionDrafts({ ...revision, added: { ...added, nodes: [], edges: [] } }, actor, session, added));
       } finally {
         this.close(session, actor);
-        this.autoReview(session);
       }
     });
   }
@@ -317,37 +225,5 @@ export class IngestManager {
   private close(session: string, actor: ActorId): undefined {
     this.deps.vault.append([{ actor, session, type: "SessionClosed", body: {} }]);
     return undefined;
-  }
-
-  private autoReview(session: string): string[] {
-    const { vault, review, schemas } = this.deps;
-    const state = vault.state();
-    const pending = pendingEvents(state.proposals[session]);
-    const { autoAccept } = review.triage(pending, state.graph, schemas.current(), this.policy);
-    if (autoAccept.length === 0) return [];
-    vault.append([
-      { actor: REVIEW_POLICY_ACTOR, session: newId(), type: "ProposalReviewed", body: { session, accepted: autoAccept, rejected: [] } },
-    ]);
-    return autoAccept;
-  }
-
-  private amendment(pending: AnyEvent[], amend: NonNullable<ReviewDecision["amend"]>[number], actor: ActorId): AnyDraft {
-    const event = pending.find((e) => e.id === amend.eventId) as AnyEvent;
-    const target = "id" in event.body ? (event.body.id as string) : amend.eventId;
-    const body = { target, patch: amend.patch ?? {}, label: amend.label, confidence: amend.confidence };
-    return { actor, session: event.session, type: "AttributesChanged", body };
-  }
-
-  private view(state: ProjectionState, proposal: Proposal): ProposalView {
-    const pending = pendingEvents(proposal);
-    const triage = this.deps.review.triage(pending, state.graph, state.schema, this.policy);
-    const reasons = new Map(triage.review.map((r) => [r.eventId, r.reasons]));
-    const { events, ...rest } = proposal;
-    return {
-      ...rest,
-      entryTitle: proposal.entry ? state.entries[proposal.entry]?.title : undefined,
-      pending: pending.length,
-      items: events.filter((i) => i.event.actor !== USER).map((i) => ({ ...i, reasons: reasons.get(i.event.id) ?? [] })),
-    };
   }
 }

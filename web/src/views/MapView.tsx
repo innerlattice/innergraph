@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Navigate } from "../App";
-import { type MapGraphView, type ViewStatus, api } from "../api";
+import { type GraphView, type ViewStatus, api } from "../api";
 import { GraphCanvas } from "../components/GraphCanvas";
 import { GraphKey } from "../components/GraphKey";
 import { Empty, ErrorNote } from "../components/ui";
@@ -8,15 +8,15 @@ import { toElements } from "../lib/elements";
 import { labelsFrom } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 import { useLive } from "../lib/useLive";
+import { ChangesPanel } from "./ChangesPanel";
 import { EdgePanel } from "./EdgePanel";
+import { type Done, UndoBar } from "./ItemControls";
 import { NodePanel } from "./NodePanel";
-import { type Reviewed, UndoBar } from "./ReviewControls";
-import { ReviewPanel, queueSize, reviewQueue } from "./ReviewPanel";
 import { SelectionPanel } from "./SelectionPanel";
 import { StatusBar } from "./StatusBar";
 import { TimeBar } from "./TimeBar";
 
-export const DEFAULT_FILTER: ViewStatus[] = ["proposed", "approved", "parked"];
+const statusesFor = (showRemoved: boolean): ViewStatus[] => (showRemoved ? ["active", "removed"] : ["active"]);
 
 /** The materialized View (now or at a past position), kept live. Everything renders from it. */
 function useMapData(index: number | undefined, filter: ViewStatus[]) {
@@ -44,50 +44,49 @@ function useMapData(index: number | undefined, filter: ViewStatus[]) {
 }
 
 interface PanelProps {
-  mode: "items" | "review";
+  mode: "items" | "changes";
   selection: string[];
-  view?: MapGraphView;
+  view?: GraphView;
   duplicates?: ReturnType<typeof useMapData>["duplicates"];
   filter: ViewStatus[];
   labels: Record<string, string>;
   version: string;
   readOnly: boolean;
   onSelect: (ids: string[]) => void;
-  onReviewed: (done: Reviewed) => void;
+  onDone: (done: Done) => void;
   onHighlight: (ids: string[]) => void;
-  onCloseReview: () => void;
+  onCloseChanges: () => void;
   navigate: Navigate;
 }
 
-/** Review queue, one Node, one Edge, or the selection: exactly one panel at a time. */
+/** What changed, one Node, one Edge, or the selection: exactly one panel at a time. */
 function SidePanel(props: PanelProps) {
   const content = panelFor(props);
   return content ? <aside className="w-96 shrink-0 overflow-auto border-l border-stone-200 bg-white">{content}</aside> : null;
 }
 
 function panelFor(props: PanelProps) {
-  if (props.mode === "review") {
-    return <ReviewPanel view={props.view} duplicates={props.duplicates} labels={props.labels} onFocus={props.onSelect} onDone={props.onReviewed} onClose={props.onCloseReview} />;
+  if (props.mode === "changes") {
+    return <ChangesPanel version={props.version} duplicates={props.duplicates} labels={props.labels} onFocus={props.onSelect} onChanged={() => props.onDone({ kind: "confirm", ids: [] })} onClose={props.onCloseChanges} />;
   }
   const { selection } = props;
   if (selection.length === 0) return null;
   const only = selection.length === 1 ? selection[0] : "";
-  const common = { labels: props.labels, readOnly: props.readOnly, version: props.version, onReviewed: props.onReviewed, navigate: props.navigate, onSelect: (id: string) => props.onSelect([id]) };
-  if (props.view?.nodes[only]) return <NodePanel id={only} {...common} statuses={props.filter} onChanged={() => props.onReviewed({ kind: "approve", ids: [] })} onHighlight={props.onHighlight} />;
+  const common = { labels: props.labels, readOnly: props.readOnly, version: props.version, onDone: props.onDone, navigate: props.navigate, onSelect: (id: string) => props.onSelect([id]) };
+  if (props.view?.nodes[only]) return <NodePanel id={only} {...common} statuses={props.filter} onHighlight={props.onHighlight} />;
   if (props.view?.edges[only]) return <EdgePanel id={only} {...common} />;
-  const changes = [...new Map(selection.flatMap((id) => props.view?.changes[id] ?? []).map((c) => [c.event.id, c])).values()];
-  return <SelectionPanel ids={selection} version={props.version} changes={changes} labels={props.labels} onClear={() => props.onSelect([])} onFocus={(id) => props.onSelect([id])} onDone={props.onReviewed} />;
+  return <SelectionPanel ids={selection} version={props.version} onClear={() => props.onSelect([])} onFocus={(id) => props.onSelect([id])} onDone={props.onDone} />;
 }
 
 export function MapView(props: { focus?: string; navigate: Navigate }) {
   const [selection, setSelection] = useState<string[]>(props.focus ? props.focus.split(",") : []);
   const [index, setIndex] = useState<number>();
   const [highlight, setHighlight] = useState<string[]>([]);
-  const [filter, setFilter] = useState<ViewStatus[]>(DEFAULT_FILTER);
-  const [mode, setMode] = useState<"items" | "review">("items");
-  const [reviewed, setReviewed] = useState<Reviewed>();
+  const [showRemoved, setShowRemoved] = useState(false);
+  const filter = statusesFor(showRemoved);
+  const [mode, setMode] = useState<"items" | "changes">("items");
+  const [done, setDone] = useState<Done>();
   const { version, positions, view, error, duplicates, schema, elements, labels, refresh } = useMapData(index, filter);
-  const queue = reviewQueue(view, duplicates);
   const empty = view && Object.keys(view.nodes).length === 0;
 
   const [synced, setSynced] = useState(0);
@@ -100,13 +99,13 @@ export function MapView(props: { focus?: string; navigate: Navigate }) {
       .then(() => setSynced((n) => n + 1))
       .catch(() => undefined);
   };
-  const onReviewed = (done: Reviewed) => {
-    setReviewed(done.kind === "decline" ? done : undefined);
+  const onDone = (next: Done) => {
+    setDone(next.kind === "remove" ? next : undefined);
     refresh();
   };
-  const undoDecline = () => {
-    const ids = reviewed?.ids ?? [];
-    setReviewed(undefined);
+  const undoRemove = () => {
+    const ids = done?.ids ?? [];
+    setDone(undefined);
     Promise.all(ids.map((id) => api.restore(id).catch(() => undefined))).then(refresh);
   };
 
@@ -115,7 +114,7 @@ export function MapView(props: { focus?: string; navigate: Navigate }) {
     if (selection.length > 0) changeSelection(selection);
   }, []);
 
-  // Items can leave the View (declined, filtered out, merged away): keep the selection to what is shown.
+  // Items can leave the View (removed, filtered out, merged away): keep the selection to what is shown.
   useEffect(() => {
     if (!view) return;
     const kept = selection.filter((id) => view.nodes[id] || view.edges[id]);
@@ -125,14 +124,14 @@ export function MapView(props: { focus?: string; navigate: Navigate }) {
   return (
     <div className="flex h-full flex-col">
       <TimeBar positions={positions.data ?? []} index={index} onChange={setIndex} onReverted={refresh} />
-      <StatusBar counts={view?.counts} filter={filter} onFilter={setFilter} toReview={index === undefined ? queueSize(queue) : 0} onReview={() => setMode(mode === "review" ? "items" : "review")} />
+      <StatusBar counts={view?.counts} showRemoved={showRemoved} onShowRemoved={setShowRemoved} changesOpen={mode === "changes"} onChanges={() => setMode(mode === "changes" ? "items" : "changes")} duplicates={duplicates?.length ?? 0} />
       <ErrorNote error={error} />
       <div className="flex min-h-0 flex-1">
         <div className="relative min-w-0 flex-1">
-          {empty ? <div className="absolute inset-x-0 top-0 z-10 p-8"><Empty>Nothing to show with these filters. Add an entry, or show more statuses.</Empty></div> : null}
+          {empty ? <div className="absolute inset-x-0 top-0 z-10 p-8"><Empty>Nothing on the map here yet. Add an entry to begin.</Empty></div> : null}
           <GraphCanvas elements={elements} selection={selection} highlight={highlight} onSelectionChange={changeSelection} />
           <GraphKey schema={schema} />
-          <UndoBar done={reviewed} onUndo={undoDecline} onClose={() => setReviewed(undefined)} />
+          <UndoBar done={done} onUndo={undoRemove} onClose={() => setDone(undefined)} />
         </div>
         <SidePanel
           mode={mode}
@@ -144,9 +143,9 @@ export function MapView(props: { focus?: string; navigate: Navigate }) {
           version={`${version}:${synced}`}
           readOnly={index !== undefined}
           onSelect={changeSelection}
-          onReviewed={onReviewed}
+          onDone={onDone}
           onHighlight={setHighlight}
-          onCloseReview={() => setMode("items")}
+          onCloseChanges={() => setMode("items")}
           navigate={props.navigate}
         />
       </div>

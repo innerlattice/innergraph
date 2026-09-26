@@ -1,18 +1,17 @@
 // Typed client for the local HTTP API. Types come straight from the core.
 import type { Loop, RootTrace } from "../../src/engines/analysisEngine";
-import type { EdgeView, EntryView, EvidenceHit, ItemChange, LoopStepView, LoopView, MapGraphView, NodeView, Selection } from "../../src/managers/exploreManager";
-import type { ViewEdge, ViewNode, ViewStatus } from "../../src/access/view";
-import type { UndoResult } from "../../src/managers/mapManager";
+import type { EdgeView, EntryView, EvidenceHit, LoopStepView, LoopView, NodeView, Selection } from "../../src/managers/exploreManager";
+import type { GraphView, ViewEdge, ViewNode, ViewStatus } from "../../src/access/view";
+import type { ChangeResult, GraphAt, UndoResult } from "../../src/managers/mapManager";
+import type { ChangeAction, ChangeRow, SessionChanges } from "../../src/managers/changeFeed";
 import type { DuplicateGroup } from "../../src/managers/resolve";
-import type { IngestResult, PendingChanges, PendingItem, ProposalView, ReviewDecision, RevisionResult } from "../../src/managers/ingestManager";
-import type { ReviewOutcome } from "../../src/managers/reviewActions";
-import type { ChangeResult, GraphAt } from "../../src/managers/mapManager";
+import type { IngestResult, RevisionResult } from "../../src/managers/ingestManager";
 import type { RelatedItem } from "../../src/managers/recallCorpus";
 import type { AnyEvent, EntryRecord, Graph, GraphEdge, GraphNode, Schema, Status } from "../../src/core/types";
 import type { Job } from "../../src/utilities/jobQueue";
 
-export type { DuplicateGroup, EdgeView, ItemChange, LoopStepView, LoopView, MapGraphView, UndoResult, ViewEdge, ViewNode, ViewStatus };
-export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, GraphEdge, GraphNode, IngestResult, Job, Loop, NodeView, ProposalView, PendingChanges, PendingItem, RelatedItem, ReviewOutcome, RevisionResult, RootTrace, Schema, Selection, Status };
+export type { ChangeAction, ChangeRow, DuplicateGroup, EdgeView, GraphView, LoopStepView, LoopView, SessionChanges, UndoResult, ViewEdge, ViewNode, ViewStatus };
+export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, GraphEdge, GraphNode, IngestResult, Job, Loop, NodeView, RelatedItem, RevisionResult, RootTrace, Schema, Selection, Status };
 
 export interface VaultStatus {
   model: string;
@@ -34,7 +33,7 @@ const enc = encodeURIComponent;
 
 export const api = {
   status: () => request<VaultStatus>("/status"),
-  graph: (withDeclined = false) => request<Graph>(withDeclined ? "/graph?superseded=1" : "/graph"),
+  graph: (withRemoved = false) => request<Graph>(withRemoved ? "/graph?superseded=1" : "/graph"),
   edge: (id: string) => request<EdgeView>(`/edges/${enc(id)}`),
   duplicates: () => request<DuplicateGroup[]>("/duplicates"),
   mergeDuplicates: (groups?: DuplicateGroup[]) => request<unknown[]>("/duplicates/merge", { groups }),
@@ -45,7 +44,7 @@ export const api = {
   graphAt: (t: string) => request<GraphAt>(`/graph/at?t=${enc(t)}`),
   positions: () => request<string[]>("/positions"),
   node: (id: string, statuses?: ViewStatus[]) => request<NodeView>(`/nodes/${enc(id)}${statuses ? `?statuses=${statuses.join(",")}` : ""}`),
-  view: (statuses?: ViewStatus[], t?: string) => request<MapGraphView>(`/view?${statuses ? `statuses=${statuses.join(",")}&` : ""}${t ? `t=${enc(t)}` : ""}`),
+  view: (statuses?: ViewStatus[], t?: string) => request<GraphView>(`/view?${statuses ? `statuses=${statuses.join(",")}&` : ""}${t ? `t=${enc(t)}` : ""}`),
   roots: (id: string) => request<RootTrace>(`/nodes/${enc(id)}/roots`),
   relatedToNode: (id: string) => request<RelatedItem[]>(`/nodes/${enc(id)}/related`),
   loops: () => request<LoopView[]>("/loops"),
@@ -54,16 +53,14 @@ export const api = {
   search: (q: string) => request<EvidenceHit[]>(`/search?q=${enc(q)}`),
   timeline: () => request<AnyEvent[]>("/timeline"),
   job: (id: string) => request<Job>(`/jobs/${enc(id)}`),
-  proposals: () => request<ProposalView[]>("/proposals"),
+  changes: (limit = 30) => request<SessionChanges[]>(`/changes?limit=${limit}`),
   addEntry: (input: { content: string; title?: string; format?: string }) => request<IngestResult>("/entries", input),
-  review: (session: string, decision: ReviewDecision) => request<ProposalView>(`/proposals/${enc(session)}/review`, decision),
-  setStatus: (id: string, status: Status) => request<ChangeResult>(`/items/${enc(id)}/status`, { status }),
   rename: (id: string, label: string) => request<ChangeResult>(`/items/${enc(id)}/attributes`, { label }),
   split: (id: string, labels: string[]) => request<ChangeResult>(`/nodes/${enc(id)}/split`, { parts: labels.map((label) => ({ label })) }),
   revise: (id: string, content: string, interpret: boolean) => request<RevisionResult>(`/entries/${enc(id)}/revise`, { content, interpret }),
-  pending: () => request<PendingChanges>("/pending"),
-  approve: (ids: string[]) => request<ReviewOutcome>("/approve", { ids }),
-  decline: (ids: string[]) => request<ReviewOutcome>("/decline", { ids }),
+  remove: (ids: string[]) => request<ChangeResult>("/remove", { ids }),
+  confirm: (ids: string[]) => request<ChangeResult>("/confirm", { ids }),
+  undoSession: (session: string) => request<UndoResult>("/undo-session", { session }),
   selection: () => request<Selection>("/selection"),
   setSelection: (ids: string[]) => request<Selection>("/selection", { ids }, fetch, "PUT"),
   merge: (sources: string[], label: string) => request<ChangeResult>("/merge", { sources, into: { label } }),

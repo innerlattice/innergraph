@@ -4,8 +4,6 @@ import type { SchemaAccess } from "../access/schemaAccess.js";
 import type { VaultAccess } from "../access/vaultAccess.js";
 import {
   type ActorId,
-  type AnyDraft,
-  type AnyEvent,
   type Attributes,
   type Graph,
   type GraphEdge,
@@ -13,7 +11,7 @@ import {
   type MigrationMap,
   type Schema,
   type SplitPart,
-  type Status,
+  GRAPH_EVENT_TYPES,
   USER,
 } from "../core/types.js";
 import type { AnalysisEngine, GraphDiff } from "../engines/analysisEngine.js";
@@ -22,8 +20,8 @@ import { newId } from "../utilities/crypto.js";
 import { toPosition } from "../utilities/hlc.js";
 import { mergeEvidence } from "../access/projection.js";
 import { type DuplicateGroup, findDuplicates } from "./resolve.js";
-import { type RevertPlan, planRevert, reassertRejected, targetsOf, withActor } from "./revert.js";
-import { ForbiddenError, NotFoundError, requireFound, runSession } from "./sessions.js";
+import { type RevertPlan, planRevert, targetsOf, withActor } from "./revert.js";
+import { ForbiddenError, requireFound, runSession } from "./sessions.js";
 
 export interface MapDeps {
   vault: VaultAccess;
@@ -32,10 +30,9 @@ export interface MapDeps {
   analysis: AnalysisEngine;
 }
 
+/** Every change lands at once as one Session; undo it with `undoSession`. */
 export interface ChangeResult {
   session: string;
-  /** False when the change came from an agent and now awaits Review. */
-  applied: boolean;
 }
 
 export interface GraphAt {
@@ -53,21 +50,6 @@ export interface UndoResult {
 function withAttachedEdges(ids: Set<string>, graphs: Graph[]): Set<string> {
   const edges = graphs.flatMap((g) => Object.values(g.edges)).filter((e) => ids.has(e.from) || ids.has(e.to));
   return new Set([...ids, ...edges.map((e) => e.id)]);
-}
-
-function touchesParked(draft: { type: string; body: unknown }, graph: Graph): boolean {
-  const target = (draft.body as { target?: string }).target;
-  return target !== undefined && (graph.nodes[target] ?? graph.edges[target])?.status === "parked";
-}
-
-function rejections(events: AnyEvent[], actor: ActorId): AnyDraft[] {
-  const bySession = new Map<string, string[]>();
-  for (const e of events) bySession.set(e.session, [...(bySession.get(e.session) ?? []), e.id]);
-  return [...bySession].map(([session, ids]) => ({ actor, session: newId(), type: "ProposalReviewed" as const, body: { session, accepted: [], rejected: ids } }));
-}
-
-function selfReview(actor: ActorId, session: string, ids: string[]): AnyDraft {
-  return { actor, session: newId(), type: "ProposalReviewed", body: { session, accepted: ids, rejected: [] } };
 }
 
 export { toPosition };
@@ -88,12 +70,19 @@ function checkMigration(schema: Schema, migration: MigrationMap): void {
 export class MapManager {
   constructor(private readonly deps: MapDeps) {}
 
-  setStatus(target: string, status: Status, actor: ActorId = USER, reason?: string): ChangeResult {
-    const current = this.item(target);
-    if (current.status === "parked" && status !== "parked" && actor !== USER) {
-      throw new ForbiddenError("No agent may un-park a Node");
-    }
-    return this.commit(actor, "status", [{ type: "StatusChanged", body: { target, status, reason } }]);
+  /** Takes Nodes/Edges off the map; they stay in history and can be restored. */
+  remove(ids: string[], actor: ActorId = USER, reason?: string): ChangeResult & { removed: string[] } {
+    const removed = [...new Set(ids)].filter((id) => this.item(id).status !== "superseded");
+    const drafts = removed.map((target) => ({ type: "StatusChanged" as const, body: { target, status: "superseded" as const, reason } }));
+    return { ...this.commit(actor, "remove", drafts), removed };
+  }
+
+  /** Marks items as right. Only the person can confirm; agents' additions stay unconfirmed. */
+  confirm(ids: string[], actor: ActorId = USER): ChangeResult & { confirmed: string[] } {
+    if (actor !== USER) throw new ForbiddenError("Only the person can confirm items");
+    const confirmed = [...new Set(ids)].filter((id) => this.item(id).status === "hypothesis");
+    const drafts = confirmed.map((target) => ({ type: "StatusChanged" as const, body: { target, status: "accepted" as const } }));
+    return { ...this.commit(actor, "confirm", drafts), confirmed };
   }
 
   changeAttributes(
@@ -160,7 +149,7 @@ export class MapManager {
 
   /**
    * Cleans up duplicates: Nodes are merged (lineage kept); for Edges the oldest is kept,
-   * gains the others' evidence, and the rest are retired. Agents' cleanups await review.
+   * gains the others' evidence, and the rest are retired.
    */
   mergeDuplicates(actor: ActorId = USER, groups: DuplicateGroup[] = this.duplicates()): ChangeResult[] {
     const results: ChangeResult[] = [];
@@ -206,21 +195,26 @@ export class MapManager {
     const before = this.deps.vault.stateAt(position);
     const only = withAttachedEdges(new Set(targetsOf(event, state)), [before.graph, state.graph]);
     const plan = planRevert(before, state, event.hlc, only);
-    const rejected = event.type === "ProposalReviewed" ? [...only].flatMap((id) => reassertRejected(state, id)) : [];
-    return this.applyPlan({ ...plan, drafts: [...plan.drafts, ...rejected] }, actor, "undo");
+    return this.applyPlan(plan, actor, "undo");
   }
 
-  /** Brings back a declined or retired Node/Edge. */
-  restore(id: string, actor: ActorId = USER): UndoResult {
+  /** Undoes everything one Session changed: its items return to how they were just before it. */
+  undoSession(session: string, actor: ActorId = USER): UndoResult {
+    const events = this.deps.vault.events();
+    const first = events.findIndex((e) => e.session === session);
+    requireFound(events[first], `Session ${session}`);
     const state = this.deps.vault.state();
-    const item = state.graph.nodes[id] ?? state.graph.edges[id];
-    if (!item) {
-      const drafts = reassertRejected(state, id);
-      if (drafts.length === 0) throw new NotFoundError(`Nothing to restore for ${id}`);
-      return this.applyPlan({ drafts, reject: [], summary: { retired: 0, restored: 1, changed: 0, declined: 0 } }, actor, "restore");
-    }
+    const before = this.deps.vault.stateAt(events[first - 1]?.hlc ?? "");
+    const touched = events.filter((e) => e.session === session && GRAPH_EVENT_TYPES.includes(e.type)).flatMap((e) => targetsOf(e, state));
+    const only = withAttachedEdges(new Set(touched), [before.graph, state.graph]);
+    return this.applyPlan(planRevert(before, state, events[first].hlc, only), actor, "undo");
+  }
+
+  /** Brings back a removed Node/Edge. */
+  restore(id: string, actor: ActorId = USER): UndoResult {
+    const item = this.item(id);
     const retiring = this.deps.vault.events().filter((e) => e.type === "StatusChanged" && e.body.target === id && e.body.status === "superseded").at(-1);
-    if (item.status !== "superseded" || !retiring) throw new Error(`${id} is not declined`);
+    if (item.status !== "superseded" || !retiring) throw new Error(`${id} is not removed`);
     return this.undo(retiring.id, actor);
   }
 
@@ -240,17 +234,10 @@ export class MapManager {
     return requireFound(graph.nodes[target] ?? graph.edges[target], `Node or Edge ${target}`);
   }
 
-  /**
-   * Appends a revert plan as one Session. Agents can revert (commit tier) but never
-   * un-park; their changes are recorded as their own reviewed Proposal.
-   */
+  /** Appends a revert plan as one Session. */
   private applyPlan(plan: RevertPlan, actor: ActorId, purpose: string): UndoResult {
-    const graph = this.deps.vault.state().graph;
-    const allowed = plan.drafts.filter((d) => actor === USER || !touchesParked(d, graph));
-    const drafts = allowed.map((d) => ({ ...d, id: newId() }));
-    const { session } = runSession(this.deps.vault, actor, purpose, (s) => [...withActor(drafts, actor, s)]);
-    const reviews = [...rejections(plan.reject, actor), ...(actor === USER ? [] : [selfReview(actor, session, drafts.map((d) => d.id))])];
-    if (reviews.length > 0) this.deps.vault.append(reviews);
+    const drafts = plan.drafts.map((d) => ({ ...d, id: newId() }));
+    const { session } = runSession(this.deps.vault, actor, purpose, (s) => withActor(drafts, actor, s));
     return { session, summary: plan.summary };
   }
 
@@ -262,6 +249,6 @@ export class MapManager {
     const { session } = runSession(this.deps.vault, actor, purpose, (s) =>
       changes.map((c) => ({ actor, session: s, type: c.type, body: c.body }) as never),
     );
-    return { session, applied: actor === USER };
+    return { session };
   }
 }

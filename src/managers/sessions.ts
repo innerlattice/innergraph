@@ -3,6 +3,11 @@ import type { VaultAccess } from "../access/vaultAccess.js";
 import type { ActorId, AnyDraft, AnyEvent } from "../core/types.js";
 import { newId } from "../utilities/crypto.js";
 
+/** Every change is one Session: it lands at once and can be undone as a whole. */
+export function openSession(actor: ActorId, session: string, purpose: string, entry?: string): AnyDraft {
+  return { actor, session, type: "SessionOpened", body: { purpose, entry } };
+}
+
 /** Appends `drafts` wrapped in SessionOpened / SessionClosed as one atomic unit. */
 export function runSession(
   vault: VaultAccess,
@@ -12,7 +17,7 @@ export function runSession(
 ): { session: string; events: AnyEvent[] } {
   const session = newId();
   const events = vault.append([
-    { actor, session, type: "SessionOpened", body: { purpose } },
+    openSession(actor, session, purpose),
     ...drafts(session),
     { actor, session, type: "SessionClosed", body: {} },
   ]);

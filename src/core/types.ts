@@ -1,13 +1,13 @@
 // Ubiquitous language of the core (see SPEC.md). No theory vocabulary lives here.
 
 export type Role = "derivational" | "causal" | "identity";
-export type Status = "hypothesis" | "accepted" | "parked" | "superseded";
+/** hypothesis: on the map, unconfirmed · accepted: confirmed by the person · superseded: removed. */
+export type Status = "hypothesis" | "accepted" | "superseded";
 export type ActorId = string; // "user" | `agent:${name}` | `model:${name}`
 export type Sign = 1 | -1;
 export type Attributes = Record<string, unknown>;
 
 export const USER: ActorId = "user";
-export const REVIEW_POLICY_ACTOR: ActorId = "agent:review-policy";
 
 /** Pointer into an Entry: blob hash plus a UTF-8 byte range [start, end). */
 export interface Evidence {
@@ -137,7 +137,6 @@ export interface EventBodies {
   SchemaChanged: { schema: Schema; migration: MigrationMap };
   SessionOpened: { purpose: string; entry?: string };
   SessionClosed: Record<string, never>;
-  ProposalReviewed: { session: string; accepted: string[]; rejected: string[] };
 }
 
 export type EventType = keyof EventBodies;
@@ -221,22 +220,9 @@ export interface EntryRecord {
   revisedBy?: string;
 }
 
-export type Decision = "pending" | "accepted" | "rejected";
-
-export interface Proposal {
-  session: string;
-  actor: ActorId;
-  purpose: string;
-  entry?: string;
-  openedAt: string;
-  closed: boolean;
-  events: { event: AnyEvent; decision: Decision }[];
-}
-
 export interface ProjectionState {
   graph: Graph;
   schema: Schema | null;
   entries: Record<string, EntryRecord>;
-  proposals: Record<string, Proposal>;
   position: string;
 }

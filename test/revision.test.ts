@@ -61,13 +61,13 @@ describe("revising an entry", () => {
 });
 
 describe("amend", () => {
-  it("applies agent corrections through the review policy and ignores unknown ids", () => {
+  it("applies agent corrections at once and ignores unknown ids", () => {
     const result = t.vault.ingest.amend("agent:claude", [{ id: ids.freeze, label: "Freezing in the meeting", attributes: {} }, { id: "nope" }]);
-    expect(result.accepted).toHaveLength(1);
+    expect(result.changed).toEqual([ids.freeze]);
     expect(result.dropped).toEqual(["nope: not found"]);
     expect(t.vault.explore.node(ids.freeze).node.label).toBe("Freezing in the meeting");
     const direct = t.vault.ingest.amend("user", [{ id: ids.shame, label: "Shame spiral" }]);
-    expect(direct.accepted).toEqual([]);
+    expect(direct.changed).toEqual([ids.shame]);
     expect(t.vault.explore.node(ids.shame).node.label).toBe("Shame spiral");
   });
 });

@@ -37,11 +37,11 @@ export function boxSize(label: string): { w: number; h: number } {
   return { w: Math.min(BOX_TEXT_WIDTH, textWidth) + 22, h: lines * 15 + 18 };
 }
 
-type ViewItem = { status: string; held: boolean };
+type ViewItem = { status: string; confirmed: boolean };
 
-/** One class per View status, plus `held` for proposals kept off the map until approved. */
+/** One class per View status, plus `confirmed` once the person has said it is right. */
 function statusClasses(item: ViewItem): string {
-  return item.held ? `${item.status} held` : item.status;
+  return item.confirmed ? `${item.status} confirmed` : item.status;
 }
 
 function nodeElement(n: ViewNode, schema: Schema | null): ElementDefinition {
@@ -106,13 +106,9 @@ export const GRAPH_STYLE: StylesheetJson = [
       "font-size": 11.5,
     },
   },
-  // Proposed: tentative, dashed amber outline. Held proposals (off the map until approved) more strongly.
-  { selector: "node.proposed", style: { "background-opacity": 0.45, "border-color": "#d97706", "border-style": "dashed", "border-width": 2 } },
-  { selector: "node.proposed.style-statement", style: { "background-opacity": 0.1 } },
-  { selector: "node.held", style: { "border-width": 3, "background-opacity": 0.2 } },
-  { selector: "node.approved", style: { "border-style": "solid", "border-width": 2.5 } },
-  { selector: "node.parked", style: { "background-color": "#d6d3d1", "border-color": "#a8a29e", opacity: 0.6 } },
-  { selector: "node.declined", style: { opacity: 0.3, "border-style": "dotted", "border-color": "#78716c" } },
+  // Confirmed by the person: a firmer outline. Removed (shown on request): faint and dotted.
+  { selector: "node.confirmed", style: { "border-width": 2.5 } },
+  { selector: "node.removed", style: { opacity: 0.3, "border-style": "dotted", "border-color": "#78716c" } },
   // Selection: a strong dark ring that reads on every shape and status.
   { selector: "node:selected", style: { "underlay-color": "#1c1917", "underlay-opacity": 0.22, "underlay-padding": 9, "underlay-shape": "ellipse" } },
   {
@@ -133,10 +129,7 @@ export const GRAPH_STYLE: StylesheetJson = [
       "text-rotation": "autorotate",
     },
   },
-  { selector: "edge.proposed", style: { "line-style": "dashed" } },
-  { selector: "edge.held", style: { "line-color": "#d97706", "target-arrow-color": "#d97706", width: 2 } },
-  { selector: "edge.parked", style: { opacity: 0.5 } },
-  { selector: "edge.declined", style: { opacity: 0.25, "line-style": "dotted" } },
+  { selector: "edge.removed", style: { opacity: 0.25, "line-style": "dotted" } },
   { selector: "edge:selected", style: { "underlay-color": "#1c1917", "underlay-opacity": 0.2, "underlay-padding": 5, width: 3 } },
   { selector: "edge.derivational", style: { width: 2.6, "line-color": "#57534e", "target-arrow-color": "#57534e" } },
   { selector: "edge.causal", style: { width: 2, "font-size": 13, "font-weight": 700 } },

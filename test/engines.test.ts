@@ -12,7 +12,6 @@ import {
   usableLabel,
 } from "../src/engines/interpretationEngine.js";
 import { RecallEngine, cosine, tokenize } from "../src/engines/recallEngine.js";
-import { ReviewEngine } from "../src/engines/reviewEngine.js";
 import { ScriptedGateway } from "../src/utilities/modelGateway.js";
 import { INTERPRETATION_1, SCHEMA_FILE } from "./helpers.js";
 
@@ -109,50 +108,6 @@ describe("InterpretationEngine", () => {
 
   it("normalises split assignments so every index lands once", () => {
     expect(normaliseAssignment(2, null, { evidence: 2, edges: 1 })).toEqual([{ evidence: [0, 1], edges: [0] }, { evidence: [], edges: [] }]);
-  });
-});
-
-describe("ReviewEngine", () => {
-  const engine = new ReviewEngine();
-  const ev = (id: string, type: string, body: object, actor = "model:x"): AnyEvent => ({ id, hlc: id, device: "d", actor, session: "s", parents: [], type, body }) as AnyEvent;
-  const nodeBody = (id: string, type: string, confidence = 0.8) => ({ id, type, label: id, attributes: {}, confidence, evidence: [] });
-  const edgeBody = (id: string, from: string, to: string, type: string) => ({ id, type, from, to, attributes: {}, confidence: 0.8, evidence: [] });
-
-  it("surfaces new roots, loops, refactors and status changes", () => {
-    const graph = graphOf(["p1", "p2"], [gEdge("c1", "p1", "p2", "reinforces")]);
-    const events = [
-      ev("1", "NodeAsserted", nodeBody("m", "core_memory")),
-      ev("2", "NodeAsserted", nodeBody("b", "belief")),
-      ev("3", "EdgeAsserted", edgeBody("a", "m", "b", "abduces")),
-      ev("4", "EdgeAsserted", edgeBody("c2", "p2", "p1", "reinforces")),
-      ev("5", "NodesMerged", { sources: [], into: {} }),
-      ev("6", "StatusChanged", { target: "p1", status: "accepted" }),
-      ev("7", "EdgeAsserted", edgeBody("self", "p1", "p1", "reinforces")),
-      ev("8", "AttributesChanged", { target: "p1", patch: {} }),
-    ];
-    const triage = engine.triage(events, graph, schema);
-    expect(triage.autoAccept).toEqual(["2", "8"]);
-    expect(Object.fromEntries(triage.review.map((r) => [r.eventId, r.reasons[0]]))).toEqual({
-      "1": "new root-level node",
-      "3": "depends on a node awaiting review",
-      "4": "closes a feedback loop",
-      "5": "refactor",
-      "6": "status change proposed by an agent",
-      "7": "closes a feedback loop",
-    });
-  });
-
-  it("honours a manual policy, a confidence floor and a missing Schema", () => {
-    const events = [ev("1", "NodeAsserted", nodeBody("p", "process_node", 0.2)), ev("2", "EdgeAsserted", edgeBody("e", "x", "y", "reinforces"))];
-    expect(engine.triage(events, graphOf([], []), schema, { autoAccept: false, minAutoConfidence: 0 }).autoAccept).toEqual([]);
-    expect(engine.triage(events, graphOf([], []), schema, { autoAccept: true, minAutoConfidence: 0.5 }).review[0].reasons).toEqual(["confidence below auto-accept threshold"]);
-    expect(engine.triage(events, graphOf([], []), null).autoAccept).toEqual(["1", "2"]);
-  });
-
-  it("cascades rejected new Nodes to their Edges", () => {
-    const events = [ev("1", "NodeAsserted", nodeBody("n", "belief")), ev("2", "EdgeAsserted", edgeBody("e", "n", "x", "scaffolds")), ev("3", "NodeAsserted", nodeBody("x", "belief"))];
-    expect(engine.cascadeRejections(events, ["1"], graphOf([], []))).toEqual(["1", "2"]);
-    expect(engine.cascadeRejections(events, ["3"], graphOf(["x"], []))).toEqual(["3"]);
   });
 });
 

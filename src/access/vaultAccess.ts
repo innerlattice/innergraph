@@ -45,6 +45,7 @@ export class VaultAccess {
     this.log = this.readLog();
     this.clock = new HlcClock(this.device, now, this.log.at(-1)?.hlc);
     this.head = fold(this.log);
+    this.writeDerived(this.head);
   }
 
   // ---- Log -------------------------------------------------------------------
@@ -179,11 +180,11 @@ export class VaultAccess {
     const edge = this.db.prepare("INSERT INTO view_edges VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
     const evidence = this.db.prepare("INSERT INTO view_evidence VALUES (?, ?, ?, ?)");
     for (const n of Object.values(view.nodes)) {
-      node.run(n.id, n.type, n.label, n.status, Number(n.held), n.confidence, JSON.stringify(n.attributes), JSON.stringify(n.derivedFrom));
+      node.run(n.id, n.type, n.label, n.status, Number(n.confirmed), n.confidence, JSON.stringify(n.attributes), JSON.stringify(n.derivedFrom));
       n.evidence.forEach((ev) => evidence.run(n.id, ev.entry, ev.start, ev.end));
     }
     for (const e of Object.values(view.edges)) {
-      edge.run(e.id, e.type, e.from, e.to, e.sign ?? null, e.status, Number(e.held), e.confidence, JSON.stringify(e.attributes));
+      edge.run(e.id, e.type, e.from, e.to, e.sign ?? null, e.status, Number(e.confirmed), e.confidence, JSON.stringify(e.attributes));
       e.evidence.forEach((ev) => evidence.run(e.id, ev.entry, ev.start, ev.end));
     }
   }

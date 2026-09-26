@@ -16,7 +16,7 @@ function live(n: GraphNode): boolean {
   return n.status === "hypothesis" || n.status === "accepted";
 }
 
-/** Everything a proposal could duplicate: every active item of the View (proposed, approved, parked). */
+/** Everything a write could duplicate: every item on the map. */
 export function knownItems(state: ProjectionState): { nodes: KnownNode[]; edges: KnownEdge[] } {
   const view = materialize(state, ACTIVE);
   return { nodes: Object.values(view.nodes), edges: Object.values(view.edges) };
@@ -72,7 +72,7 @@ function isSame(a: GraphNode, b: GraphNode): boolean {
 
 function edgeGroups(state: ProjectionState): DuplicateGroup[] {
   const byKey = new Map<string, string[]>();
-  const live = Object.values(state.graph.edges).filter((e) => e.status !== "superseded" && e.status !== "parked");
+  const live = Object.values(state.graph.edges).filter((e) => e.status !== "superseded");
   for (const e of live.sort((a, b) => a.assertedAt.localeCompare(b.assertedAt))) {
     const key = `${e.from}|${e.type}|${e.to}`;
     byKey.set(key, [...(byKey.get(key) ?? []), e.id]);

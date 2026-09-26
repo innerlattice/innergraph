@@ -9,7 +9,6 @@ import { AnalysisEngine } from "./engines/analysisEngine.js";
 import { InterpretationEngine } from "./engines/interpretationEngine.js";
 import { LlmReranker } from "./engines/llmReranker.js";
 import { RecallEngine, type Reranker } from "./engines/recallEngine.js";
-import { DEFAULT_POLICY, ReviewEngine, type ReviewPolicy } from "./engines/reviewEngine.js";
 import { ExploreManager } from "./managers/exploreManager.js";
 import { IngestManager } from "./managers/ingestManager.js";
 import { MapManager } from "./managers/mapManager.js";
@@ -21,7 +20,6 @@ export interface VaultOptions {
   dir: string;
   key?: string;
   gateway?: ModelGateway;
-  policy?: ReviewPolicy;
   now?: () => number;
   /** Search stages; null disables one, undefined uses the environment's default. */
   embedder?: Embedder | null;
@@ -39,7 +37,6 @@ export interface Vault {
 
 const DB_FILE = "vault.db";
 const KEY_FILE = "vault.key";
-const CONFIG_FILE = "config.json";
 
 export function vaultExists(dir: string): boolean {
   return existsSync(join(dir, DB_FILE));
@@ -54,13 +51,6 @@ function resolveKey(dir: string, explicit?: string): string {
     chmodSync(file, 0o600);
   }
   return readFileSync(file, "utf8").trim();
-}
-
-function readPolicy(dir: string): ReviewPolicy {
-  const file = join(dir, CONFIG_FILE);
-  if (!existsSync(file)) return DEFAULT_POLICY;
-  const config = JSON.parse(readFileSync(file, "utf8")) as { review?: Partial<ReviewPolicy> };
-  return { ...DEFAULT_POLICY, ...config.review };
 }
 
 function defaultEmbedder(): Embedder | undefined {
@@ -94,17 +84,13 @@ export function openVault(options: VaultOptions): Vault {
   const analysis = new AnalysisEngine();
   const recall = new RecallEngine();
   const queue = new JobQueue();
-  const policy = options.policy ?? readPolicy(options.dir);
-  const review = new ReviewEngine();
   return {
-    ingest: new IngestManager({ vault, schemas, interpretation, review, recall, queue, policy }),
+    ingest: new IngestManager({ vault, schemas, interpretation, recall, queue }),
     map: new MapManager({ vault, schemas, interpretation, analysis }),
     explore: new ExploreManager({
       vault,
       analysis,
       recall,
-      review,
-      policy,
       embedder: orDefault(options.embedder, defaultEmbedder),
       reranker: orDefault(options.reranker, () => defaultReranker(gateway)),
     }),

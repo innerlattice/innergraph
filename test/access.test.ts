@@ -29,19 +29,13 @@ const node = (id: string, extra: Record<string, unknown> = {}) => ({
 });
 
 describe("projection fold", () => {
-  it("applies user events directly and holds agent events until reviewed", () => {
-    const events = [
-      makeEvent(node("a"), "01"),
-      makeEvent({ ...node("b"), actor: "agent:x", session: "p" }, "02"),
-      makeEvent({ type: "ProposalReviewed", body: { session: "p", accepted: ["e02"], rejected: [] } }, "03"),
-    ];
-    expect(Object.keys(fold(events, "02").graph.nodes)).toEqual(["a"]);
+  it("applies every Actor's events as written: the person's confirmed, agents' unconfirmed", () => {
+    const events = [makeEvent(node("a"), "01"), makeEvent({ ...node("b"), actor: "agent:x", session: "p" }, "02")];
+    expect(Object.keys(fold(events, "01").graph.nodes)).toEqual(["a"]);
     const state = fold(events);
-    expect(Object.keys(state.graph.nodes)).toEqual(["a", "b"]);
     expect(state.graph.nodes.a.status).toBe("accepted");
     expect(state.graph.nodes.b.status).toBe("hypothesis");
-    expect(state.proposals.p.events[0].decision).toBe("accepted");
-    expect(state.position).toBe("03");
+    expect(state.position).toBe("02");
   });
 
   it("re-asserting a Node merges Evidence and ignores type conflicts", () => {
@@ -70,13 +64,13 @@ describe("projection fold", () => {
       makeEvent(node("a", { attributes: { x: 1, y: 2 } }), "01"),
       makeEvent({ type: "AttributesChanged", body: { target: "a", patch: { x: null, z: 3 }, label: "A", confidence: 0.2 } }, "02"),
       makeEvent({ type: "AttributesChanged", body: { target: "missing", patch: {} } }, "03"),
-      makeEvent({ type: "StatusChanged", body: { target: "a", status: "parked" } }, "04"),
-      makeEvent({ type: "StatusChanged", body: { target: "missing", status: "parked" } }, "05"),
+      makeEvent({ type: "StatusChanged", body: { target: "a", status: "accepted" } }, "04"),
+      makeEvent({ type: "StatusChanged", body: { target: "missing", status: "superseded" } }, "05"),
     ]);
-    expect(state.graph.nodes.a).toMatchObject({ attributes: { y: 2, z: 3 }, label: "A", confidence: 0.2, status: "parked" });
+    expect(state.graph.nodes.a).toMatchObject({ attributes: { y: 2, z: 3 }, label: "A", confidence: 0.2, status: "accepted" });
   });
 
-  it("migrates types on SchemaChanged and tracks entries and sessions", () => {
+  it("migrates types on SchemaChanged and tracks entries", () => {
     const schema = { name: "s", version: 2, nodeTypes: {}, edgeTypes: {} };
     const state = fold([
       makeEvent({ type: "SessionOpened", body: { purpose: "ingest", entry: "h" } }, "01"),
@@ -84,14 +78,10 @@ describe("projection fold", () => {
       makeEvent(node("a"), "03"),
       makeEvent({ type: "SchemaChanged", body: { schema, migration: { nodeTypes: { t: "u" }, edgeTypes: {} } } }, "04"),
       makeEvent({ type: "SessionClosed", body: {} }, "05"),
-      makeEvent({ type: "SessionClosed", body: {}, session: "orphan" }, "06"),
-      makeEvent({ type: "ProposalReviewed", body: { session: "unknown", accepted: [], rejected: [] } }, "07"),
     ]);
     expect(state.graph.nodes.a.type).toBe("u");
     expect(state.schema).toEqual(schema);
     expect(state.entries.h).toMatchObject({ title: "T", session: "s" });
-    expect(state.proposals.s.closed).toBe(true);
-    expect(state.proposals.orphan.purpose).toBe("unspecified");
   });
 
   it("ignores refactors of unknown Nodes", () => {

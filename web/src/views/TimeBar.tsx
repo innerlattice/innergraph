@@ -6,10 +6,9 @@ import { formatHlc } from "../lib/format";
 type Summary = UndoResult["summary"];
 
 const PHRASES: [keyof Summary, string, string][] = [
-  ["retired", "retire", "item added since|items added since"],
+  ["retired", "remove", "item added since|items added since"],
   ["restored", "restore", "status|statuses"],
   ["changed", "undo", "edit|edits"],
-  ["declined", "decline", "waiting proposal|waiting proposals"],
 ];
 
 export function describeRevert(s: Summary): string {

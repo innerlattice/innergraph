@@ -4,24 +4,19 @@
 import type { AnyEvent, Evidence, GraphEdge, GraphNode, ProjectionState, VaultEvent } from "../core/types.js";
 
 /**
- * - proposed: written by an Actor, not yet approved (merged as a hypothesis, or `held`
- *   for review because it is high-impact)
- * - approved: confirmed by the person
- * - parked: set aside; excluded from recall and suggestions
- * - declined: rejected or retired; kept in history, restorable
+ * - active: on the map (`confirmed` when the person has said it is right)
+ * - removed: taken off the map; kept in history, restorable
  * Items replaced by a refactor (merged or split away) are history only, never materialized.
  */
-export type ViewStatus = "proposed" | "approved" | "parked" | "declined";
+export type ViewStatus = "active" | "removed";
 
-export const VIEW_STATUSES: readonly ViewStatus[] = ["proposed", "approved", "parked", "declined"];
-export const ACTIVE: readonly ViewStatus[] = ["proposed", "approved", "parked"];
+export const VIEW_STATUSES: readonly ViewStatus[] = ["active", "removed"];
+export const ACTIVE: readonly ViewStatus[] = ["active"];
 
 export interface ViewMeta {
   status: ViewStatus;
-  /** Proposed but not merged: waiting because it is high-impact. */
-  held: boolean;
-  /** The Event that proposed it, while it is held. */
-  proposedBy?: string;
+  /** The person confirmed it (or wrote it themselves). */
+  confirmed: boolean;
   /** Evidence that pointed into earlier versions of an Entry and is no longer shown. */
   staleEvidence: number;
 }
@@ -35,23 +30,6 @@ export interface GraphView {
   /** How many items have each status, whatever the filter. */
   counts: Record<ViewStatus, number>;
   position: string;
-}
-
-// ---- pending Events ---------------------------------------------------------------
-
-export function pendingEvents(state: ProjectionState): AnyEvent[] {
-  return Object.values(state.proposals).flatMap((p) => p.events.filter((i) => i.decision === "pending").map((i) => i.event));
-}
-
-type Assertion = VaultEvent<"NodeAsserted"> | VaultEvent<"EdgeAsserted">;
-
-function isAssertion(e: AnyEvent): e is Assertion {
-  return e.type === "NodeAsserted" || e.type === "EdgeAsserted";
-}
-
-function rejectedAssertions(state: ProjectionState): Assertion[] {
-  const rejected = Object.values(state.proposals).flatMap((p) => p.events.filter((i) => i.decision === "rejected").map((i) => i.event));
-  return rejected.filter(isAssertion);
 }
 
 // ---- evidence ------------------------------------------------------------------------
@@ -76,55 +54,25 @@ export function normaliseEvidence(evidence: Evidence[], state: ProjectionState):
 
 // ---- status ---------------------------------------------------------------------------
 
-const MERGED: Record<GraphNode["status"], ViewStatus | "replaced"> = {
-  hypothesis: "proposed",
-  accepted: "approved",
-  parked: "parked",
-  superseded: "declined",
-};
-
 function replacedIds(state: ProjectionState): Set<string> {
   return new Set(Object.values(state.graph.nodes).flatMap((n) => n.derivedFrom));
 }
 
-function withMeta<T extends GraphNode | GraphEdge>(item: T, status: ViewStatus, state: ProjectionState, held?: string): Omit<T, "status"> & ViewMeta {
+function withMeta<T extends GraphNode | GraphEdge>(item: T, state: ProjectionState): Omit<T, "status"> & ViewMeta {
   const { evidence, stale } = normaliseEvidence(item.evidence, state);
-  const { status: _raw, ...rest } = item;
-  return { ...rest, evidence, status, held: held !== undefined, proposedBy: held, staleEvidence: stale };
+  const { status, ...rest } = item;
+  return { ...rest, evidence, status: status === "superseded" ? "removed" : "active", confirmed: status === "accepted", staleEvidence: stale };
 }
 
-function asItem(e: Assertion): GraphNode | GraphEdge {
-  const meta = { status: "hypothesis" as const, assertedBy: e.actor, assertedAt: e.hlc, updatedAt: e.hlc };
-  if (e.type === "EdgeAsserted") return { ...e.body, ...meta };
-  const { similarTo: _hint, ...body } = e.body;
-  return { ...body, ...meta, derivedFrom: [] };
-}
-
-interface Candidate {
-  item: GraphNode | GraphEdge;
-  status: ViewStatus;
-  held?: string;
-}
-
-/** Every item that could be materialized, with its one status. Replaced items are left out. */
-export function candidates(state: ProjectionState): Candidate[] {
+/** Every item that could be materialized. Replaced items are left out. */
+export function candidates(state: ProjectionState): (GraphNode | GraphEdge)[] {
   const replaced = replacedIds(state);
   const { nodes, edges } = state.graph;
-  const merged = [...Object.values(nodes), ...Object.values(edges)]
-    .filter((i) => !(i.status === "superseded" && replaced.has(i.id)))
-    .map((item) => ({ item, status: MERGED[item.status] as ViewStatus }));
-  const known = (id: string) => nodes[id] !== undefined || edges[id] !== undefined;
-  const held = pendingEvents(state).filter(isAssertion).filter((e) => !known(e.body.id)).map((e) => ({ item: asItem(e), status: "proposed" as const, held: e.id }));
-  const heldIds = new Set(held.map((h) => h.item.id));
-  const rejected = rejectedAssertions(state).filter((e) => !known(e.body.id) && !heldIds.has(e.body.id));
-  const declined = [...new Map(rejected.map((e) => [e.body.id, { item: asItem(e), status: "declined" as const }])).values()];
-  return [...merged, ...held, ...declined];
+  return [...Object.values(nodes), ...Object.values(edges)].filter((i) => !(i.status === "superseded" && replaced.has(i.id)));
 }
 
-function countStatuses(all: Candidate[]): Record<ViewStatus, number> {
-  const counts = { proposed: 0, approved: 0, parked: 0, declined: 0 };
-  for (const c of all) counts[c.status]++;
-  return counts;
+function isEdge(item: ViewNode | ViewEdge): item is ViewEdge {
+  return "from" in item;
 }
 
 /**
@@ -132,14 +80,14 @@ function countStatuses(all: Candidate[]): Record<ViewStatus, number> {
  * Nodes are materialized too.
  */
 export function materialize(state: ProjectionState, include: readonly ViewStatus[] = ACTIVE): GraphView {
-  const all = candidates(state);
+  const all = candidates(state).map((item): ViewNode | ViewEdge => ("from" in item ? withMeta(item, state) : withMeta(item, state)));
+  const counts = { active: 0, removed: 0 };
+  for (const item of all) counts[item.status]++;
   const wanted = new Set(include);
-  const chosen = all.filter((c) => wanted.has(c.status));
+  const chosen = all.filter((i) => wanted.has(i.status));
   const nodes: Record<string, ViewNode> = {};
-  for (const c of chosen) if (!("from" in c.item)) nodes[c.item.id] = withMeta(c.item, c.status, state, c.held);
+  for (const i of chosen) if (!isEdge(i)) nodes[i.id] = i;
   const edges: Record<string, ViewEdge> = {};
-  for (const c of chosen) {
-    if ("from" in c.item && nodes[c.item.from] && nodes[c.item.to]) edges[c.item.id] = withMeta(c.item, c.status, state, c.held);
-  }
-  return { nodes, edges, counts: countStatuses(all), position: state.position };
+  for (const i of chosen) if (isEdge(i) && nodes[i.from] && nodes[i.to]) edges[i.id] = i;
+  return { nodes, edges, counts, position: state.position };
 }

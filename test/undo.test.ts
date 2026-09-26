@@ -16,26 +16,18 @@ beforeEach(async () => {
 afterEach(() => t.cleanup());
 
 describe("restore", () => {
-  it("brings back an edge that was approved and then declined by accident", () => {
+  it("brings back an edge that was confirmed and then removed by accident", () => {
     const edge = edgeBetween("Rest", "Shame")?.id as string;
-    t.vault.ingest.approve([edge]);
-    t.vault.ingest.decline([edge]);
+    t.vault.map.confirm([edge]);
+    t.vault.map.remove([edge]);
     expect(t.vault.explore.graph().edges[edge]).toBeUndefined();
     t.vault.map.restore(edge);
     expect(graph().edges[edge].status).toBe("accepted");
   });
 
-  it("brings back a declined proposal as a hypothesis", () => {
-    const memory = t.vault.ingest.pendingChanges().assertions.find((a) => a.kind === "node")?.item.id as string;
-    t.vault.ingest.decline([memory]);
-    expect(graph().nodes[memory]).toBeUndefined();
-    t.vault.map.restore(memory);
-    expect(graph().nodes[memory].status).toBe("hypothesis");
-  });
-
   it("explains when there is nothing to restore", () => {
-    expect(() => t.vault.map.restore("nope")).toThrow("Nothing to restore");
-    expect(() => t.vault.map.restore(byLabel("Shame")?.id as string)).toThrow("not declined");
+    expect(() => t.vault.map.restore("nope")).toThrow("not found");
+    expect(() => t.vault.map.restore(byLabel("Shame")?.id as string)).toThrow("not removed");
   });
 });
 
@@ -62,33 +54,24 @@ describe("undo", () => {
     expect(attached(shame).map((e) => `${e.from}|${e.type}|${e.to}`)).toEqual(before);
   });
 
-  it("undoing a review of declined proposals restores them", () => {
-    const memory = t.vault.ingest.pendingChanges().assertions.find((a) => a.kind === "node")?.item.id as string;
-    t.vault.ingest.decline([memory]);
-    const review = t.vault.explore.timeline(3).find((e) => e.type === "ProposalReviewed")?.id as string;
-    t.vault.map.undo(review);
-    expect(graph().nodes[memory].status).toBe("hypothesis");
-  });
-
   it("rejects unknown events", () => {
     expect(() => t.vault.map.undo("nope")).toThrow("not found");
   });
 });
 
 describe("revert", () => {
-  it("previews and returns the whole graph to an earlier point, declining later proposals", () => {
+  it("previews and returns the whole graph to an earlier point", () => {
     const position = lastEvent().hlc;
     const shame = byLabel("Shame")?.id as string;
-    t.vault.map.setStatus(shame, "accepted");
+    t.vault.map.confirm([shame]);
     t.vault.map.changeAttributes(shame, { label: "Changed" });
     const entry = t.vault.explore.entries()[0].id;
-    const later = t.vault.ingest.propose("agent:x", entry, { nodes: [{ ref: "m", type: "core_memory", label: "Manager meeting", confidence: 1, quotes: ["my manager asked a question"] }], edges: [] });
-    const preview = t.vault.map.revertPreview(position);
-    expect(preview).toEqual({ retired: 0, restored: 1, changed: 1, declined: 1 });
-    t.vault.map.revert(position);
+    t.vault.ingest.propose("agent:x", entry, { nodes: [{ ref: "m", type: "core_memory", label: "Manager meeting", confidence: 1, quotes: ["my manager asked a question"] }], edges: [] });
+    expect(t.vault.map.revertPreview(position)).toEqual({ retired: 1, restored: 1, changed: 1 });
+    t.vault.map.revert(position, "agent:claude");
     expect(graph().nodes[shame]).toMatchObject({ label: "Shame", status: "hypothesis" });
-    expect(t.vault.ingest.proposal(later.session).pending).toBe(0);
-    expect(t.vault.ingest.pendingChanges().assertions).toHaveLength(4);
+    expect(byLabel("Manager meeting")?.status).toBe("superseded");
+    expect(lastEvent()).toMatchObject({ type: "SessionClosed", actor: "agent:claude" });
   });
 
   it("retires items created after the point and can itself be undone", () => {
@@ -100,17 +83,6 @@ describe("revert", () => {
     const revertEvent = t.vault.explore.timeline(50).find((e) => e.session === session && e.type === "StatusChanged")?.id as string;
     t.vault.map.undo(revertEvent);
     expect(byLabel("Later thing")?.status).toBe("accepted");
-  });
-
-  it("lets agents revert but never un-park, recording their own review", () => {
-    const shame = byLabel("Shame")?.id as string;
-    const position = lastEvent().hlc;
-    t.vault.map.setStatus(shame, "parked");
-    t.vault.map.revert(position, "agent:claude");
-    expect(graph().nodes[shame].status).toBe("parked");
-    t.vault.map.changeAttributes(shame, { label: "X" });
-    t.vault.map.revert(position, "agent:claude");
-    expect(lastEvent()).toMatchObject({ type: "ProposalReviewed", actor: "agent:claude" });
   });
 });
 

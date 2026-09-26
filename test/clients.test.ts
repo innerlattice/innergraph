@@ -7,7 +7,7 @@ import { InvariantError } from "../src/access/invariants.js";
 import { formatFor, runCli, spawnInForeground } from "../src/clients/cli.js";
 import type { LaunchPlan } from "../src/clients/launcher.js";
 import { createApp, statusFor } from "../src/clients/http.js";
-import { allowedTools, connectionNotice, createMcpServer, toolSpecs } from "../src/clients/mcp.js";
+import { allowedTools, connectionNotice, createMcpServer, tierOf, toolSpecs } from "../src/clients/mcp.js";
 import { ForbiddenError, NotFoundError } from "../src/managers/sessions.js";
 import { ScriptedGateway } from "../src/utilities/modelGateway.js";
 import { openVault } from "../src/vault.js";
@@ -33,19 +33,16 @@ describe("HTTP client", () => {
     expect(statusFor("weird")).toBe(400);
   });
 
-  it("serves the ingest, review and explore workflow", async () => {
+  it("serves the ingest, change and explore workflow", async () => {
     const app = createApp(t.vault);
     expect((await call(app, "/api/status")).json).toMatchObject({ model: "scripted", hosted: false });
     const added = await call(app, "/api/entries", { content: ENTRY_1, format: "markdown" });
     expect(added.status).toBe(200);
     await t.vault.queue.idle();
     expect((await call(app, `/api/jobs/${added.json.session}`)).json.state).toBe("done");
-    const proposals = (await call(app, "/api/proposals")).json;
-    expect(proposals).toHaveLength(1);
-    const pending = proposals[0].items.filter((i: { decision: string }) => i.decision === "pending").map((i: { event: { id: string } }) => i.event.id);
-    await call(app, `/api/proposals/${added.json.session}/review`, { accept: pending });
-    expect((await call(app, `/api/proposals/${added.json.session}`)).json.pending).toBe(0);
-    expect((await call(app, "/api/proposals?filter=all")).json).toHaveLength(1);
+    const changes = (await call(app, "/api/changes?limit=5")).json;
+    expect(changes[0]).toMatchObject({ session: added.json.session, purpose: "ingest" });
+    expect((await call(app, "/api/view?statuses=active,removed,bogus")).json.counts).toEqual({ active: 9, removed: 0 });
 
     const graph = (await call(app, "/api/graph")).json;
     const shame = Object.values(graph.nodes as Record<string, { id: string; label: string }>).find((n) => n.label === "Shame") as { id: string };
@@ -77,10 +74,13 @@ describe("HTTP client", () => {
     await app.request("/api/selection", { method: "PUT", body: JSON.stringify({}), headers: { "content-type": "application/json" } });
 
     await call(app, `/api/items/${shame.id}/attributes`, { label: "Shame (social)" });
-    await call(app, `/api/items/${shame.id}/status`, { status: "accepted" });
-    expect((await call(app, `/api/nodes/${shame.id}`)).json.node).toMatchObject({ label: "Shame (social)", status: "approved" });
+    await call(app, "/api/confirm", { ids: [shame.id] });
+    expect((await call(app, `/api/nodes/${shame.id}`)).json.node).toMatchObject({ label: "Shame (social)", status: "active", confirmed: true });
+    expect((await call(app, "/api/remove", { ids: [shame.id] })).json.removed).toEqual([shame.id]);
+    expect((await call(app, "/api/undo-session", { session: added.json.session })).status).toBe(200);
+    expect((await call(app, "/api/undo-session", {})).status).toBe(404);
     t.gateway.generateJson = async () => ({ parts: [] });
-    expect((await call(app, `/api/nodes/${memory.id}/split`, { parts: [{ label: "a" }, { label: "b" }] })).json.applied).toBe(true);
+    expect((await call(app, `/api/nodes/${memory.id}/split`, { parts: [{ label: "a" }, { label: "b" }] })).status).toBe(400);
     const merged = await call(app, "/api/merge", { sources: [shame.id, memory.id], into: { label: "m" } });
     expect(merged.status).toBe(400);
     expect((await call(app, "/api/nodes/missing")).status).toBe(404);
@@ -115,20 +115,19 @@ describe("live stream", () => {
 describe("MCP client", () => {
   it("gates tools by tier", () => {
     const specs = toolSpecs(t.vault, "agent:x");
-    expect(allowedTools(specs, "read").map((s) => s.name)).not.toContain("propose");
-    expect(allowedTools(specs, "propose").map((s) => s.name)).not.toContain("review");
-    expect(allowedTools(specs, "commit")).toHaveLength(specs.length);
+    expect(allowedTools(specs, "read").map((s) => s.name)).not.toContain("add_to_graph");
+    expect(allowedTools(specs, "write")).toHaveLength(specs.length);
+    expect([tierOf("read"), tierOf("propose"), tierOf("commit"), tierOf(undefined)]).toEqual(["read", "write", "write", "write"]);
     expect(connectionNotice({ tier: "read", agent: "x" })).toContain("hosted");
   });
 
-  it("lets a propose-tier agent add Entries and propose, but not review", async () => {
-    const server = createMcpServer(t.vault, { tier: "propose", agent: "tester" });
+  it("lets a write-tier agent add Entries and change the graph", async () => {
+    const server = createMcpServer(t.vault, { tier: "write", agent: "tester" });
     const [a, b] = InMemoryTransport.createLinkedPair();
     const client = new Client({ name: "test", version: "1" });
     await Promise.all([server.connect(a), client.connect(b)]);
     const tools = (await client.listTools()).tools.map((tool) => tool.name);
-    expect(tools).toContain("propose");
-    expect(tools).not.toContain("review");
+    expect(tools).toContain("add_to_graph");
 
     const text = async (name: string, args: Record<string, unknown> = {}) => {
       const result = (await client.callTool({ name, arguments: args })) as { content: { text: string }[]; isError?: boolean };
@@ -139,15 +138,16 @@ describe("MCP client", () => {
     const added = JSON.parse((await text("add_entry", { content: ENTRY_1 })).body);
     await t.vault.queue.idle();
     const proposed = JSON.parse(
-      (await text("propose", { entry: added.entry, nodes: [{ ref: "r", type: "process_node", label: "Rest", confidence: 0.4, quotes: ["When I rest properly"] }] })).body,
+      (await text("add_to_graph", { entry: added.entry, nodes: [{ ref: "r", type: "process_node", label: "Rest", confidence: 0.4, quotes: ["When I rest properly"] }] })).body,
     );
-    expect(proposed.accepted).toHaveLength(1);
+    expect(proposed.items[0]).toMatchObject({ kind: "node", label: "Rest" });
+    expect(proposed.items[0].evidence).toHaveLength(1);
     expect(JSON.parse((await text("get_schema")).body).name).toBe("author");
     expect(JSON.parse((await text("get_selection")).body).items).toEqual([]);
     expect(JSON.parse((await text("search_graph", { query: "rest" })).body).hits[0].label).toBe("Rest");
     expect(JSON.parse((await text("search_graph", { query: "rest", limit: 1 })).body).hits).toHaveLength(1);
-    expect(JSON.parse((await text("find_loops")).body)).toEqual([]);
-    expect(JSON.parse((await text("list_proposals", { all: true })).body).length).toBe(2);
+    expect(JSON.parse((await text("find_loops")).body)).toHaveLength(1);
+    expect(JSON.parse((await text("recent_changes", { limit: 2 })).body)).toHaveLength(2);
     expect(JSON.parse((await text("search_evidence", { query: "froze" })).body).length).toBeGreaterThan(0);
     expect(JSON.parse((await text("find_related", { text: "rest" })).body)).toBeInstanceOf(Array);
     expect(JSON.parse((await text("graph_at", { t: "2030-01-01" })).body).graph).toBeDefined();
@@ -157,20 +157,22 @@ describe("MCP client", () => {
     await client.close();
   });
 
-  it("lets a commit-tier agent review", async () => {
+  it("lets a write-tier agent remove, merge, split, restore and undo", async () => {
     const { vault } = t;
     const added = vault.ingest.addEntry({ content: ENTRY_1 });
     await vault.queue.idle();
-    const spec = toolSpecs(vault, "agent:x").find((s) => s.name === "review");
-    const view = spec?.run({ session: added.session, reject: [] }) as { session: string };
-    expect(view.session).toBe(added.session);
     const tool = (name: string) => toolSpecs(vault, "agent:x").find((s) => s.name === name);
-    const pending = vault.ingest.pendingChanges().assertions[0].item.id;
-    vault.ingest.decline([pending]);
-    tool("restore")?.run({ id: pending });
-    expect(vault.explore.graph().nodes[pending]).toBeDefined();
-    const review = vault.explore.timeline(20).find((e) => e.type === "ProposalReviewed")?.id;
-    expect(() => tool("undo")?.run({ eventId: review })).not.toThrow();
+    const nodes = Object.values(vault.explore.graph().nodes);
+    const [first, second, third] = nodes.map((n) => n.id);
+    expect(tool("remove")?.run({ ids: [first] })).toMatchObject({ removed: [first] });
+    tool("restore")?.run({ id: first });
+    expect(vault.explore.graph().nodes[first]).toBeDefined();
+    tool("merge_nodes")?.run({ ids: [first, second], label: "Both" });
+    t.gateway.generateJson = async () => ({ parts: [{ evidence: [], edges: [] }, { evidence: [], edges: [] }] });
+    await tool("split_node")?.run({ id: third, parts: ["A", "B"] });
+    const undoable = vault.explore.timeline(5).find((e) => e.type === "NodesSplit")?.id;
+    expect(() => tool("undo")?.run({ eventId: undoable })).not.toThrow();
+    expect(tool("undo_session")?.run({ session: added.session })).toHaveProperty("summary");
     expect(tool("revert")?.run({ t: "2020-01-01" })).toHaveProperty("summary");
     expect(tool("find_duplicates")?.run({})).toEqual([]);
     expect(tool("merge_duplicates")?.run({})).toEqual([]);
@@ -226,7 +228,7 @@ describe("CLI client", () => {
     await runCli(["--vault", dir, "--port", "43918", "--harness", "my-agent --flag"], { ...env, spawn: spawnFake });
     expect(plans[0]).toMatchObject({ command: "my-agent", args: ["--flag"], env: { INNER_GRAPH_VAULT: dir, INNER_GRAPH_VIEW: "http://127.0.0.1:43918" } });
     const config = JSON.parse(readFileSync(join(dir, "agent", "mcp.json"), "utf8"));
-    expect(config.mcpServers["inner-graph"].args).toEqual(expect.arrayContaining(["mcp", "--tier", "commit", "--agent", "my-agent --flag"]));
+    expect(config.mcpServers["inner-graph"].args).toEqual(expect.arrayContaining(["mcp", "--tier", "write", "--agent", "my-agent --flag"]));
     await expect(fetch("http://127.0.0.1:43918/api/status")).rejects.toThrow();
     rmSync(dir, { recursive: true });
   });

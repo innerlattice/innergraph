@@ -70,16 +70,17 @@ function signMark(sign: number | undefined): string {
   return sign === 1 ? " (+)" : "";
 }
 
+const STATUS_WORDS: Record<string, string> = { superseded: "removed", accepted: "confirmed", hypothesis: "unconfirmed" };
+
 const DESCRIBERS: Describers = {
   NodeAsserted: (b) => `${b.type}: “${b.label}” · ${pct(b.confidence)}`,
   EdgeAsserted: (b, name) => `${name(b.from)} —${b.type}${signMark(b.sign)}→ ${name(b.to)} · ${pct(b.confidence)}`,
-  StatusChanged: (b, name) => `${name(b.target)} → ${b.status}`,
+  StatusChanged: (b, name) => `${name(b.target)} → ${STATUS_WORDS[b.status] ?? b.status}`,
   AttributesChanged: (b, name) => `edit ${name(b.target)}`,
   NodesSplit: (b, name) => `split ${name(b.source)} into ${b.into.map((p) => p.label).join(", ")}`,
   NodesMerged: (b, name) => `merge ${b.sources.map(name).join(" + ")} into “${b.into.label}”`,
   EntryAdded: (b) => `entry “${b.title}”`,
   SessionOpened: (b) => `session opened (${b.purpose})`,
-  ProposalReviewed: (b) => `reviewed: ${b.accepted.length} merged, ${b.rejected.length} declined`,
   SchemaChanged: (b) => `schema “${b.schema.name}” v${b.schema.version}`,
 };
 

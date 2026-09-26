@@ -4,14 +4,13 @@ import type { VaultAccess } from "../access/vaultAccess.js";
 import type { AnyEvent, EntryRecord, Evidence, Graph, GraphEdge, GraphNode, ProjectionState, Schema } from "../core/types.js";
 import { type AnalysisEngine, type Loop, type LoopDetail, type LoopStep, type RootTrace, activeGraph } from "../engines/analysisEngine.js";
 import type { RecallEngine, Reranker, SearchHit } from "../engines/recallEngine.js";
-import { DEFAULT_POLICY, type ReviewEngine, type ReviewPolicy } from "../engines/reviewEngine.js";
 import { toPosition } from "../utilities/hlc.js";
-import { ACTIVE, type GraphView, VIEW_STATUSES, type ViewEdge, type ViewNode, type ViewStatus, candidates, materialize, normaliseEvidence, pendingEvents } from "../access/view.js";
+import { ACTIVE, type GraphView, VIEW_STATUSES, type ViewEdge, type ViewNode, type ViewStatus, materialize, normaliseEvidence } from "../access/view.js";
 import type { Embedder } from "../utilities/modelGateway.js";
 import { cachedVectors, graphDocs } from "./graphSearch.js";
 import { byteOffset } from "../utilities/crypto.js";
 import { type RelatedItem, buildCorpus, describeMatches } from "./recallCorpus.js";
-import { changeTargets, reviewReasons } from "./pending.js";
+import { type SessionChanges, changeFeed } from "./changeFeed.js";
 import { requireFound } from "./sessions.js";
 
 export interface ExploreDeps {
@@ -22,30 +21,15 @@ export interface ExploreDeps {
   embedder?: Embedder;
   /** Optional reranking of the fused candidates. */
   reranker?: Reranker;
-  /** Explains why held proposals are waiting. */
-  review?: ReviewEngine;
-  policy?: ReviewPolicy;
 }
 
 export interface ViewOptions {
-  /** Which statuses to materialize (default: proposed, approved, parked). */
+  /** Which statuses to materialize (default: active). */
   statuses?: readonly ViewStatus[];
-  /** Shorthand: also materialize declined items. */
-  declined?: boolean;
-  /** A past position (ISO date or HLC); history has no pending review state. */
+  /** Shorthand: also materialize removed items. */
+  removed?: boolean;
+  /** A past position (ISO date or HLC). */
   at?: string;
-}
-
-export interface ItemChange {
-  event: AnyEvent;
-  reasons: string[];
-}
-
-export interface MapGraphView extends GraphView {
-  /** Why each held item is waiting for review. */
-  reasons: Record<string, string[]>;
-  /** Waiting changes to materialized items (renames, retractions, refactors, new evidence). */
-  changes: Record<string, ItemChange[]>;
 }
 
 export interface GraphSearchHit extends SearchHit {
@@ -88,8 +72,6 @@ export interface NodeView {
   incoming: ViewEdge[];
   derivedFrom: GraphNode[];
   derivedInto: GraphNode[];
-  reasons: string[];
-  changes: ItemChange[];
 }
 
 export interface EdgeView {
@@ -97,8 +79,6 @@ export interface EdgeView {
   fromLabel: string;
   toLabel: string;
   evidence: EvidenceView[];
-  reasons: string[];
-  changes: ItemChange[];
 }
 
 export interface EvidenceHit extends Evidence {
@@ -137,6 +117,7 @@ export interface SelectionItem {
   type: string;
   label: string;
   status: string;
+  confirmed: boolean;
 }
 
 export interface Selection {
@@ -151,9 +132,9 @@ export function edgeLabel(view: { nodes: Record<string, { label: string }> }, ed
 
 function describeItem(view: GraphView, id: string): SelectionItem | undefined {
   const node = view.nodes[id];
-  if (node) return { id, kind: "node", type: node.type, label: node.label, status: node.status };
+  if (node) return { id, kind: "node", type: node.type, label: node.label, status: node.status, confirmed: node.confirmed };
   const edge = view.edges[id];
-  return edge ? { id, kind: "edge", type: edge.type, label: edgeLabel(view, edge), status: edge.status } : undefined;
+  return edge ? { id, kind: "edge", type: edge.type, label: edgeLabel(view, edge), status: edge.status, confirmed: edge.confirmed } : undefined;
 }
 
 export interface LoopStepView extends LoopStep {
@@ -181,12 +162,12 @@ function replacedNode(state: ProjectionState, id: string): ViewNode | undefined 
   if (!node) return undefined;
   const { evidence, stale } = normaliseEvidence(node.evidence, state);
   const { status: _s, ...rest } = node;
-  return { ...rest, evidence, status: "declined", held: false, staleEvidence: stale };
+  return { ...rest, evidence, status: "removed", confirmed: false, staleEvidence: stale };
 }
 
 function filterFor(options: ViewOptions): readonly ViewStatus[] {
   if (options.statuses && options.statuses.length > 0) return options.statuses;
-  return options.declined ? VIEW_STATUSES : ACTIVE;
+  return options.removed ? VIEW_STATUSES : ACTIVE;
 }
 
 export class ExploreManager {
@@ -202,15 +183,15 @@ export class ExploreManager {
   }
 
   /** The materialized View the graph display renders: one status per item, filtered. */
-  view(options: ViewOptions = {}): MapGraphView {
+  view(options: ViewOptions = {}): GraphView {
     const state = options.at ? this.deps.vault.stateAt(toPosition(options.at)) : this.deps.vault.state();
-    const view = materialize(state, filterFor(options));
-    if (options.at) return { ...view, reasons: {}, changes: {} };
-    const reasons = this.reasons(state);
-    const held = Object.fromEntries(
-      [...Object.values(view.nodes), ...Object.values(view.edges)].filter((i) => i.proposedBy).map((i) => [i.id, reasons.get(i.proposedBy as string) ?? []]),
-    );
-    return { ...view, reasons: held, changes: this.changesByItem(state, reasons) };
+    return materialize(state, filterFor(options));
+  }
+
+  /** What changed, grouped by Session, newest first; each Session can be undone as a whole. */
+  changes(limit = 30): SessionChanges[] {
+    const { vault } = this.deps;
+    return changeFeed(vault.events(), vault.state(), limit);
   }
 
   /** A Node from the View (whatever its status), with Edges filtered like the View. */
@@ -219,7 +200,6 @@ export class ExploreManager {
     const node = requireFound(materialize(state, VIEW_STATUSES).nodes[id] ?? replacedNode(state, id), `Node ${id}`);
     const shown = materialize(state, filterFor(options));
     const edges = Object.values(shown.edges);
-    const extras = this.itemExtras(state, node);
     return {
       node,
       evidence: node.evidence.map((e) => this.evidenceView(e)),
@@ -227,7 +207,6 @@ export class ExploreManager {
       incoming: edges.filter((e) => e.to === id),
       derivedFrom: node.derivedFrom.map((p) => state.graph.nodes[p]).filter(Boolean),
       derivedInto: Object.values(state.graph.nodes).filter((n) => n.derivedFrom.includes(id)),
-      ...extras,
     };
   }
 
@@ -240,28 +219,7 @@ export class ExploreManager {
       fromLabel: all.nodes[edge.from]?.label ?? edge.from,
       toLabel: all.nodes[edge.to]?.label ?? edge.to,
       evidence: edge.evidence.map((e) => this.evidenceView(e)),
-      ...this.itemExtras(state, edge),
     };
-  }
-
-  private reasons(state: ProjectionState): Map<string, string[]> {
-    const { review, policy } = this.deps;
-    return review ? reviewReasons(state, review, policy ?? DEFAULT_POLICY) : new Map();
-  }
-
-  private changesByItem(state: ProjectionState, reasons: Map<string, string[]>): Record<string, ItemChange[]> {
-    // Held proposals are items in their own right; only changes to other items are listed here.
-    const held = new Set(candidates(state).map((c) => c.held));
-    const changes: Record<string, ItemChange[]> = {};
-    for (const event of pendingEvents(state).filter((e) => !held.has(e.id))) {
-      for (const target of changeTargets(event, state)) (changes[target] ??= []).push({ event, reasons: reasons.get(event.id) ?? [] });
-    }
-    return changes;
-  }
-
-  private itemExtras(state: ProjectionState, item: ViewNode | ViewEdge): { reasons: string[]; changes: ItemChange[] } {
-    const reasons = this.reasons(state);
-    return { reasons: item.proposedBy ? (reasons.get(item.proposedBy) ?? []) : [], changes: this.changesByItem(state, reasons)[item.id] ?? [] };
   }
 
   traceRoots(id: string): RootTrace {
@@ -299,7 +257,7 @@ export class ExploreManager {
     return this.deps.analysis.groups(state.graph, rolesOf(state.schema));
   }
 
-  /** Offered, never pushed: returns related material only when asked. Parked Nodes never appear. */
+  /** Offered, never pushed: returns related material only when asked. Removed Nodes never appear. */
   findRelated(query: { text?: string; nodeId?: string }): RelatedItem[] {
     const { vault, recall } = this.deps;
     const state = vault.state();
@@ -309,7 +267,7 @@ export class ExploreManager {
     return describeMatches(vault, state, recall.recall(text, buildCorpus(vault, state), { exclude }));
   }
 
-  /** Hybrid search over Nodes and Edges: lexical + dense, fused, then reranked. Parked items never appear. */
+  /** Hybrid search over Nodes and Edges: lexical + dense, fused, then reranked. Removed items never appear. */
   async searchGraph(query: string, limit = 10): Promise<GraphSearchResult> {
     const { vault, recall, embedder, reranker } = this.deps;
     const state = vault.state();

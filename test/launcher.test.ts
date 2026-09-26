@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { HARNESSES, claudeCommand, customPlan, launchContext, mcpServerConfig, planFor } from "../src/clients/launcher.js";
 
-const ctx = launchContext("/repo", "/vault", { tier: "commit", agent: "claude", port: "4317" });
+const ctx = launchContext("/repo", "/vault", { tier: "write", agent: "claude", port: "4317" });
 
 describe("launcher", () => {
   it("describes the MCP server for the vault and tier", () => {
     expect(mcpServerConfig(ctx).mcpServers["inner-graph"]).toEqual({
       command: "/repo/node_modules/.bin/tsx",
-      args: ["/repo/src/bin.ts", "mcp", "--vault", "/vault", "--tier", "commit", "--agent", "claude"],
+      args: ["/repo/src/bin.ts", "mcp", "--vault", "/vault", "--tier", "write", "--agent", "claude"],
     });
     expect(ctx).toMatchObject({ viewUrl: "http://127.0.0.1:4317", mcpConfigFile: "/vault/agent/mcp.json", pluginDir: "/repo/plugin" });
   });

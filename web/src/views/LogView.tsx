@@ -4,7 +4,7 @@ import { ErrorNote, Page } from "../components/ui";
 import { actorLabel, describeEvent, formatHlc, labelsFrom } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 
-const UNDOABLE = new Set(["StatusChanged", "AttributesChanged", "ProposalReviewed", "NodesSplit", "NodesMerged", "NodeAsserted", "EdgeAsserted"]);
+const UNDOABLE = new Set(["StatusChanged", "AttributesChanged", "NodesSplit", "NodesMerged", "NodeAsserted", "EdgeAsserted"]);
 
 /** Events whose effect on the graph can be undone (workflow and entry events cannot). */
 export function undoable(e: AnyEvent): boolean {

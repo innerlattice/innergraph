@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../App";
-import type { EntryView, NodeView, ProposalView } from "../api";
+import type { EntryView, NodeView } from "../api";
 import { Button, Card, Empty, ErrorNote, Page, Quote, StatusPill } from "../components/ui";
 import { EntriesView, EntryText } from "./EntriesView";
 import { LogView } from "./LogView";
@@ -14,21 +14,18 @@ import { Related, WriteView, useJob } from "./WriteView";
 vi.mock("../components/GraphCanvas", () => ({ GraphCanvas: () => <div data-testid="graph-canvas" /> }));
 
 const HLC = "001758800000000.000000.d";
-const base = { attributes: {}, confidence: 0.5, evidence: [], assertedBy: "model:m", assertedAt: HLC, updatedAt: HLC, derivedFrom: [], held: false, staleEvidence: 0 };
+const base = { attributes: {}, confidence: 0.5, evidence: [], assertedBy: "model:m", assertedAt: HLC, updatedAt: HLC, derivedFrom: [], confirmed: false, staleEvidence: 0 };
 const graph = {
   nodes: {
-    n1: { ...base, id: "n1", type: "belief", label: "Needing is unsafe", status: "proposed", held: true, proposedBy: "ev1" },
-    n2: { ...base, id: "n2", type: "core_memory", label: "Dinner table", status: "parked" },
+    n1: { ...base, id: "n1", type: "belief", label: "Needing is unsafe", status: "active" },
+    n2: { ...base, id: "n2", type: "core_memory", label: "Dinner table", status: "active", confirmed: true },
   },
   edges: {},
-  counts: { proposed: 1, approved: 0, parked: 1, declined: 0 },
+  counts: { active: 2, removed: 0 },
   position: HLC,
-  reasons: { n1: ["new root-level node"] },
-  changes: {},
 };
 const text = "I learned that needing things is unsafe.";
 const nodeEvent = { id: "ev1", hlc: HLC, device: "d", actor: "model:m", session: "s1", parents: [], type: "NodeAsserted", body: { id: "n3", type: "belief", label: "New one", attributes: {}, confidence: 0.7, evidence: [{ entry: "h", start: 15, end: 28 }] } };
-const proposal = { session: "s1", actor: "user", purpose: "ingest", entry: "h", entryTitle: "Tuesday", openedAt: HLC, closed: true, pending: 1, items: [{ event: nodeEvent, decision: "pending", reasons: ["new root-level node"] }] } as unknown as ProposalView;
 const entryView: EntryView = {
   entry: { id: "h", source: "text", title: "Tuesday", bytes: 40, addedAt: HLC, session: "s1" },
   text,
@@ -37,12 +34,10 @@ const entryView: EntryView = {
 const nodeView = {
   node: graph.nodes.n1,
   evidence: [{ entry: "h", start: 15, end: 39, text: "needing things is unsafe", entryTitle: "Tuesday" }],
-  outgoing: [{ id: "e1", type: "scaffolds", from: "n1", to: "n2", status: "approved" }],
-  incoming: [{ id: "e2", type: "abduces", from: "n2", to: "n1", status: "declined" }],
+  outgoing: [{ id: "e1", type: "scaffolds", from: "n1", to: "n2", status: "active" }],
+  incoming: [{ id: "e2", type: "abduces", from: "n2", to: "n1", status: "removed" }],
   derivedFrom: [{ ...graph.nodes.n2 }],
   derivedInto: [],
-  reasons: ["new root-level node"],
-  changes: [],
 } as unknown as NodeView;
 
 const step = (edge: string, from: string, to: string, sign: 1 | -1, confidence: number) => ({ edge, from, to, sign, confidence, fromLabel: from.toUpperCase(), toLabel: to.toUpperCase(), quotes: [`quote ${edge}`] });
@@ -60,7 +55,6 @@ const LOOP = {
 
 const routes: Record<string, unknown> = {
   "/api/status": { model: "gemma", hosted: true, schema: { name: "author", version: 1, nodeTypes: {}, edgeTypes: {} } },
-  "/api/proposals": [proposal],
   "/api/view": graph,
   "/api/graph": graph,
   "/api/duplicates": [],
@@ -118,7 +112,6 @@ describe("App shell", () => {
   it("shows the hosted notice and navigates between views", async () => {
     render(<App />);
     expect(await screen.findByText(/entry text leaves this device/)).toBeTruthy();
-    expect((await screen.findAllByText("1")).length).toBeGreaterThan(0);
     for (const label of ["Loops", "Entries", "Log", "Write", "Map"]) {
       fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${label}`) }));
     }
@@ -248,17 +241,15 @@ describe("EntriesView", () => {
 });
 
 describe("NodePanel", () => {
-  const props = { id: "n1", labels: { n1: "Needing is unsafe", n2: "Dinner table" }, readOnly: false, onChanged: vi.fn(), onHighlight: vi.fn(), navigate: vi.fn() };
+  const props = { id: "n1", labels: { n1: "Needing is unsafe", n2: "Dinner table" }, readOnly: false, onDone: vi.fn(), onHighlight: vi.fn(), navigate: vi.fn() };
 
   it("shows evidence, edges and lineage, and runs actions", async () => {
     render(<NodePanel {...props} />);
     expect(await screen.findByText("Needing is unsafe", { selector: "h3" })).toBeTruthy();
     expect(screen.getByText("→ scaffolds → Dinner table")).toBeTruthy();
     expect(screen.getByText("← abduces ← Dinner table").className).toContain("line-through");
-    expect(screen.getByText(/Not on the map until you approve it: new root-level node/)).toBeTruthy();
     expect(screen.getByText(/from “Dinner table”/)).toBeTruthy();
-    fireEvent.click(screen.getByText("Approve"));
-    fireEvent.click(screen.getByText("Not now (park)"));
+    fireEvent.click(screen.getByText("Looks right"));
     fireEvent.click(screen.getByText("Trace roots"));
     expect(await screen.findByText(/supports 1 downstream/)).toBeTruthy();
     fireEvent.click(screen.getByText("Related"));
@@ -273,20 +264,21 @@ describe("NodePanel", () => {
     fireEvent.change(screen.getByLabelText("Merge with"), { target: { value: "n2" } });
     fireEvent.click(screen.getByText("Merge"));
     fireEvent.click(screen.getByText(/needing things is unsafe/));
-    await waitFor(() => expect(posted.map((p) => p.url)).toEqual(["/api/approve", "/api/items/n1/status", "/api/items/n1/attributes", "/api/nodes/n1/split", "/api/merge"]));
+    await waitFor(() => expect(posted.map((p) => p.url)).toEqual(["/api/confirm", "/api/items/n1/attributes", "/api/nodes/n1/split", "/api/merge"]));
     expect(props.onHighlight).toHaveBeenCalledWith(["n2", "n1"]);
     expect(props.navigate).toHaveBeenCalledWith("entries", "h@15-39");
     expect(screen.getByRole("button", { name: "Open “Tuesday” at this passage" })).toBeTruthy();
   });
 
-  it("is read-only in the past and offers un-parking", async () => {
-    routes["/api/nodes/n1"] = { ...nodeView, node: { ...graph.nodes.n1, status: "parked" }, outgoing: [], incoming: [], derivedFrom: [] };
+  it("is read-only in the past and offers Restore for removed nodes", async () => {
+    routes["/api/nodes/n1"] = { ...nodeView, node: { ...graph.nodes.n1, status: "removed" }, outgoing: [], incoming: [], derivedFrom: [] };
     const { unmount } = render(<NodePanel {...props} readOnly />);
     expect(await screen.findByText("No edges.")).toBeTruthy();
-    expect(screen.queryByText("Un-park")).toBeNull();
+    expect(screen.queryByText("Restore")).toBeNull();
     unmount();
     render(<NodePanel {...props} />);
-    fireEvent.click(await screen.findByText("Un-park"));
+    expect(await screen.findByText(/Removed. Restore puts it back/)).toBeTruthy();
+    fireEvent.click(screen.getByText("Restore"));
     routes["/api/nodes/n1"] = nodeView;
   });
 

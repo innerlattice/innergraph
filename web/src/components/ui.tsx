@@ -46,16 +46,11 @@ export function ErrorNote(props: { error?: string }) {
   return <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-800">{props.error}</p>;
 }
 
-/** Pills for the four View statuses; the same colours as the map. */
-const STATUS_STYLE: Record<string, string> = {
-  proposed: "border-dashed border-amber-500 text-amber-800",
-  approved: "border-emerald-300 bg-emerald-50 text-emerald-800",
-  parked: "border-stone-300 bg-stone-100 text-stone-500",
-  declined: "border-stone-200 text-stone-400 line-through",
-};
-
-export function StatusPill(props: { status: string }) {
-  return <span className={`rounded-full border px-2 py-0.5 text-xs ${STATUS_STYLE[props.status] ?? ""}`}>{props.status}</span>;
+/** Only what is worth saying: confirmed, or removed. Unconfirmed is the quiet default. */
+export function StatusPill(props: { status: string; confirmed?: boolean }) {
+  if (props.status === "removed") return <span className="rounded-full border border-stone-200 px-2 py-0.5 text-xs text-stone-400 line-through">removed</span>;
+  if (props.confirmed) return <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-800">confirmed</span>;
+  return null;
 }
 
 export function Quote(props: { children: ReactNode; source?: string }) {

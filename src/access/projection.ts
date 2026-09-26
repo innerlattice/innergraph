@@ -9,7 +9,6 @@ import {
   type GraphEdge,
   type GraphNode,
   type ProjectionState,
-  type Proposal,
   type SpanMove,
   type Status,
   type VaultEvent,
@@ -18,7 +17,7 @@ import {
 } from "../core/types.js";
 
 export function emptyState(): ProjectionState {
-  return { graph: { nodes: {}, edges: {} }, schema: null, entries: {}, proposals: {}, position: "" };
+  return { graph: { nodes: {}, edges: {} }, schema: null, entries: {}, position: "" };
 }
 
 export function fold(events: readonly AnyEvent[], upTo?: string): ProjectionState {
@@ -33,7 +32,7 @@ export function fold(events: readonly AnyEvent[], upTo?: string): ProjectionStat
 export function applyEvent(state: ProjectionState, event: AnyEvent): void {
   state.position = event.hlc;
   if (GRAPH_EVENT_TYPES.includes(event.type)) {
-    recordGraphEvent(state, event);
+    applyGraphEvent(state.graph, event);
     return;
   }
   workflowHandlers[event.type]?.(state, event as never);
@@ -61,27 +60,6 @@ const workflowHandlers: HandlerTable = {
     migrateGraph(state.graph, e.body.migration.nodeTypes, e.body.migration.edgeTypes);
     state.schema = e.body.schema;
   },
-  SessionOpened: (state, e) => {
-    state.proposals[e.session] = {
-      session: e.session,
-      actor: e.actor,
-      purpose: e.body.purpose,
-      entry: e.body.entry,
-      openedAt: e.hlc,
-      closed: false,
-      events: [],
-    };
-  },
-  SessionClosed: (state, e) => {
-    proposalFor(state, e).closed = true;
-  },
-  ProposalReviewed: (state, e) => {
-    const proposal = state.proposals[e.body.session];
-    if (!proposal) return;
-    for (const item of proposal.events) {
-      decide(state, item, e.body.accepted, e.body.rejected);
-    }
-  },
 };
 
 /** Moves Evidence from a revised Entry to the same text in its revision; unmatched spans stay put. */
@@ -96,40 +74,6 @@ function reviseEntry(state: ProjectionState, previous: string, next: string, rem
   for (const item of [...Object.values(state.graph.nodes), ...Object.values(state.graph.edges)]) {
     item.evidence = item.evidence.map(move);
   }
-}
-
-function decide(
-  state: ProjectionState,
-  item: Proposal["events"][number],
-  accepted: string[],
-  rejected: string[],
-): void {
-  if (item.decision !== "pending") return;
-  if (accepted.includes(item.event.id)) {
-    item.decision = "accepted";
-    applyGraphEvent(state.graph, item.event);
-  } else if (rejected.includes(item.event.id)) {
-    item.decision = "rejected";
-  }
-}
-
-function proposalFor(state: ProjectionState, event: AnyEvent): Proposal {
-  state.proposals[event.session] ??= {
-    session: event.session,
-    actor: event.actor,
-    purpose: "unspecified",
-    openedAt: event.hlc,
-    closed: false,
-    events: [],
-  };
-  return state.proposals[event.session];
-}
-
-/** User events are direct commits; every other Actor's graph events wait for Review. */
-function recordGraphEvent(state: ProjectionState, event: AnyEvent): void {
-  const direct = event.actor === USER;
-  proposalFor(state, event).events.push({ event, decision: direct ? "accepted" : "pending" });
-  if (direct) applyGraphEvent(state.graph, event);
 }
 
 function migrateGraph(graph: Graph, nodeMap: Record<string, string>, edgeMap: Record<string, string>): void {

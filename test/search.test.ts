@@ -35,9 +35,8 @@ function vault(embedder: Embedder | null, reranker: Reranker | null) {
 
 async function seeded(embedder: Embedder | null, reranker: Reranker | null) {
   const v = vault(embedder, reranker);
-  const { session } = v.ingest.addEntry({ content: ENTRY_1, format: "markdown" });
+  v.ingest.addEntry({ content: ENTRY_1, format: "markdown" });
   await v.queue.idle();
-  v.ingest.approve(v.ingest.proposal(session).items.map((i) => i.event.id));
   return v;
 }
 
@@ -90,12 +89,12 @@ describe("graph search", () => {
     expect(result.hits[0].stages.rerank).toBe(1);
   });
 
-  it("falls back gracefully when models are unavailable, and never returns parked items", async () => {
+  it("falls back gracefully when models are unavailable, and never returns removed items", async () => {
     const broken: Embedder = { name: "broken", embed: async () => Promise.reject(new Error("model missing")) };
     const failing: Reranker = { name: "failing", rerank: async () => Promise.reject(new Error("timeout")) };
     v = await seeded(broken, failing);
     const shame = Object.values(v.explore.graph().nodes).find((n) => n.label === "Shame")?.id as string;
-    v.map.setStatus(shame, "parked");
+    v.map.remove([shame]);
     const result = await v.explore.searchGraph("shame freezing rest father", 10);
     expect(result.stages).toEqual(["lexical"]);
     expect(result.notes).toEqual(["dense retrieval skipped: model missing", "rerank skipped: timeout"]);
