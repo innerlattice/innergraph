@@ -1,0 +1,9 @@
+node_modules/
+web/dist/
+coverage/
+*.db
+*.db-wal
+*.db-shm
+*.key
+.claude/launch.json
+.DS_Store
