@@ -5,7 +5,7 @@ import { Button, ErrorNote, StatusPill } from "../components/ui";
 import { actorLabel, entryFocus } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 import { type Done, ItemActions } from "./ItemControls";
-import { Related } from "./WriteView";
+import { Related } from "../components/Related";
 
 export interface NodePanelProps {
   id: string;

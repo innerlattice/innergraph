@@ -59,10 +59,16 @@ interface PanelProps {
   navigate: Navigate;
 }
 
-/** What changed, one Node, one Edge, or the selection: exactly one panel at a time. */
+/** What changed, one Node, one Edge, or the selection: exactly one card at a time, floating over
+ *  the map so the conversation keeps its room. */
 function SidePanel(props: PanelProps) {
   const content = panelFor(props);
-  return content ? <aside className="w-96 shrink-0 overflow-auto border-l border-stone-200 bg-white">{content}</aside> : null;
+  if (!content) return null;
+  return (
+    <aside className="absolute top-3 right-3 bottom-3 z-20 w-[min(22rem,calc(100%-1.5rem))] animate-rise overflow-auto rounded-2xl border border-stone-200/80 bg-white/95 shadow-xl backdrop-blur">
+      {content}
+    </aside>
+  );
 }
 
 function panelFor(props: PanelProps) {
@@ -78,8 +84,17 @@ function panelFor(props: PanelProps) {
   return <SelectionPanel ids={selection} version={props.version} onClear={() => props.onSelect([])} onFocus={(id) => props.onSelect([id])} onDone={props.onDone} />;
 }
 
-export function MapView(props: { focus?: string; navigate: Navigate }) {
-  const [selection, setSelection] = useState<string[]>(props.focus ? props.focus.split(",") : []);
+export interface MapViewProps {
+  /** Shared with the conversation, which can refer to "these". */
+  selection: string[];
+  /** Changes whenever the server has stored a new selection. */
+  synced: string;
+  onSelect: (ids: string[]) => void;
+  navigate: Navigate;
+}
+
+export function MapView(props: MapViewProps) {
+  const { selection } = props;
   const [index, setIndex] = useState<number>();
   const [highlight, setHighlight] = useState<string[]>([]);
   const [showRemoved, setShowRemoved] = useState(false);
@@ -89,15 +104,10 @@ export function MapView(props: { focus?: string; navigate: Navigate }) {
   const { version, positions, view, error, duplicates, schema, elements, labels, refresh } = useMapData(index, filter);
   const empty = view && Object.keys(view.nodes).length === 0;
 
-  const [synced, setSynced] = useState(0);
   const changeSelection = (ids: string[]) => {
-    setSelection(ids);
     setHighlight([]);
     if (ids.length > 0) setMode("items");
-    api
-      .setSelection(ids)
-      .then(() => setSynced((n) => n + 1))
-      .catch(() => undefined);
+    props.onSelect(ids);
   };
   const onDone = (next: Done) => {
     setDone(next.kind === "remove" ? next : undefined);
@@ -108,11 +118,6 @@ export function MapView(props: { focus?: string; navigate: Navigate }) {
     setDone(undefined);
     Promise.all(ids.map((id) => api.restore(id).catch(() => undefined))).then(refresh);
   };
-
-  // A selection handed over by another view (e.g. "Show on map") is shared too.
-  useEffect(() => {
-    if (selection.length > 0) changeSelection(selection);
-  }, []);
 
   // Items can leave the View (removed, filtered out, merged away): keep the selection to what is shown.
   useEffect(() => {
@@ -126,8 +131,8 @@ export function MapView(props: { focus?: string; navigate: Navigate }) {
       <TimeBar positions={positions.data ?? []} index={index} onChange={setIndex} onReverted={refresh} />
       <StatusBar counts={view?.counts} showRemoved={showRemoved} onShowRemoved={setShowRemoved} changesOpen={mode === "changes"} onChanges={() => setMode(mode === "changes" ? "items" : "changes")} duplicates={duplicates?.length ?? 0} />
       <ErrorNote error={error} />
-      <div className="flex min-h-0 flex-1">
-        <div className="relative min-w-0 flex-1">
+      <div className="relative min-h-0 flex-1">
+        <div className="absolute inset-0">
           {empty ? <div className="absolute inset-x-0 top-0 z-10 p-8"><Empty>Nothing on the map here yet. Add an entry to begin.</Empty></div> : null}
           <GraphCanvas elements={elements} selection={selection} highlight={highlight} onSelectionChange={changeSelection} />
           <GraphKey schema={schema} />
@@ -140,7 +145,7 @@ export function MapView(props: { focus?: string; navigate: Navigate }) {
           duplicates={duplicates}
           filter={filter}
           labels={labels}
-          version={`${version}:${synced}`}
+          version={`${version}:${props.synced}`}
           readOnly={index !== undefined}
           onSelect={changeSelection}
           onDone={onDone}

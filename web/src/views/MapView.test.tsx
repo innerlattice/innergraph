@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { GraphCanvasProps } from "../components/GraphCanvas";
 import { MapView } from "./MapView";
@@ -42,6 +43,12 @@ const routes: Record<string, unknown> = {
 };
 const respond = (url: string) => new Response(JSON.stringify(/[?&]t=/.test(url) ? past : (routes[url.split("?")[0]] ?? { ok: true })));
 
+/** The shell owns the selection; this stands in for it. */
+function Harness(props: { initial?: string[] }) {
+  const [selection, setSelection] = useState(props.initial ?? []);
+  return <MapView selection={selection} synced="" onSelect={setSelection} navigate={vi.fn()} />;
+}
+
 beforeEach(() => {
   vi.stubGlobal("fetch", async (url: string) => respond(url));
 });
@@ -51,7 +58,7 @@ afterEach(() => {
 });
 
 it("selects nodes, traces roots, and travels back in time", async () => {
-  render(<MapView navigate={vi.fn()} />);
+  render(<Harness />);
   fireEvent.click(await screen.findByText("node:n1"));
   expect(await screen.findByText("One", { selector: "h3" })).toBeTruthy();
   fireEvent.click(screen.getByText("Trace roots"));
@@ -67,23 +74,18 @@ it("selects nodes, traces roots, and travels back in time", async () => {
   fireEvent.change(screen.getByLabelText("Time travel"), { target: { value: "1" } });
 });
 
-it("shows a selection panel for several items and syncs the selection", async () => {
-  const calls: string[] = [];
-  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
-    if (init?.method) calls.push(`${init.method} ${url}`);
-    return respond(url);
-  });
-  render(<MapView navigate={vi.fn()} />);
+it("shows a selection panel for several items and clears it", async () => {
+  render(<Harness />);
   fireEvent.click(await screen.findByText("node:n1"));
   fireEvent.click(screen.getByText("node:n2"), { shiftKey: true });
   expect(await screen.findByText("2 selected")).toBeTruthy();
   expect(await screen.findByText("Two")).toBeTruthy();
   fireEvent.click(screen.getByText("Clear"));
-  await waitFor(() => expect(calls.filter((c) => c.startsWith("PUT /api/selection"))).toHaveLength(3));
+  await waitFor(() => expect(screen.queryByText("2 selected")).toBeNull());
 });
 
 it("lists node types from the Schema in the legend", async () => {
-  render(<MapView navigate={vi.fn()} />);
+  render(<Harness />);
   fireEvent.click(await screen.findByText("Key"));
   expect(screen.getByText("t")).toBeTruthy();
   expect(screen.getByText("u")).toBeTruthy();
@@ -92,7 +94,7 @@ it("lists node types from the Schema in the legend", async () => {
 it("opens what changed from the status bar and shows removed items on request", async () => {
   const urls: string[] = [];
   vi.stubGlobal("fetch", async (url: string) => (urls.push(url), respond(url)));
-  render(<MapView navigate={vi.fn()} />);
+  render(<Harness />);
   fireEvent.click(await screen.findByText("What changed"));
   expect(await screen.findByText("New entry")).toBeTruthy();
   fireEvent.click(screen.getByText("Ghost"));
@@ -103,12 +105,12 @@ it("opens what changed from the status bar and shows removed items on request", 
 
 it("drops selected items that leave the graph", async () => {
   routes["/api/view"] = { ...now, nodes: {} };
-  render(<MapView focus="n1" navigate={vi.fn()} />);
+  render(<Harness initial={["n1"]} />);
   await waitFor(() => expect(screen.queryByText("One", { selector: "h3" })).toBeNull());
   routes["/api/view"] = now;
 });
 
 it("opens with a focused node", async () => {
-  render(<MapView focus="n1" navigate={vi.fn()} />);
+  render(<Harness initial={["n1"]} />);
   expect(await screen.findByText("One", { selector: "h3" })).toBeTruthy();
 });

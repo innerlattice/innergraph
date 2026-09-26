@@ -1,12 +1,73 @@
 @import "tailwindcss";
+@import "streamdown/styles.css";
+@source "../../node_modules/streamdown/dist/*.js";
 
+/* Warm paper, ink, a clay accent and a sage second voice: calm rather than clinical.
+   Tailwind's stone scale is redefined so every existing surface warms up with it. */
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-serif: ui-serif, Georgia, "Iowan Old Style", serif;
+  --font-serif: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+
+  --color-stone-50: #fbf8f3;
+  --color-stone-100: #f4efe7;
+  --color-stone-200: #e8e0d4;
+  --color-stone-300: #d7cbbb;
+  --color-stone-400: #aa9c8a;
+  --color-stone-500: #867867;
+  --color-stone-600: #685c4f;
+  --color-stone-700: #50463c;
+  --color-stone-800: #3b332b;
+  --color-stone-900: #2a241f;
+
+  --color-paper: #f8f4ee;
+  --color-clay-50: #fbf2ec;
+  --color-clay-100: #f6e0d3;
+  --color-clay-200: #edc3ac;
+  --color-clay-300: #e1a283;
+  --color-clay-400: #d28462;
+  --color-clay-500: #c06b49;
+  --color-clay-600: #a4573b;
+  --color-clay-700: #834532;
+  --color-sage-50: #f1f4ee;
+  --color-sage-100: #e2e9dc;
+  --color-sage-200: #c7d4bd;
+  --color-sage-400: #8ea27f;
+  --color-sage-600: #5f7753;
+  --color-sage-700: #4b5f42;
+
+  --animate-breathe: breathe 2.4s ease-in-out infinite;
+  --animate-rise: rise 0.35s ease-out both;
+
+  @keyframes breathe {
+    0%,
+    100% {
+      transform: scale(0.8);
+      opacity: 0.45;
+    }
+    50% {
+      transform: scale(1.15);
+      opacity: 1;
+    }
+  }
+  @keyframes rise {
+    from {
+      transform: translateY(6px);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
 }
 
-/* Anything clickable shows a pointer (Tailwind v4 resets buttons to the default cursor). */
 @layer base {
+  body {
+    background: var(--color-paper);
+    color: var(--color-stone-800);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Anything clickable shows a pointer (Tailwind v4 resets buttons to the default cursor). */
   button:not(:disabled),
   [role="button"],
   a[href],
@@ -14,10 +75,14 @@
   select,
   label:has(input[type="checkbox"]),
   input[type="checkbox"],
+  input[type="radio"],
   input[type="range"] {
     cursor: pointer;
   }
   button:disabled {
     cursor: not-allowed;
+  }
+  ::selection {
+    background: var(--color-clay-100);
   }
 }

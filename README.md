@@ -12,13 +12,23 @@ v1 scope: single device, offline, local model (Ollama), one user-defined Schema.
 
 ```bash
 npm install
-npm run build                       # graph view → web/dist
+npm run build                       # the app → web/dist
 npx tsx src/bin.ts init             # creates ~/.inner-graph/default with schema/author.yaml
-npm run chat                        # graph view on :4317 + your agent harness
+npm start                           # the app on :4317
 ```
 
-`inner-graph` (or `inner-graph chat`) is the main interface. It serves the graph view and
-boots an agent harness wired to the Inner Graph MCP server and skill:
+The app is chat-first. Write to the assistant in the middle column; it saves your message
+as an Entry, adds what it finds to the map, and shows each change as a card with Undo. The
+passages it used are highlighted in your message (click one to see it on the map). Select
+items on the map and they appear above the message box, so "these" means something.
+Conversations are in the left rail and the views (map, loops, entries, log) in the right
+rail; both open on hover, and clicking the open view again gives the chat the whole
+window. Settings (bottom left) choose the model: OpenRouter with a key (or
+`OPENROUTER_API_KEY`), or any local OpenAI-compatible server (Ollama by default). A
+conversation warns at 70% of its token budget and ends at 90%; the map keeps everything.
+
+`inner-graph chat` instead boots an external agent harness wired to the Inner Graph MCP
+server and skill, with the app alongside:
 
 - `--harness claude` (default) runs Claude Code with the plugin in `plugin/` (the
   `inner-graph` skill) and the MCP server via `--mcp-config`.
@@ -27,7 +37,7 @@ boots an agent harness wired to the Inner Graph MCP server and skill:
   skill's `SKILL.md`) and `INNER_GRAPH_VIEW` in its environment.
 - Chat connections use the `write` tier; pass `--tier read` for a look-only agent.
 
-The graph view updates live as the agent works. Select with click, shift-click or a drag
+The map updates live as any agent works. Select with click, shift-click or a drag
 box; the agent sees the selection through `get_selection`. "What changed" lists recent
 changes, each undoable as a whole; the side panel can confirm ("Looks right"), remove,
 restore and rename (double-click the title).

@@ -9,9 +9,27 @@ import type { IngestResult, RevisionResult } from "../../src/managers/ingestMana
 import type { RelatedItem } from "../../src/managers/recallCorpus";
 import type { AnyEvent, EntryRecord, Graph, GraphEdge, GraphNode, Schema, Status } from "../../src/core/types";
 import type { Job } from "../../src/utilities/jobQueue";
+import type { ChatSummary } from "../../src/access/chatAccess";
+import type { AmendResult, ProposeResult, WrittenItem } from "../../src/managers/ingestManager";
+import type { BudgetLevel, ChatBudget, ChatProvider, ChatSettings, PublicChatSettings } from "../../src/managers/chatManager";
+import type { ChatMessage, ChatMetadata } from "../../src/clients/chat";
+import type { SelectionItem } from "../../src/managers/exploreManager";
 
 export type { ChangeAction, ChangeRow, DuplicateGroup, EdgeView, GraphView, LoopStepView, LoopView, SessionChanges, UndoResult, ViewEdge, ViewNode, ViewStatus };
 export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, GraphEdge, GraphNode, IngestResult, Job, Loop, NodeView, RelatedItem, RevisionResult, RootTrace, Schema, Selection, Status };
+
+export type { AmendResult, BudgetLevel, ChatBudget, ChatMessage, ChatMetadata, ChatProvider, ChatSummary, ProposeResult, PublicChatSettings, SelectionItem, WrittenItem };
+
+export interface ChatListItem extends ChatSummary {
+  budget: ChatBudget;
+}
+
+export interface ChatDetail {
+  chat: ChatSummary & { messages: ChatMessage[] };
+  budget: ChatBudget;
+}
+
+export type ChatSettingsPatch = Partial<ChatSettings>;
 
 export interface VaultStatus {
   model: string;
@@ -63,5 +81,11 @@ export const api = {
   undoSession: (session: string) => request<UndoResult>("/undo-session", { session }),
   selection: () => request<Selection>("/selection"),
   setSelection: (ids: string[]) => request<Selection>("/selection", { ids }, fetch, "PUT"),
+  chats: () => request<ChatListItem[]>("/chats"),
+  chat: (id: string) => request<ChatDetail>(`/chats/${enc(id)}`),
+  renameChat: (id: string, title: string) => request<ChatDetail>(`/chats/${enc(id)}`, { title }, fetch, "PATCH"),
+  deleteChat: (id: string) => request<{ removed: boolean }>(`/chats/${enc(id)}`, {}, fetch, "DELETE"),
+  chatSettings: () => request<PublicChatSettings>("/chat/settings"),
+  saveChatSettings: (patch: ChatSettingsPatch) => request<PublicChatSettings>("/chat/settings", patch, fetch, "PUT"),
   merge: (sources: string[], label: string) => request<ChangeResult>("/merge", { sources, into: { label } }),
 };

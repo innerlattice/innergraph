@@ -4,7 +4,7 @@ import { type EntryView, type RevisionResult, api } from "../api";
 import { Button, Card, Empty, ErrorNote, Page } from "../components/ui";
 import { formatHlc, highlightSegments, parseEntryFocus } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
-import { useJob } from "./WriteView";
+import { useJob } from "../lib/useJob";
 
 const FOCUS = "\u0000focus";
 

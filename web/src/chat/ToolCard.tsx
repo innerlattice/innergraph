@@ -1,0 +1,92 @@
+// A tool call inline in the conversation: a quiet line for look-ups, a soft card for changes,
+// with the items it touched (click to see them on the map) and Undo.
+import { Check, CircleAlert, Search, Sparkles, Undo2 } from "lucide-react";
+import { useState } from "react";
+import { api } from "../api";
+import { type ToolCardInfo, type ToolPart, describeTool } from "./parts";
+
+export interface ToolCardProps {
+  part: ToolPart;
+  labels?: Record<string, string>;
+  onSelect: (ids: string[]) => void;
+  onOpenEntry: (entry: string) => void;
+}
+
+function Lookup(props: { info: ToolCardInfo }) {
+  const { info } = props;
+  return (
+    <p className="flex items-center gap-2 py-0.5 text-xs text-stone-400">
+      <Search size={12} className={info.phase === "running" ? "animate-pulse" : ""} />
+      {info.title}
+      {info.phase === "running" ? "…" : ""}
+    </p>
+  );
+}
+
+function CardIcon(props: { phase: ToolCardInfo["phase"]; undone: boolean }) {
+  if (props.phase === "error") return <CircleAlert size={15} className="text-rose-500" />;
+  if (props.phase === "running") return <Sparkles size={15} className="animate-pulse text-clay-500" />;
+  return props.undone ? <Undo2 size={15} className="text-stone-400" /> : <Check size={15} className="text-sage-600" />;
+}
+
+function Chips(props: { info: ToolCardInfo; undone: boolean; onSelect: (ids: string[]) => void }) {
+  if (props.info.items.length === 0) return null;
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {props.info.items.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          disabled={props.undone}
+          onClick={() => props.onSelect([item.id])}
+          className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 text-xs text-stone-700 transition hover:border-clay-300 hover:bg-clay-50 disabled:line-through disabled:opacity-60"
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function UndoButton(props: { session?: string; undone: boolean; onUndone: () => void; onError: (message: string) => void }) {
+  if (!props.session || props.undone) return props.undone ? <span className="text-xs text-stone-400">Undone</span> : null;
+  const undo = () =>
+    api
+      .undoSession(props.session as string)
+      .then(props.onUndone)
+      .catch((e: Error) => props.onError(e.message));
+  return (
+    <button type="button" onClick={undo} className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-stone-500 transition hover:bg-stone-100 hover:text-stone-800">
+      <Undo2 size={12} /> Undo
+    </button>
+  );
+}
+
+export function ToolCard(props: ToolCardProps) {
+  const [undone, setUndone] = useState(false);
+  const [failure, setFailure] = useState<string>();
+  const info = describeTool(props.part, props.labels);
+  if (info.quiet) return <Lookup info={info} />;
+  const title = info.entry && !undone ? (
+    <button type="button" className="text-left hover:underline" onClick={() => props.onOpenEntry(info.entry as string)}>
+      {info.title}
+    </button>
+  ) : (
+    info.title
+  );
+  return (
+    <div className="my-2 animate-rise rounded-xl border border-stone-200/80 bg-white/70 px-3.5 py-2.5 shadow-[0_1px_2px_rgba(60,40,20,0.04)]">
+      <div className="flex items-center gap-2 text-sm text-stone-700">
+        <CardIcon phase={info.phase} undone={undone} />
+        <span className={`min-w-0 flex-1 ${undone ? "text-stone-400 line-through" : ""}`}>{title}</span>
+        <UndoButton session={info.session} undone={undone} onUndone={() => setUndone(true)} onError={setFailure} />
+      </div>
+      <Chips info={info} undone={undone} onSelect={props.onSelect} />
+      {[...info.notes, info.error ?? "", failure ?? ""].filter(Boolean).map((note) => (
+        <p key={note} className="mt-1.5 text-xs text-stone-500">
+          {note}
+        </p>
+      ))}
+    </div>
+  );
+}

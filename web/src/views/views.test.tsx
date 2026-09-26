@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { App } from "../App";
 import type { EntryView, NodeView } from "../api";
 import { Button, Card, Empty, ErrorNote, Page, Quote, StatusPill } from "../components/ui";
 import { EntriesView, EntryText } from "./EntriesView";
 import { LogView } from "./LogView";
 import { LoopCard, LoopsView } from "./LoopsView";
 import { NodePanel } from "./NodePanel";
-import { Related, WriteView, useJob } from "./WriteView";
+import { Related } from "../components/Related";
+import { useJob } from "../lib/useJob";
 
 // Cytoscape needs a real canvas; the Map view is covered in MapView.test.tsx.
 vi.mock("../components/GraphCanvas", () => ({ GraphCanvas: () => <div data-testid="graph-canvas" /> }));
@@ -108,45 +108,14 @@ describe("ui primitives", () => {
   });
 });
 
-describe("App shell", () => {
-  it("shows the hosted notice and navigates between views", async () => {
-    render(<App />);
-    expect(await screen.findByText(/entry text leaves this device/)).toBeTruthy();
-    for (const label of ["Loops", "Entries", "Log", "Write", "Map"]) {
-      fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${label}`) }));
-    }
-    expect(screen.getByLabelText("Time travel")).toBeTruthy();
-  });
-});
-
-describe("WriteView", () => {
-  it("adds an entry, polls the job and offers related material", async () => {
-    const navigate = vi.fn();
-    render(<WriteView navigate={navigate} />);
-    fireEvent.change(screen.getByPlaceholderText("Title (optional)"), { target: { value: "Title" } });
-    fireEvent.change(screen.getByPlaceholderText("Write freely…"), { target: { value: "Something happened" } });
-    fireEvent.change(screen.getByLabelText("Format"), { target: { value: "markdown" } });
-    fireEvent.click(screen.getByText("Add entry"));
-    await screen.findByText(/New items are on the map/);
-    expect(posted[0].body).toEqual({ content: "Something happened", title: "Title", format: "markdown" });
-    fireEvent.click(screen.getByText("See it on the map"));
-    expect(navigate).toHaveBeenCalledWith("map");
+describe("Related and useJob", () => {
+  it("folds related material away until asked for", () => {
+    const { container } = render(<Related items={[]} />);
+    expect(container.innerHTML).toBe("");
+    render(<Related items={[{ id: "h", kind: "entry", score: 0.4, terms: [], title: "Tuesday", snippet: "old words" }]} />);
     fireEvent.click(screen.getByText(/may be related \(1\)/));
     expect(screen.getByText("old words")).toBeTruthy();
     fireEvent.click(screen.getByText("Hide related material"));
-  });
-
-  it("shows errors when adding fails", async () => {
-    vi.stubGlobal("fetch", async () => new Response('{"error":"Entry is empty"}', { status: 400 }));
-    render(<WriteView navigate={vi.fn()} />);
-    fireEvent.change(screen.getByPlaceholderText("Write freely…"), { target: { value: "x" } });
-    fireEvent.click(screen.getByText("Add entry"));
-    expect(await screen.findByText("Entry is empty")).toBeTruthy();
-  });
-
-  it("renders nothing when nothing is related", () => {
-    const { container } = render(<Related items={[]} />);
-    expect(container.innerHTML).toBe("");
   });
 
   it("keeps polling running jobs and reports failures", async () => {
