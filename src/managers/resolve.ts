@@ -6,7 +6,7 @@ import type { ContextNode, Interpretation } from "../engines/interpretationEngin
 import { lexicalRanking } from "../engines/recallEngine.js";
 import { type KnownEdge, type KnownNode, type Resolved, SAME, bestMatch, resolve } from "../engines/resolution.js";
 import { graphDocs } from "./graphSearch.js";
-import { pendingAssertions } from "./pending.js";
+import { ACTIVE, materialize } from "../access/view.js";
 
 /** Graphs up to this size are shown to the model whole; larger ones are narrowed by retrieval. */
 export const CONTEXT_LIMIT = 60;
@@ -16,12 +16,10 @@ function live(n: GraphNode): boolean {
   return n.status === "hypothesis" || n.status === "accepted";
 }
 
-/** Everything a proposal could duplicate: live and parked items plus other pending proposals. */
+/** Everything a proposal could duplicate: every active item of the View (proposed, approved, parked). */
 export function knownItems(state: ProjectionState): { nodes: KnownNode[]; edges: KnownEdge[] } {
-  const pending = pendingAssertions(state).map((p) => p.item);
-  const nodes = [...Object.values(state.graph.nodes).filter((n) => n.status !== "superseded"), ...pending.filter((p): p is GraphNode => "label" in p)];
-  const edges = [...Object.values(state.graph.edges).filter((e) => e.status !== "superseded"), ...pending.filter((p) => "from" in p)] as KnownEdge[];
-  return { nodes, edges };
+  const view = materialize(state, ACTIVE);
+  return { nodes: Object.values(view.nodes), edges: Object.values(view.edges) };
 }
 
 export function resolveAgainst(state: ProjectionState, result: Interpretation): Resolved {

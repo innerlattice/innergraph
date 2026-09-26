@@ -4,11 +4,14 @@ import type { VaultAccess } from "../access/vaultAccess.js";
 import type { AnyEvent, EntryRecord, Evidence, Graph, GraphEdge, GraphNode, ProjectionState, Schema } from "../core/types.js";
 import { type AnalysisEngine, type Loop, type LoopDetail, type LoopStep, type RootTrace, activeGraph } from "../engines/analysisEngine.js";
 import type { RecallEngine, Reranker, SearchHit } from "../engines/recallEngine.js";
+import { DEFAULT_POLICY, type ReviewEngine, type ReviewPolicy } from "../engines/reviewEngine.js";
+import { toPosition } from "../utilities/hlc.js";
+import { ACTIVE, type GraphView, VIEW_STATUSES, type ViewEdge, type ViewNode, type ViewStatus, candidates, materialize, normaliseEvidence, pendingEvents } from "../access/view.js";
 import type { Embedder } from "../utilities/modelGateway.js";
 import { cachedVectors, graphDocs } from "./graphSearch.js";
 import { byteOffset } from "../utilities/crypto.js";
 import { type RelatedItem, buildCorpus, describeMatches } from "./recallCorpus.js";
-import { pendingAssertions } from "./pending.js";
+import { changeTargets, reviewReasons } from "./pending.js";
 import { requireFound } from "./sessions.js";
 
 export interface ExploreDeps {
@@ -19,6 +22,30 @@ export interface ExploreDeps {
   embedder?: Embedder;
   /** Optional reranking of the fused candidates. */
   reranker?: Reranker;
+  /** Explains why held proposals are waiting. */
+  review?: ReviewEngine;
+  policy?: ReviewPolicy;
+}
+
+export interface ViewOptions {
+  /** Which statuses to materialize (default: proposed, approved, parked). */
+  statuses?: readonly ViewStatus[];
+  /** Shorthand: also materialize declined items. */
+  declined?: boolean;
+  /** A past position (ISO date or HLC); history has no pending review state. */
+  at?: string;
+}
+
+export interface ItemChange {
+  event: AnyEvent;
+  reasons: string[];
+}
+
+export interface MapGraphView extends GraphView {
+  /** Why each held item is waiting for review. */
+  reasons: Record<string, string[]>;
+  /** Waiting changes to materialized items (renames, retractions, refactors, new evidence). */
+  changes: Record<string, ItemChange[]>;
 }
 
 export interface GraphSearchHit extends SearchHit {
@@ -55,19 +82,23 @@ export function spanContext(bytes: Buffer, start: number, end: number): { before
 }
 
 export interface NodeView {
-  node: GraphNode;
+  node: ViewNode;
   evidence: EvidenceView[];
-  outgoing: GraphEdge[];
-  incoming: GraphEdge[];
+  outgoing: ViewEdge[];
+  incoming: ViewEdge[];
   derivedFrom: GraphNode[];
   derivedInto: GraphNode[];
+  reasons: string[];
+  changes: ItemChange[];
 }
 
 export interface EdgeView {
-  edge: GraphEdge;
+  edge: ViewEdge;
   fromLabel: string;
   toLabel: string;
   evidence: EvidenceView[];
+  reasons: string[];
+  changes: ItemChange[];
 }
 
 export interface EvidenceHit extends Evidence {
@@ -114,24 +145,15 @@ export interface Selection {
   items: SelectionItem[];
 }
 
-function describeItem(state: ProjectionState, id: string): SelectionItem | undefined {
-  const proposed = pendingAssertions(state).find((a) => a.item.id === id);
-  const graph: Graph = proposed ? withProposed(state.graph, proposed.item) : state.graph;
-  const item = describeInGraph(graph, id);
-  return item && proposed ? { ...item, status: "proposed" } : item;
+export function edgeLabel(view: { nodes: Record<string, { label: string }> }, edge: { from: string; to: string; type: string }): string {
+  return `${view.nodes[edge.from]?.label ?? edge.from} —${edge.type}→ ${view.nodes[edge.to]?.label ?? edge.to}`;
 }
 
-function withProposed(graph: Graph, item: GraphNode | GraphEdge): Graph {
-  return "from" in item ? { ...graph, edges: { ...graph.edges, [item.id]: item } } : { ...graph, nodes: { ...graph.nodes, [item.id]: item } };
-}
-
-function describeInGraph(graph: Graph, id: string): SelectionItem | undefined {
-  const node = graph.nodes[id];
+function describeItem(view: GraphView, id: string): SelectionItem | undefined {
+  const node = view.nodes[id];
   if (node) return { id, kind: "node", type: node.type, label: node.label, status: node.status };
-  const edge = graph.edges[id];
-  if (!edge) return undefined;
-  const label = `${graph.nodes[edge.from]?.label ?? edge.from} —${edge.type}→ ${graph.nodes[edge.to]?.label ?? edge.to}`;
-  return { id, kind: "edge", type: edge.type, label, status: edge.status };
+  const edge = view.edges[id];
+  return edge ? { id, kind: "edge", type: edge.type, label: edgeLabel(view, edge), status: edge.status } : undefined;
 }
 
 export interface LoopStepView extends LoopStep {
@@ -147,11 +169,24 @@ export interface LoopView extends Omit<LoopDetail, "steps" | "inputs" | "outputs
   weakest: LoopStepView;
 }
 
-function describeHit(vault: VaultAccess, state: ProjectionState, hit: SearchHit): GraphSearchHit {
-  const item = describeInGraph(state.graph, hit.id) as SelectionItem;
-  const target = state.graph.nodes[hit.id] ?? state.graph.edges[hit.id];
-  const first = target?.evidence[0];
+function describeHit(vault: VaultAccess, view: GraphView, hit: SearchHit): GraphSearchHit {
+  const item = describeItem(view, hit.id) as SelectionItem;
+  const first = (view.nodes[hit.id] ?? view.edges[hit.id])?.evidence[0];
   return { ...hit, label: item.label, type: item.type, status: item.status, evidence: first ? vault.readSpan(first) : undefined };
+}
+
+/** Nodes merged or split away are history, not part of the View; lineage links still open them. */
+function replacedNode(state: ProjectionState, id: string): ViewNode | undefined {
+  const node = state.graph.nodes[id];
+  if (!node) return undefined;
+  const { evidence, stale } = normaliseEvidence(node.evidence, state);
+  const { status: _s, ...rest } = node;
+  return { ...rest, evidence, status: "declined", held: false, staleEvidence: stale };
+}
+
+function filterFor(options: ViewOptions): readonly ViewStatus[] {
+  if (options.statuses && options.statuses.length > 0) return options.statuses;
+  return options.declined ? VIEW_STATUSES : ACTIVE;
 }
 
 export class ExploreManager {
@@ -166,29 +201,67 @@ export class ExploreManager {
     return options.includeSuperseded ? graph : activeGraph(graph);
   }
 
-  node(id: string): NodeView {
-    const graph = this.deps.vault.state().graph;
-    const node = requireFound(graph.nodes[id], `Node ${id}`);
-    const edges = Object.values(graph.edges);
+  /** The materialized View the graph display renders: one status per item, filtered. */
+  view(options: ViewOptions = {}): MapGraphView {
+    const state = options.at ? this.deps.vault.stateAt(toPosition(options.at)) : this.deps.vault.state();
+    const view = materialize(state, filterFor(options));
+    if (options.at) return { ...view, reasons: {}, changes: {} };
+    const reasons = this.reasons(state);
+    const held = Object.fromEntries(
+      [...Object.values(view.nodes), ...Object.values(view.edges)].filter((i) => i.proposedBy).map((i) => [i.id, reasons.get(i.proposedBy as string) ?? []]),
+    );
+    return { ...view, reasons: held, changes: this.changesByItem(state, reasons) };
+  }
+
+  /** A Node from the View (whatever its status), with Edges filtered like the View. */
+  node(id: string, options: ViewOptions = {}): NodeView {
+    const state = this.deps.vault.state();
+    const node = requireFound(materialize(state, VIEW_STATUSES).nodes[id] ?? replacedNode(state, id), `Node ${id}`);
+    const shown = materialize(state, filterFor(options));
+    const edges = Object.values(shown.edges);
+    const extras = this.itemExtras(state, node);
     return {
       node,
       evidence: node.evidence.map((e) => this.evidenceView(e)),
       outgoing: edges.filter((e) => e.from === id),
       incoming: edges.filter((e) => e.to === id),
-      derivedFrom: node.derivedFrom.map((p) => graph.nodes[p]).filter(Boolean),
-      derivedInto: Object.values(graph.nodes).filter((n) => n.derivedFrom.includes(id)),
+      derivedFrom: node.derivedFrom.map((p) => state.graph.nodes[p]).filter(Boolean),
+      derivedInto: Object.values(state.graph.nodes).filter((n) => n.derivedFrom.includes(id)),
+      ...extras,
     };
   }
 
   edge(id: string): EdgeView {
-    const graph = this.deps.vault.state().graph;
-    const edge = requireFound(graph.edges[id], `Edge ${id}`);
+    const state = this.deps.vault.state();
+    const all = materialize(state, VIEW_STATUSES);
+    const edge = requireFound(all.edges[id], `Edge ${id}`);
     return {
       edge,
-      fromLabel: graph.nodes[edge.from]?.label ?? edge.from,
-      toLabel: graph.nodes[edge.to]?.label ?? edge.to,
+      fromLabel: all.nodes[edge.from]?.label ?? edge.from,
+      toLabel: all.nodes[edge.to]?.label ?? edge.to,
       evidence: edge.evidence.map((e) => this.evidenceView(e)),
+      ...this.itemExtras(state, edge),
     };
+  }
+
+  private reasons(state: ProjectionState): Map<string, string[]> {
+    const { review, policy } = this.deps;
+    return review ? reviewReasons(state, review, policy ?? DEFAULT_POLICY) : new Map();
+  }
+
+  private changesByItem(state: ProjectionState, reasons: Map<string, string[]>): Record<string, ItemChange[]> {
+    // Held proposals are items in their own right; only changes to other items are listed here.
+    const held = new Set(candidates(state).map((c) => c.held));
+    const changes: Record<string, ItemChange[]> = {};
+    for (const event of pendingEvents(state).filter((e) => !held.has(e.id))) {
+      for (const target of changeTargets(event, state)) (changes[target] ??= []).push({ event, reasons: reasons.get(event.id) ?? [] });
+    }
+    return changes;
+  }
+
+  private itemExtras(state: ProjectionState, item: ViewNode | ViewEdge): { reasons: string[]; changes: ItemChange[] } {
+    const reasons = this.reasons(state);
+    return { reasons: item.proposedBy ? (reasons.get(item.proposedBy) ?? []) : [], changes: this.changesByItem(state, reasons)[item.id] ?? [] };
   }
 
   traceRoots(id: string): RootTrace {
@@ -248,7 +321,7 @@ export class ExploreManager {
       return recall.search({ query, docs, ...vectors }, undefined, limit);
     });
     const stages = ["lexical", ...(vectors ? ["dense"] : []), ...(hits.some((h) => h.stages.rerank !== undefined) ? ["rerank"] : [])];
-    return { hits: hits.map((h) => describeHit(vault, state, h)), stages, notes };
+    return { hits: hits.map((h) => describeHit(vault, materialize(state), h)), stages, notes };
   }
 
   private async vectors(embedder: Embedder, query: string, docs: { text: string }[], notes: string[]) {
@@ -287,8 +360,8 @@ export class ExploreManager {
   /** What the user currently has selected in the graph view. */
   selection(): Selection {
     const stored = this.deps.vault.readSetting<{ ids: string[]; at: string }>("selection") ?? { ids: [], at: "" };
-    const state = this.deps.vault.state();
-    const items = stored.ids.map((id) => describeItem(state, id)).filter((i): i is SelectionItem => i !== undefined);
+    const view = materialize(this.deps.vault.state(), VIEW_STATUSES);
+    const items = stored.ids.map((id) => describeItem(view, id)).filter((i): i is SelectionItem => i !== undefined);
     return { ...stored, items };
   }
 

@@ -1,5 +1,6 @@
 // Builds the Recall corpus from the head Projection. Parked Nodes are never included.
 import type { VaultAccess } from "../access/vaultAccess.js";
+import { materialize } from "../access/view.js";
 import type { ProjectionState } from "../core/types.js";
 import type { RecallDoc, RecallMatch } from "../engines/recallEngine.js";
 
@@ -8,8 +9,9 @@ export interface RelatedItem extends RecallMatch {
   snippet: string;
 }
 
+/** Recall offers proposed and approved material; parked and declined items never come back. */
 function recallable(state: ProjectionState) {
-  return Object.values(state.graph.nodes).filter((n) => n.status !== "parked" && n.status !== "superseded");
+  return Object.values(materialize(state, ["proposed", "approved"]).nodes);
 }
 
 export function buildCorpus(vault: VaultAccess, state: ProjectionState): RecallDoc[] {

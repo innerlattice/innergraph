@@ -95,13 +95,16 @@ export function openVault(options: VaultOptions): Vault {
   const recall = new RecallEngine();
   const queue = new JobQueue();
   const policy = options.policy ?? readPolicy(options.dir);
+  const review = new ReviewEngine();
   return {
-    ingest: new IngestManager({ vault, schemas, interpretation, review: new ReviewEngine(), recall, queue, policy }),
+    ingest: new IngestManager({ vault, schemas, interpretation, review, recall, queue, policy }),
     map: new MapManager({ vault, schemas, interpretation, analysis }),
     explore: new ExploreManager({
       vault,
       analysis,
       recall,
+      review,
+      policy,
       embedder: orDefault(options.embedder, defaultEmbedder),
       reranker: orDefault(options.reranker, () => defaultReranker(gateway)),
     }),

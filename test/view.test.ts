@@ -69,3 +69,46 @@ describe("evidence normalisation", () => {
     expect(result).toEqual({ evidence: [span(353, 442), span(500, 510)], stale: 1 });
   });
 });
+
+describe("view through ExploreManager", async () => {
+  const { ENTRY_1, INTERPRETATION_1, makeVault } = await import("./helpers.js");
+
+  it("attaches review reasons, per-item changes and respects the declined filter", async () => {
+    const t = makeVault([INTERPRETATION_1]);
+    t.vault.ingest.addEntry({ content: ENTRY_1, format: "markdown" });
+    await t.vault.queue.idle();
+    const view = t.vault.explore.view();
+    const memory = Object.values(view.nodes).find((n) => n.label.startsWith("Father"));
+    expect(memory).toMatchObject({ status: "proposed", held: true });
+    expect(view.reasons[memory?.id as string]).toEqual(["new root-level node"]);
+
+    const shame = Object.values(view.nodes).find((n) => n.label === "Shame")?.id as string;
+    t.vault.map.setStatus(shame, "superseded", "agent:x");
+    expect(t.vault.explore.view().changes[shame][0]).toMatchObject({ event: { type: "StatusChanged" }, reasons: ["status change proposed by an agent"] });
+
+    const rest = Object.values(view.nodes).find((n) => n.label === "Rest")?.id as string;
+    const restEdge = Object.values(view.edges).find((e) => e.from === rest)?.id as string;
+    t.vault.ingest.decline([restEdge]);
+    expect(t.vault.explore.node(rest).outgoing).toEqual([]);
+    expect(t.vault.explore.node(rest, { declined: true }).outgoing[0]).toMatchObject({ id: restEdge, status: "declined" });
+    expect(t.vault.explore.view({ declined: true }).edges[restEdge].status).toBe("declined");
+    expect(t.vault.explore.edge(restEdge).edge.status).toBe("declined");
+
+    const past = t.vault.explore.view({ at: "2020-01-01" });
+    expect(past).toMatchObject({ nodes: {}, reasons: {}, changes: {} });
+    t.cleanup();
+  });
+
+  it("opens replaced nodes as history", async () => {
+    const t = makeVault([INTERPRETATION_1]);
+    t.vault.ingest.addEntry({ content: ENTRY_1, format: "markdown" });
+    await t.vault.queue.idle();
+    const nodes = Object.values(t.vault.explore.view().nodes).filter((n) => n.label === "Rest" || n.label === "Freezing");
+    t.vault.map.merge(nodes.map((n) => n.id), { label: "Merged" });
+    const old = t.vault.explore.node(nodes[0].id);
+    expect(old.node.status).toBe("declined");
+    expect(old.derivedInto.map((n) => n.label)).toEqual(["Merged"]);
+    expect(t.vault.explore.view().nodes[nodes[0].id]).toBeUndefined();
+    t.cleanup();
+  });
+});

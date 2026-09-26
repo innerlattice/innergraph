@@ -4,6 +4,7 @@ import { streamSSE } from "hono/streaming";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { InvariantError } from "../access/invariants.js";
 import { SchemaError } from "../access/schemaAccess.js";
+import { VIEW_STATUSES, type ViewStatus } from "../access/view.js";
 import type { Status } from "../core/types.js";
 import { ForbiddenError, NotFoundError, requireFound } from "../managers/sessions.js";
 import type { Vault } from "../vault.js";
@@ -34,6 +35,12 @@ function route(handler: Handler) {
 
 const body = (c: Context) => c.req.json();
 
+/** `?statuses=proposed,approved` → the View filter; unknown words are ignored. */
+export function statusesOf(c: Context): ViewStatus[] | undefined {
+  const raw = c.req.query("statuses");
+  return raw ? raw.split(",").filter((s): s is ViewStatus => (VIEW_STATUSES as readonly string[]).includes(s)) : undefined;
+}
+
 const STREAM_INTERVAL_MS = 400;
 
 /** Server-sent events: emits the Log position whenever any process appends, so views update live. */
@@ -57,7 +64,8 @@ function registerReads(app: Hono, vault: Vault): void {
   app.get("/api/graph/at", route((c) => map.graphAt(c.req.query("t") ?? "")));
   app.get("/api/diff", route((c) => map.diff(c.req.query("from") ?? "", c.req.query("to") ?? "")));
   app.get("/api/positions", route(() => map.positions()));
-  app.get("/api/nodes/:id", route((c) => explore.node(c.req.param("id") ?? "")));
+  app.get("/api/view", route((c) => explore.view({ statuses: statusesOf(c), at: c.req.query("t") || undefined })));
+  app.get("/api/nodes/:id", route((c) => explore.node(c.req.param("id") ?? "", { statuses: statusesOf(c) })));
   app.get("/api/edges/:id", route((c) => explore.edge(c.req.param("id") ?? "")));
   app.get("/api/nodes/:id/roots", route((c) => explore.traceRoots(c.req.param("id") ?? "")));
   app.get("/api/nodes/:id/related", route((c) => explore.findRelated({ nodeId: c.req.param("id") })));
@@ -99,7 +107,7 @@ function registerWrites(app: Hono, vault: Vault): void {
     const input = await body(c);
     return ingest.reviseEntry(c.req.param("id") ?? "", input.content, { interpret: input.interpret !== false });
   }));
-  app.post("/api/duplicates/merge", route(() => map.mergeDuplicates()));
+  app.post("/api/duplicates/merge", route(async (c) => map.mergeDuplicates("user", (await body(c)).groups ?? undefined)));
   app.post("/api/undo", route(async (c) => map.undo((await body(c)).eventId)));
   app.post("/api/restore", route(async (c) => map.restore((await body(c)).id)));
   app.post("/api/revert", route(async (c) => map.revert((await body(c)).t)));

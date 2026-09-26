@@ -88,7 +88,7 @@ describe("selection of proposed items", () => {
     const selection = t.vault.explore.setSelection([memory.item.id, node("Shame").id]);
     expect(selection.items.map((i) => [i.label, i.status])).toEqual([
       ["Father laughed when I cried", "proposed"],
-      ["Shame", "hypothesis"],
+      ["Shame", "proposed"],
     ]);
   });
 });

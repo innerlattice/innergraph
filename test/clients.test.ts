@@ -78,7 +78,7 @@ describe("HTTP client", () => {
 
     await call(app, `/api/items/${shame.id}/attributes`, { label: "Shame (social)" });
     await call(app, `/api/items/${shame.id}/status`, { status: "accepted" });
-    expect((await call(app, `/api/nodes/${shame.id}`)).json.node).toMatchObject({ label: "Shame (social)", status: "accepted" });
+    expect((await call(app, `/api/nodes/${shame.id}`)).json.node).toMatchObject({ label: "Shame (social)", status: "approved" });
     t.gateway.generateJson = async () => ({ parts: [] });
     expect((await call(app, `/api/nodes/${memory.id}/split`, { parts: [{ label: "a" }, { label: "b" }] })).json.applied).toBe(true);
     const merged = await call(app, "/api/merge", { sources: [shame.id, memory.id], into: { label: "m" } });

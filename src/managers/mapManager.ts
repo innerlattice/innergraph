@@ -19,7 +19,7 @@ import {
 import type { AnalysisEngine, GraphDiff } from "../engines/analysisEngine.js";
 import type { InterpretationEngine } from "../engines/interpretationEngine.js";
 import { newId } from "../utilities/crypto.js";
-import { hlcAtTime } from "../utilities/hlc.js";
+import { toPosition } from "../utilities/hlc.js";
 import { mergeEvidence } from "../access/projection.js";
 import { type DuplicateGroup, findDuplicates } from "./resolve.js";
 import { type RevertPlan, planRevert, reassertRejected, targetsOf, withActor } from "./revert.js";
@@ -70,12 +70,7 @@ function selfReview(actor: ActorId, session: string, ids: string[]): AnyDraft {
   return { actor, session: newId(), type: "ProposalReviewed", body: { session, accepted: ids, rejected: [] } };
 }
 
-export function toPosition(at: string): string {
-  if (/^\d{15}\.\d{6}\./.test(at)) return at;
-  const ms = Date.parse(at);
-  if (Number.isNaN(ms)) throw new Error(`Cannot read time position "${at}"`);
-  return hlcAtTime(ms);
-}
+export { toPosition };
 
 function describeEdge(edge: GraphEdge, graph: Graph): string {
   const from = graph.nodes[edge.from]?.label ?? edge.from;

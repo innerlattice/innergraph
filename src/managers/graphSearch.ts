@@ -1,37 +1,33 @@
 // Documents and cached vectors for graph search. Helpers for ExploreManager; not a Manager.
 import type { VaultAccess } from "../access/vaultAccess.js";
-import type { GraphEdge, GraphNode, ProjectionState } from "../core/types.js";
+import { type GraphView, type ViewEdge, type ViewNode, materialize } from "../access/view.js";
+import type { ProjectionState } from "../core/types.js";
 import type { RecallDoc } from "../engines/recallEngine.js";
 import { sha256, utf8 } from "../utilities/crypto.js";
 import type { Embedder } from "../utilities/modelGateway.js";
 
 const BATCH = 32;
 
-function searchable(item: GraphNode | GraphEdge): boolean {
-  return item.status !== "parked" && item.status !== "superseded";
-}
-
 function values(attributes: Record<string, unknown>): string {
   return Object.values(attributes).filter((v) => typeof v === "string" && v).join("; ");
 }
 
-function edgeText(vault: VaultAccess, e: GraphEdge, state: ProjectionState): string {
+function edgeText(vault: VaultAccess, e: ViewEdge, view: GraphView): string {
   const sign = e.sign === -1 ? " (decreases)" : e.sign === 1 ? " (increases)" : "";
-  const from = state.graph.nodes[e.from]?.label ?? e.from;
-  const to = state.graph.nodes[e.to]?.label ?? e.to;
+  const from = view.nodes[e.from]?.label ?? e.from;
+  const to = view.nodes[e.to]?.label ?? e.to;
   return [`${from} ${e.type.replace(/_/g, " ")}${sign} ${to}`, ...e.evidence.map((ev) => vault.readSpan(ev))].join("\n");
 }
 
-function nodeText(vault: VaultAccess, n: GraphNode): string {
+function nodeText(vault: VaultAccess, n: ViewNode): string {
   return [`${n.label} (${n.type.replace(/_/g, " ")})`, values(n.attributes), ...n.evidence.map((ev) => vault.readSpan(ev))].filter(Boolean).join("\n");
 }
 
-/** One document per live Node and Edge. Parked items are never searchable. */
+/** Searchable items: proposed and approved. Parked and declined items never are. */
 export function graphDocs(vault: VaultAccess, state: ProjectionState): RecallDoc[] {
-  const nodes = Object.values(state.graph.nodes).filter(searchable).map((n) => ({ id: n.id, kind: "node" as const, text: nodeText(vault, n) }));
-  const edges = Object.values(state.graph.edges)
-    .filter((e) => searchable(e) && searchable(state.graph.nodes[e.from] ?? e) && searchable(state.graph.nodes[e.to] ?? e))
-    .map((e) => ({ id: e.id, kind: "edge" as const, text: edgeText(vault, e, state) }));
+  const view = materialize(state, ["proposed", "approved"]);
+  const nodes = Object.values(view.nodes).map((n) => ({ id: n.id, kind: "node" as const, text: nodeText(vault, n) }));
+  const edges = Object.values(view.edges).map((e) => ({ id: e.id, kind: "edge" as const, text: edgeText(vault, e, view) }));
   return [...nodes, ...edges];
 }
 

@@ -55,3 +55,11 @@ export class HlcClock {
     }
   }
 }
+
+/** Accepts an HLC string or anything Date.parse understands. */
+export function toPosition(at: string): string {
+  if (/^\d{15}\.\d{6}\./.test(at)) return at;
+  const ms = Date.parse(at);
+  if (Number.isNaN(ms)) throw new Error(`Cannot read time position "${at}"`);
+  return hlcAtTime(ms);
+}
