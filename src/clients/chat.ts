@@ -53,6 +53,8 @@ beside a live view of their graph; they are not a developer and never see tool n
   then decompose it with \`add_to_graph\` using the returned entry id. Quote their message
   exactly; every quote is highlighted in their message, so keep quotes short and precise.
   In this app use \`record_entry\`, never \`add_entry\`.
+- If a tool call fails, read the error, fix the call and try again. Never say you changed
+  something unless the tool returned it.
 - Questions, corrections and small talk are not entries; answer or act on the graph directly.
 - Keep replies short, warm and plain. Say what you changed in a sentence or two and ask
   whether it fits; the app already shows each change as a card with an Undo button.`;
@@ -94,6 +96,33 @@ export function contextTokensOf(usage: LanguageModelUsage | undefined, fallback:
   return (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0) || fallback;
 }
 
+/** Fields that are lists; small models sometimes send a single string instead. */
+const LISTS = new Set(["quotes", "ids", "parts"]);
+
+function coerce(value: unknown, key?: string): unknown {
+  if (Array.isArray(value)) return value.map((v) => coerce(v));
+  if (typeof value === "string" && key && LISTS.has(key)) return [value];
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== null).map(([k, v]) => [k, coerce(v, k)]));
+}
+
+/** Fixes the usual slips in a tool call's JSON input (a string for a list, null for absent); undefined when there is nothing to fix. */
+export function repairInput(input: string): string | undefined {
+  let value: unknown;
+  try {
+    value = JSON.parse(input);
+  } catch {
+    return undefined;
+  }
+  const fixed = JSON.stringify(coerce(value));
+  return fixed === JSON.stringify(value) ? undefined : fixed;
+}
+
+/** A rough count (about four characters a token) for servers that report no usage. */
+export function estimateTokens(...parts: unknown[]): number {
+  return Math.ceil(JSON.stringify(parts).length / 4);
+}
+
 /** Runs one turn: loads the conversation, streams the answer, and stores it when done. */
 export async function respondToChat(vault: Vault, request: ChatRequest, model?: LanguageModel): Promise<Response> {
   const { chat, budget } = vault.chat.open(request.id);
@@ -102,18 +131,24 @@ export async function respondToChat(vault: Vault, request: ChatRequest, model?: 
   const actor = modelActor(settings.model);
   const messages = [...(chat.messages as ChatMessage[]), request.message];
   const tools = chatTools(vault, actor, messageText(request.message));
+  const instructions = chatInstructions(vault.explore.selection().items);
+  const estimate = estimateTokens(instructions, messages);
   let last: LanguageModelUsage | undefined;
   const result = streamText({
     model: model ?? chatModel(settings),
-    instructions: chatInstructions(vault.explore.selection().items),
+    instructions,
     messages: await convertToModelMessages(messages, { tools, ignoreIncompleteToolCalls: true }),
     tools,
     stopWhen: isStepCount(MAX_STEPS),
+    repairToolCall: async ({ toolCall }) => {
+      const input = repairInput(toolCall.input);
+      return input ? { ...toolCall, input } : null;
+    },
     onStepEnd: ({ usage }) => {
       last = usage;
     },
   });
-  const tokens = () => contextTokensOf(last, budget.contextTokens);
+  const tokens = () => contextTokensOf(last, Math.max(estimate, budget.contextTokens));
   return createUIMessageStreamResponse({
     stream: toUIMessageStream<ToolSet, ChatMessage>({
       stream: result.stream,

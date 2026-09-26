@@ -24,11 +24,11 @@ const assertion = {
   nodes: z
     .array(
       z.object({
-        ref: z.string(),
-        existing_id: z.string().optional(),
+        ref: z.string().describe("A short name for this node within the call, used as an edge endpoint"),
+        existing_id: z.string().nullish(),
         type: z.string(),
         label: z.string(),
-        attributes: z.record(z.string(), z.unknown()).optional(),
+        attributes: z.record(z.string(), z.unknown()).nullish(),
         confidence: z.number().min(0).max(1),
         quotes: z.array(z.string()).min(1).describe("Verbatim passages from the Entry"),
       }),
@@ -37,10 +37,10 @@ const assertion = {
   edges: z
     .array(
       z.object({
-        from: z.string(),
-        to: z.string(),
+        from: z.string().describe("A node's ref from this call, or an existing node id"),
+        to: z.string().describe("A node's ref from this call, or an existing node id"),
         type: z.string(),
-        sign: z.enum(["+", "-"]).optional(),
+        sign: z.enum(["+", "-"]).nullish(),
         confidence: z.number().min(0).max(1),
         quotes: z.array(z.string()).min(1),
       }),
@@ -48,7 +48,18 @@ const assertion = {
     .default([]),
 };
 
+/** Models often send `null` for a field they leave out; treat it as absent. */
+export function withoutNulls(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withoutNulls);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== null).map(([k, v]) => [k, withoutNulls(v)]));
+}
+
 export function toolSpecs(vault: Vault, actor: ActorId): ToolSpec[] {
+  return specsFor(vault, actor).map((spec) => ({ ...spec, run: (args) => spec.run(withoutNulls(args) as Record<string, unknown>) }));
+}
+
+function specsFor(vault: Vault, actor: ActorId): ToolSpec[] {
   const { explore, map, ingest } = vault;
   const text = (args: Record<string, unknown>, key: string) => String(args[key] ?? "");
   const ids = (args: Record<string, unknown>) => args.ids as string[];
@@ -60,23 +71,23 @@ export function toolSpecs(vault: Vault, actor: ActorId): ToolSpec[] {
       tier: "read",
       description:
         "Find the Nodes and Edges most relevant to what the user is talking about: pass their words (or a paraphrase). Hybrid lexical + embedding retrieval, fused and reranked. Use this to resolve names ('the hiding part', 'that loop about control') to ids.",
-      input: { query: z.string(), limit: z.number().int().min(1).max(50).optional() },
+      input: { query: z.string(), limit: z.number().int().min(1).max(50).nullish() },
       run: (a) => explore.searchGraph(text(a, "query"), (a.limit as number | undefined) ?? 10),
     },
     { name: "search_evidence", tier: "read", description: "Case-insensitive search over Entry text; returns spans and the Nodes/Edges citing them.", input: { query: z.string() }, run: (a) => explore.searchEvidence(text(a, "query")) },
     { name: "trace_roots", tier: "read", description: "Follow derivational Edges upstream from a Node and rank candidate roots by downstream support.", input: { id: z.string() }, run: (a) => explore.traceRoots(text(a, "id")) },
     { name: "find_loops", tier: "read", description: "Feedback loops over causal Edges: polarity, each step with sign, confidence and quotes, outside brakes/accelerators, what the loop drives, and its least certain link. Offer implications as questions, not verdicts.", input: {}, run: () => explore.loopDetails() },
-    { name: "find_related", tier: "read", description: "Related past Entries and Nodes for a text or Node id.", input: { text: z.string().optional(), nodeId: z.string().optional() }, run: (a) => explore.findRelated(a) },
+    { name: "find_related", tier: "read", description: "Related past Entries and Nodes for a text or Node id.", input: { text: z.string().nullish(), nodeId: z.string().nullish() }, run: (a) => explore.findRelated(a) },
     { name: "graph_at", tier: "read", description: "The Graph as it was at a time (ISO date) or HLC position.", input: { t: z.string() }, run: (a) => map.graphAt(text(a, "t")) },
     { name: "get_entry", tier: "read", description: "An Entry's full text and which Nodes/Edges cite which passages.", input: { id: z.string() }, run: (a) => explore.entry(text(a, "id")) },
     { name: "list_entries", tier: "read", description: "The latest version of every Entry, newest first.", input: {}, run: () => explore.entries() },
     { name: "get_selection", tier: "read", description: "The Nodes and Edges the user currently has selected in the graph view. Use when the user says 'these', 'the selected ones' or similar.", input: {}, run: () => explore.selection() },
-    { name: "recent_changes", tier: "read", description: "What changed recently, grouped by Session (newest first): what was added, renamed, removed, merged. Use a Session id with undo_session.", input: { limit: z.number().int().min(1).max(100).optional() }, run: (a) => explore.changes((a.limit as number | undefined) ?? 20) },
+    { name: "recent_changes", tier: "read", description: "What changed recently, grouped by Session (newest first): what was added, renamed, removed, merged. Use a Session id with undo_session.", input: { limit: z.number().int().min(1).max(100).nullish() }, run: (a) => explore.changes((a.limit as number | undefined) ?? 20) },
     {
       name: "add_entry",
       tier: "write",
       description: "Add a raw Entry (journal, transcript, reflection). By default the local model decomposes it; pass interpret=false to decompose it yourself with `add_to_graph`.",
-      input: { content: z.string(), title: z.string().optional(), format: z.enum(["text", "markdown", "chat-json"]).optional(), interpret: z.boolean().optional() },
+      input: { content: z.string(), title: z.string().nullish(), format: z.enum(["text", "markdown", "chat-json"]).nullish(), interpret: z.boolean().nullish() },
       run: (a) => ingest.addEntry(a as never, { actor, interpret: a.interpret !== false }),
     },
     {
@@ -91,21 +102,21 @@ export function toolSpecs(vault: Vault, actor: ActorId): ToolSpec[] {
       name: "revise_entry",
       tier: "write",
       description: "Replace an Entry's text with an edited version (e.g. a typo fix). Evidence moves to the same passages in the new text. With interpret=false, returns the cited items (label, attributes, old quotes, moved) so you can fix them yourself with `amend` and add new material with `add_to_graph`.",
-      input: { entry: z.string(), content: z.string(), interpret: z.boolean().optional() },
+      input: { entry: z.string(), content: z.string(), interpret: z.boolean().nullish() },
       run: (a) => ingest.reviseEntry(text(a, "entry"), text(a, "content"), { actor, interpret: a.interpret !== false }),
     },
     {
       name: "amend",
       tier: "write",
       description: "Rename or correct attributes of existing Nodes/Edges.",
-      input: { changes: z.array(z.object({ id: z.string(), label: z.string().optional(), attributes: z.record(z.string(), z.unknown()).optional() })).min(1) },
+      input: { changes: z.array(z.object({ id: z.string(), label: z.string().nullish(), attributes: z.record(z.string(), z.unknown()).nullish() })).min(1) },
       run: (a) => ingest.amend(actor, a.changes as never),
     },
     {
       name: "remove",
       tier: "write",
       description: "Take Nodes/Edges off the map (kept in history; restore brings them back). Resolve 'the selected ones' with get_selection.",
-      input: { ids: z.array(z.string()).min(1), reason: z.string().optional() },
+      input: { ids: z.array(z.string()).min(1), reason: z.string().nullish() },
       run: (a) => map.remove(ids(a), actor, a.reason as string | undefined),
     },
     {

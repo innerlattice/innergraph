@@ -1,7 +1,8 @@
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { chatInstructions, chatTools, contextTokensOf, messageText, respondToChat } from "../src/clients/chat.js";
+import { chatInstructions, chatTools, contextTokensOf, estimateTokens, messageText, repairInput, respondToChat } from "../src/clients/chat.js";
+import { withoutNulls } from "../src/clients/tools.js";
 import { createApp } from "../src/clients/http.js";
 import { ChatFullError, budgetLevel, titleFrom } from "../src/managers/chatManager.js";
 import { ChatModelError, chatModel, modelActor } from "../src/utilities/chatModel.js";
@@ -135,6 +136,27 @@ describe("chat turns", () => {
     const res = await app.request("/api/chat", { method: "POST", body: JSON.stringify({ id: "full", message: userMessage() }), headers: { "content-type": "application/json" } });
     expect(res.status).toBe(409);
     expect((await res.json()).error).toContain("full");
+  });
+});
+
+describe("tool input from small models", () => {
+  it("is repaired when a list comes as a string or a field as null", () => {
+    expect(repairInput('{"nodes":[{"quotes":"I froze","existing_id":null}],"ids":["a"]}')).toBe('{"nodes":[{"quotes":["I froze"]}],"ids":["a"]}');
+    expect(repairInput('{"nodes":[{"quotes":["ok"]}]}')).toBeUndefined();
+    expect(repairInput("not json")).toBeUndefined();
+    expect(withoutNulls({ a: null, b: [{ c: null, d: 1 }], e: "x" })).toEqual({ b: [{ d: 1 }], e: "x" });
+    expect(estimateTokens("abcd".repeat(10))).toBeGreaterThanOrEqual(10);
+  });
+
+  it("is repaired during a turn so the call goes through", async () => {
+    const entryId = () => t.vault.explore.entries()[0].id;
+    const model = scripted([
+      () => [toolCall("c1", "record_entry", {}), finish("tool-calls")],
+      () => [toolCall("c2", "add_to_graph", { entry: entryId(), nodes: [{ ref: "f", existing_id: null, type: "process_node", label: "Freezing", confidence: 0.8, quotes: "I froze in the meeting" }] }), finish("tool-calls")],
+      () => [...text("Done."), finish("stop")],
+    ]);
+    await (await respondToChat(t.vault, { id: "r", message: userMessage() }, model)).text();
+    expect(Object.values(t.vault.explore.graph().nodes).map((n) => n.label)).toContain("Freezing");
   });
 });
 

@@ -15,7 +15,7 @@ export class ChatModelError extends Error {}
 
 export function chatModel(settings: ChatModelSettings): LanguageModel {
   if (settings.provider === "local") {
-    return createOpenAICompatible({ name: "local", baseURL: settings.baseUrl, apiKey: settings.apiKey })(settings.model);
+    return createOpenAICompatible({ name: "local", baseURL: settings.baseUrl, apiKey: settings.apiKey, includeUsage: true })(settings.model);
   }
   if (!settings.apiKey) throw new ChatModelError("Add an OpenRouter key in Settings, or switch to a local model.");
   return createOpenRouter({ apiKey: settings.apiKey })(settings.model);
