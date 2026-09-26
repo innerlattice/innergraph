@@ -23,7 +23,7 @@ function Highlight(props: { segment: Segment; onSelect: (ids: string[]) => void 
       title={title}
       onClick={() => !pending && props.onSelect(segment.ids)}
       onKeyDown={(e) => e.key === "Enter" && !pending && props.onSelect(segment.ids)}
-      className={`rounded-sm px-0.5 text-inherit transition ${pending ? "animate-pulse bg-sage-100" : "bg-clay-100 decoration-clay-300 underline-offset-4 hover:bg-clay-200 hover:underline"}`}
+      className={`rounded-sm box-decoration-clone text-inherit transition ${pending ? "animate-pulse bg-sage-100" : "bg-clay-200/60 decoration-clay-400 underline-offset-4 hover:bg-clay-200 hover:underline"}`}
     >
       {segment.text}
     </mark>

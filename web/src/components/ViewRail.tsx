@@ -17,7 +17,7 @@ export function ViewRail(props: { active?: PaneName; onToggle: (view: PaneName) 
     <div className="relative w-12 shrink-0">
       <nav
         aria-label="Views"
-        className="group/views absolute inset-y-0 right-0 z-40 flex w-12 flex-col gap-1 overflow-hidden border-l border-stone-200/70 bg-stone-100/95 px-1.5 py-4 backdrop-blur transition-[width,box-shadow] duration-200 hover:w-48 hover:shadow-2xl focus-within:w-48"
+        className="group/views absolute inset-y-0 right-0 z-40 flex w-12 flex-col gap-1 overflow-hidden border-l border-stone-200/70 bg-stone-100/95 px-1.5 py-4 backdrop-blur transition-[width,box-shadow] duration-200 hover:w-48 hover:shadow-2xl has-[:focus-visible]:w-48"
       >
         {VIEWS.map((v) => {
           const on = props.active === v.view;
@@ -31,7 +31,7 @@ export function ViewRail(props: { active?: PaneName; onToggle: (view: PaneName) 
               className={`flex h-9 items-center gap-3 rounded-xl px-2.5 text-sm transition ${on ? "bg-white text-clay-600 shadow-sm" : "text-stone-500 hover:bg-stone-200/70 hover:text-stone-900"}`}
             >
               <span className="shrink-0">{v.icon}</span>
-              <span className="whitespace-nowrap opacity-0 transition-opacity group-hover/views:opacity-100 group-focus-within/views:opacity-100">{v.label}</span>
+              <span className="whitespace-nowrap opacity-0 transition-opacity group-hover/views:opacity-100 group-has-[:focus-visible]/views:opacity-100">{v.label}</span>
             </button>
           );
         })}

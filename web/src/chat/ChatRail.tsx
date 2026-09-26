@@ -27,7 +27,7 @@ function RailButton(props: { icon: ReactNode; label: string; onClick: () => void
   return (
     <button type="button" onClick={props.onClick} aria-label={props.label} className="flex h-9 w-full items-center gap-3 rounded-xl px-2.5 text-sm text-stone-600 transition hover:bg-stone-200/70 hover:text-stone-900">
       <span className="shrink-0">{props.icon}</span>
-      <span className="truncate opacity-0 transition-opacity group-hover/rail:opacity-100 group-focus-within/rail:opacity-100">{props.label}</span>
+      <span className="truncate opacity-0 transition-opacity group-hover/rail:opacity-100 group-has-[:focus-visible]/rail:opacity-100">{props.label}</span>
     </button>
   );
 }
@@ -69,7 +69,7 @@ export function ChatRail(props: ChatRailProps) {
     <div className="relative w-14 shrink-0">
       <nav
         aria-label="Conversations"
-        className="group/rail absolute inset-y-0 left-0 z-40 flex w-14 flex-col gap-1 overflow-hidden border-r border-stone-200/70 bg-stone-100/95 px-2 py-4 backdrop-blur transition-[width,box-shadow] duration-200 hover:w-72 hover:shadow-2xl focus-within:w-72"
+        className="group/rail absolute inset-y-0 left-0 z-40 flex w-14 flex-col gap-1 overflow-hidden border-r border-stone-200/70 bg-stone-100/95 px-2 py-4 backdrop-blur transition-[width,box-shadow] duration-200 hover:w-72 hover:shadow-2xl has-[:focus-visible]:w-72"
       >
         <div className="mb-3 flex h-8 items-center gap-3 px-2.5">
           <span className="h-3 w-3 shrink-0 rounded-full bg-clay-400" />
@@ -80,7 +80,7 @@ export function ChatRail(props: ChatRailProps) {
           <MessageCircle size={18} className="shrink-0" />
           <span className="text-xs tracking-wide uppercase opacity-0 transition-opacity group-hover/rail:opacity-100">Conversations</span>
         </div>
-        <div className="mt-1 min-h-0 flex-1 overflow-y-auto opacity-0 transition-opacity group-hover/rail:opacity-100 group-focus-within/rail:opacity-100">
+        <div className="mt-1 min-h-0 flex-1 overflow-y-auto opacity-0 transition-opacity group-hover/rail:opacity-100 group-has-[:focus-visible]/rail:opacity-100">
           {props.chats.length === 0 ? <p className="px-2.5 py-2 text-xs whitespace-nowrap text-stone-400">Nothing here yet.</p> : null}
           {props.chats.map((chat) => (
             <ChatRow key={chat.id} chat={chat} active={chat.id === props.active} onOpen={props.onOpen} onRename={props.onRename} onDelete={props.onDelete} />

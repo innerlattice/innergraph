@@ -21,7 +21,7 @@ export function SelectionPanel(props: {
         <h3 className="font-serif text-xl text-stone-800">{props.ids.length} selected</h3>
         <Button onClick={props.onClear}>Clear</Button>
       </header>
-      <p className="text-xs text-stone-500">Your agent can see this selection: ask it about “the selected items”.</p>
+      <p className="text-xs text-stone-500">The assistant sees this selection: ask about “these”.</p>
       {items.length > 0 ? <ItemActions ids={props.ids} items={states} onDone={props.onDone} count /> : null}
       <ErrorNote error={selection.error} />
       <ul className="space-y-1">

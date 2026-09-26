@@ -75,7 +75,7 @@ export function LoopCard(props: { loop: LoopView; onOpen: (focus: string) => voi
 export function LoopsView(props: { navigate: Navigate }) {
   const loops = useAsync(api.loops);
   return (
-    <Page title="Loops" subtitle="Cycles over causal edges. A loop is a pattern to notice, not a problem to fix. Ask your agent what one might mean for you.">
+    <Page title="Loops" subtitle="Cycles over causal edges. A loop is a pattern to notice, not a problem to fix. Ask the assistant what one might mean for you.">
       <ErrorNote error={loops.error} />
       <div className="space-y-4">
         {loops.data?.length === 0 ? <Empty>No feedback loops yet.</Empty> : null}
