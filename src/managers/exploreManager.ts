@@ -1,0 +1,150 @@
+// ExploreManager: queries and Projections (root tracing, loops, recall, evidence search).
+import { rolesOf } from "../access/schemaAccess.js";
+import type { VaultAccess } from "../access/vaultAccess.js";
+import type { AnyEvent, EntryRecord, Evidence, Graph, GraphEdge, GraphNode, Schema } from "../core/types.js";
+import { type AnalysisEngine, type Loop, type RootTrace, activeGraph } from "../engines/analysisEngine.js";
+import type { RecallEngine } from "../engines/recallEngine.js";
+import { byteOffset } from "../utilities/crypto.js";
+import { type RelatedItem, buildCorpus, describeMatches } from "./recallCorpus.js";
+import { requireFound } from "./sessions.js";
+
+export interface ExploreDeps {
+  vault: VaultAccess;
+  analysis: AnalysisEngine;
+  recall: RecallEngine;
+}
+
+export interface EvidenceView extends Evidence {
+  text: string;
+  entryTitle: string;
+}
+
+export interface NodeView {
+  node: GraphNode;
+  evidence: EvidenceView[];
+  outgoing: GraphEdge[];
+  incoming: GraphEdge[];
+  derivedFrom: GraphNode[];
+  derivedInto: GraphNode[];
+}
+
+export interface EvidenceHit extends Evidence {
+  entryTitle: string;
+  text: string;
+  citedBy: string[];
+}
+
+export interface EntryView {
+  entry: EntryRecord;
+  text: string;
+  citations: { target: string; label: string; evidence: Evidence }[];
+}
+
+function overlaps(a: Evidence, b: Evidence): boolean {
+  return a.entry === b.entry && a.start < b.end && b.start < a.end;
+}
+
+function citationsOf(graph: Graph) {
+  return [...Object.values(graph.nodes), ...Object.values(graph.edges)].flatMap((item) =>
+    item.evidence.map((evidence) => ({ target: item.id, label: "label" in item ? item.label : item.type, evidence })),
+  );
+}
+
+function findAll(text: string, query: string): number[] {
+  const lower = text.toLowerCase();
+  const needle = query.toLowerCase();
+  const hits: number[] = [];
+  for (let i = lower.indexOf(needle); i >= 0 && needle; i = lower.indexOf(needle, i + needle.length)) hits.push(i);
+  return hits;
+}
+
+export class ExploreManager {
+  constructor(private readonly deps: ExploreDeps) {}
+
+  schema(): Schema | null {
+    return this.deps.vault.state().schema;
+  }
+
+  graph(options: { includeSuperseded?: boolean } = {}): Graph {
+    const graph = this.deps.vault.state().graph;
+    return options.includeSuperseded ? graph : activeGraph(graph);
+  }
+
+  node(id: string): NodeView {
+    const graph = this.deps.vault.state().graph;
+    const node = requireFound(graph.nodes[id], `Node ${id}`);
+    const edges = Object.values(graph.edges);
+    return {
+      node,
+      evidence: node.evidence.map((e) => this.evidenceView(e)),
+      outgoing: edges.filter((e) => e.from === id),
+      incoming: edges.filter((e) => e.to === id),
+      derivedFrom: node.derivedFrom.map((p) => graph.nodes[p]).filter(Boolean),
+      derivedInto: Object.values(graph.nodes).filter((n) => n.derivedFrom.includes(id)),
+    };
+  }
+
+  traceRoots(id: string): RootTrace {
+    const state = this.deps.vault.state();
+    requireFound(state.graph.nodes[id], `Node ${id}`);
+    return this.deps.analysis.traceRoots(state.graph, rolesOf(state.schema), id);
+  }
+
+  findLoops(): Loop[] {
+    const state = this.deps.vault.state();
+    return this.deps.analysis.findLoops(state.graph, rolesOf(state.schema));
+  }
+
+  groups(): string[][] {
+    const state = this.deps.vault.state();
+    return this.deps.analysis.groups(state.graph, rolesOf(state.schema));
+  }
+
+  /** Offered, never pushed: returns related material only when asked. Parked Nodes never appear. */
+  findRelated(query: { text?: string; nodeId?: string }): RelatedItem[] {
+    const { vault, recall } = this.deps;
+    const state = vault.state();
+    const node = query.nodeId ? requireFound(state.graph.nodes[query.nodeId], `Node ${query.nodeId}`) : undefined;
+    const text = node ? [node.label, ...node.evidence.map((e) => vault.readSpan(e))].join("\n") : (query.text ?? "");
+    const exclude = node ? [node.id, ...node.evidence.map((e) => e.entry)] : [];
+    return describeMatches(vault, state, recall.recall(text, buildCorpus(vault, state), { exclude }));
+  }
+
+  searchEvidence(query: string, limit = 50): EvidenceHit[] {
+    const state = this.deps.vault.state();
+    const citations = citationsOf(state.graph);
+    return Object.values(state.entries)
+      .flatMap((entry) => this.hitsIn(entry, query, citations))
+      .slice(0, limit);
+  }
+
+  entries(): EntryRecord[] {
+    return Object.values(this.deps.vault.state().entries).sort((a, b) => b.addedAt.localeCompare(a.addedAt));
+  }
+
+  entry(id: string): EntryView {
+    const state = this.deps.vault.state();
+    const entry = requireFound(state.entries[id], `Entry ${id}`);
+    const citations = citationsOf(state.graph).filter((c) => c.evidence.entry === id);
+    return { entry, text: this.deps.vault.readText(id), citations };
+  }
+
+  timeline(limit = 200): AnyEvent[] {
+    return this.deps.vault.events().slice(-limit).reverse();
+  }
+
+  private evidenceView(e: Evidence): EvidenceView {
+    const title = this.deps.vault.state().entries[e.entry]?.title ?? e.entry;
+    return { ...e, text: this.deps.vault.readSpan(e), entryTitle: title };
+  }
+
+  private hitsIn(entry: EntryRecord, query: string, citations: ReturnType<typeof citationsOf>): EvidenceHit[] {
+    const text = this.deps.vault.readText(entry.id);
+    return findAll(text, query).map((index) => {
+      const span = { entry: entry.id, start: byteOffset(text, index), end: byteOffset(text, index + query.length) };
+      const context = text.slice(Math.max(0, index - 80), index + query.length + 80);
+      const citedBy = citations.filter((c) => overlaps(c.evidence, span)).map((c) => c.target);
+      return { ...span, entryTitle: entry.title, text: context, citedBy };
+    });
+  }
+}
