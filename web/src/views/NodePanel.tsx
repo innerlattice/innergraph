@@ -13,6 +13,8 @@ export interface NodePanelProps {
   onChanged: () => void;
   onHighlight: (ids: string[]) => void;
   navigate: Navigate;
+  /** Changes when the Log moves, so the panel refreshes live. */
+  version?: string;
 }
 
 type Run = (work: () => Promise<unknown>) => void;
@@ -124,8 +126,8 @@ function RootsList(props: { trace?: RootTrace; labels: Record<string, string> })
 }
 
 export function NodePanel(props: NodePanelProps) {
-  const { id, labels, readOnly, onChanged, onHighlight, navigate } = props;
-  const view = useAsync(() => api.node(id), [id]);
+  const { id, labels, readOnly, onChanged, onHighlight, navigate, version } = props;
+  const view = useAsync(() => api.node(id), [id, version]);
   const [trace, setTrace] = useState<RootTrace>();
   const [related, setRelated] = useState<RelatedItem[]>();
   const [error, setError] = useState<string>();

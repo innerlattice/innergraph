@@ -71,6 +71,7 @@ export function toolSpecs(vault: Vault, actor: ActorId): ToolSpec[] {
     { name: "find_loops", tier: "read", description: "Feedback loops over causal Edges, classified reinforcing or balancing.", input: {}, run: () => explore.findLoops() },
     { name: "find_related", tier: "read", description: "Related past Entries and Nodes for a text or Node id. Parked Nodes are never returned.", input: { text: z.string().optional(), nodeId: z.string().optional() }, run: (a) => explore.findRelated(a) },
     { name: "graph_at", tier: "read", description: "The Graph as it was at a time (ISO date) or HLC position.", input: { t: z.string() }, run: (a) => map.graphAt(text(a, "t")) },
+    { name: "get_selection", tier: "read", description: "The Nodes and Edges the user currently has selected in the graph view. Use when the user says 'these', 'the selected ones' or similar.", input: {}, run: () => explore.selection() },
     { name: "list_proposals", tier: "read", description: "Proposals with Events awaiting review, and why each was surfaced.", input: { all: z.boolean().optional() }, run: (a) => ingest.listProposals(a.all ? "all" : "pending") },
     {
       name: "add_entry",

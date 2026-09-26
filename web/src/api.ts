@@ -1,13 +1,13 @@
 // Typed client for the local HTTP API. Types come straight from the core.
 import type { Loop, RootTrace } from "../../src/engines/analysisEngine";
-import type { EntryView, EvidenceHit, NodeView } from "../../src/managers/exploreManager";
+import type { EntryView, EvidenceHit, NodeView, Selection } from "../../src/managers/exploreManager";
 import type { IngestResult, ProposalView, ReviewDecision } from "../../src/managers/ingestManager";
 import type { ChangeResult, GraphAt } from "../../src/managers/mapManager";
 import type { RelatedItem } from "../../src/managers/recallCorpus";
 import type { AnyEvent, EntryRecord, Graph, GraphEdge, GraphNode, Schema, Status } from "../../src/core/types";
 import type { Job } from "../../src/utilities/jobQueue";
 
-export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, GraphEdge, GraphNode, IngestResult, Job, Loop, NodeView, ProposalView, RelatedItem, RootTrace, Schema, Status };
+export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, GraphEdge, GraphNode, IngestResult, Job, Loop, NodeView, ProposalView, RelatedItem, RootTrace, Schema, Selection, Status };
 
 export interface VaultStatus {
   model: string;
@@ -17,8 +17,8 @@ export interface VaultStatus {
 
 export class ApiError extends Error {}
 
-export async function request<T>(path: string, body?: unknown, fetchImpl: typeof fetch = fetch): Promise<T> {
-  const init: RequestInit = body === undefined ? {} : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
+export async function request<T>(path: string, body?: unknown, fetchImpl: typeof fetch = fetch, method = "POST"): Promise<T> {
+  const init: RequestInit = body === undefined ? {} : { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
   const res = await fetchImpl(`/api${path}`, init);
   const data = await res.json();
   if (!res.ok) throw new ApiError(data?.error ?? `Request failed (${res.status})`);
@@ -47,5 +47,7 @@ export const api = {
   setStatus: (id: string, status: Status) => request<ChangeResult>(`/items/${enc(id)}/status`, { status }),
   rename: (id: string, label: string) => request<ChangeResult>(`/items/${enc(id)}/attributes`, { label }),
   split: (id: string, labels: string[]) => request<ChangeResult>(`/nodes/${enc(id)}/split`, { parts: labels.map((label) => ({ label })) }),
+  selection: () => request<Selection>("/selection"),
+  setSelection: (ids: string[]) => request<Selection>("/selection", { ids }, fetch, "PUT"),
   merge: (sources: string[], label: string) => request<ChangeResult>("/merge", { sources, into: { label } }),
 };

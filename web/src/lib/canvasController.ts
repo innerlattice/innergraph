@@ -42,9 +42,34 @@ export function render(cy: Core, elements: ElementDefinition[], positions: Posit
   return new Set(ids);
 }
 
-export function applySelection(cy: Core | undefined, selected?: string): void {
-  cy?.elements().unselect();
-  if (selected) cy?.getElementById(selected).select();
+/** Makes the canvas selection match `ids` without touching elements already in the right state. */
+export function applySelection(cy: Core | undefined, ids: string[]): void {
+  if (!cy) return;
+  const wanted = new Set(ids);
+  cy.elements(":selected").filter((el) => !wanted.has(el.id())).unselect();
+  for (const id of ids) cy.getElementById(id).select();
+}
+
+export function selectedIds(cy: Core): string[] {
+  return cy.elements(":selected").map((el) => el.id());
+}
+
+const ZOOM_SPEED = 0.01;
+
+/** Trackpad-friendly wheel: two-finger scroll pans; pinch (ctrl+wheel) zooms at the pointer. */
+export function wheelToViewport(cy: Core, e: { deltaX: number; deltaY: number; ctrlKey: boolean; metaKey: boolean; offsetX: number; offsetY: number }): void {
+  if (e.ctrlKey || e.metaKey) {
+    const level = cy.zoom() * Math.exp(-e.deltaY * ZOOM_SPEED);
+    cy.zoom({ level, renderedPosition: { x: e.offsetX, y: e.offsetY } });
+  } else {
+    cy.panBy({ x: -e.deltaX, y: -e.deltaY });
+  }
+}
+
+/** Space held: drag pans instead of drawing a selection box. */
+export function setPanMode(cy: Core, panning: boolean): void {
+  cy.userPanningEnabled(panning);
+  cy.boxSelectionEnabled(!panning);
 }
 
 /** Highlights the given nodes and the edges between them. */
@@ -54,4 +79,22 @@ export function applyHighlight(cy: Core | undefined, highlight: string[]): void 
   const ids = new Set(highlight);
   for (const id of highlight) cy.getElementById(id).addClass("highlight");
   cy.edges().filter((e) => ids.has(e.source().id()) && ids.has(e.target().id())).addClass("highlight");
+}
+
+type KeyLike = { code: string; key: string; target: EventTarget | null };
+
+export function isTyping(target: EventTarget | null): boolean {
+  const el = target as { tagName?: string; isContentEditable?: boolean } | null;
+  return Boolean(el?.isContentEditable) || ["INPUT", "TEXTAREA", "SELECT"].includes(el?.tagName ?? "");
+}
+
+/** Space starts panning; Escape clears the selection. Ignored while typing in a field. */
+export function onKeyDown(cy: Core, e: KeyLike): void {
+  if (isTyping(e.target)) return;
+  if (e.code === "Space") setPanMode(cy, true);
+  if (e.key === "Escape") cy.elements().unselect();
+}
+
+export function onKeyUp(cy: Core, e: KeyLike): void {
+  if (e.code === "Space") setPanMode(cy, false);
 }

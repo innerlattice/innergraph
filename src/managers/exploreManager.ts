@@ -72,6 +72,29 @@ function findAll(text: string, query: string): number[] {
   return hits;
 }
 
+export interface SelectionItem {
+  id: string;
+  kind: "node" | "edge";
+  type: string;
+  label: string;
+  status: string;
+}
+
+export interface Selection {
+  ids: string[];
+  at: string;
+  items: SelectionItem[];
+}
+
+function describeItem(graph: Graph, id: string): SelectionItem | undefined {
+  const node = graph.nodes[id];
+  if (node) return { id, kind: "node", type: node.type, label: node.label, status: node.status };
+  const edge = graph.edges[id];
+  if (!edge) return undefined;
+  const label = `${graph.nodes[edge.from]?.label ?? edge.from} —${edge.type}→ ${graph.nodes[edge.to]?.label ?? edge.to}`;
+  return { id, kind: "edge", type: edge.type, label, status: edge.status };
+}
+
 export class ExploreManager {
   constructor(private readonly deps: ExploreDeps) {}
 
@@ -141,6 +164,24 @@ export class ExploreManager {
     const entry = requireFound(state.entries[id], `Entry ${id}`);
     const citations = citationsOf(state.graph).filter((c) => c.evidence.entry === id);
     return { entry, text: this.deps.vault.readText(id), citations };
+  }
+
+  /** What the user currently has selected in the graph view. */
+  selection(): Selection {
+    const stored = this.deps.vault.readSetting<{ ids: string[]; at: string }>("selection") ?? { ids: [], at: "" };
+    const graph = this.deps.vault.state().graph;
+    const items = stored.ids.map((id) => describeItem(graph, id)).filter((i): i is SelectionItem => i !== undefined);
+    return { ...stored, items };
+  }
+
+  setSelection(ids: string[]): Selection {
+    this.deps.vault.writeSetting("selection", { ids: [...new Set(ids)], at: new Date().toISOString() });
+    return this.selection();
+  }
+
+  /** HLC of the latest Event; changes whenever anything (in any process) appends. */
+  position(): string {
+    return this.deps.vault.state().position;
   }
 
   timeline(limit = 200): AnyEvent[] {

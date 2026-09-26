@@ -108,6 +108,18 @@ export class VaultAccess {
     return this.readBlob(evidence.entry)?.subarray(evidence.start, evidence.end).toString("utf8") ?? "";
   }
 
+  // ---- Shared client state (not part of the Log) ------------------------------
+
+  /** Small JSON values shared between Clients, e.g. the graph selection. Never Events. */
+  readSetting<T>(key: string): T | undefined {
+    const raw = this.meta(`setting:${key}`);
+    return raw === undefined ? undefined : (JSON.parse(raw) as T);
+  }
+
+  writeSetting(key: string, value: unknown): void {
+    this.setMeta(`setting:${key}`, JSON.stringify(value));
+  }
+
   // ---- internals -----------------------------------------------------------------
 
   private seal(draft: AnyDraft, parent: string | undefined): AnyEvent {

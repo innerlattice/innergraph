@@ -65,6 +65,14 @@ describe("HTTP client", () => {
     expect((await call(app, "/api/graph?superseded=1")).status).toBe(200);
     expect((await call(app, "/api/related", { text: "shame" })).status).toBe(200);
 
+    const put = await app.request("/api/selection", { method: "PUT", body: JSON.stringify({ ids: [shame.id, "gone", shame.id] }), headers: { "content-type": "application/json" } });
+    expect((await put.json()).ids).toEqual([shame.id, "gone"]);
+    expect((await call(app, "/api/selection")).json.items.map((i: { label: string }) => i.label)).toEqual(["Shame"]);
+    const edgeId = Object.keys(graph.edges)[0];
+    await app.request("/api/selection", { method: "PUT", body: JSON.stringify({ ids: [edgeId] }), headers: { "content-type": "application/json" } });
+    expect((await call(app, "/api/selection")).json.items[0].kind).toBe("edge");
+    await app.request("/api/selection", { method: "PUT", body: JSON.stringify({}), headers: { "content-type": "application/json" } });
+
     await call(app, `/api/items/${shame.id}/attributes`, { label: "Shame (social)" });
     await call(app, `/api/items/${shame.id}/status`, { status: "accepted" });
     expect((await call(app, `/api/nodes/${shame.id}`)).json.node).toMatchObject({ label: "Shame (social)", status: "accepted" });
@@ -74,6 +82,20 @@ describe("HTTP client", () => {
     expect(merged.status).toBe(400);
     expect((await call(app, "/api/nodes/missing")).status).toBe(404);
     expect((await call(app, "/api/jobs/missing")).status).toBe(404);
+  });
+});
+
+describe("live stream", () => {
+  it("emits the Log position when it changes", async () => {
+    const app = createApp(t.vault);
+    const res = await app.request("/api/stream");
+    const reader = (res.body as ReadableStream<Uint8Array>).getReader();
+    const first = new TextDecoder().decode((await reader.read()).value);
+    expect(first).toContain("event: position");
+    t.vault.ingest.addEntry({ content: "live" }, { interpret: false });
+    const next = new TextDecoder().decode((await reader.read()).value);
+    expect(next).toContain("data:");
+    await reader.cancel();
   });
 });
 
@@ -108,6 +130,7 @@ describe("MCP client", () => {
     );
     expect(proposed.accepted).toHaveLength(1);
     expect(JSON.parse((await text("get_schema")).body).name).toBe("author");
+    expect(JSON.parse((await text("get_selection")).body).items).toEqual([]);
     expect(JSON.parse((await text("find_loops")).body)).toEqual([]);
     expect(JSON.parse((await text("list_proposals", { all: true })).body).length).toBe(2);
     expect(JSON.parse((await text("search_evidence", { query: "froze" })).body).length).toBeGreaterThan(0);
