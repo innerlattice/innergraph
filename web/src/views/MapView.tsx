@@ -98,6 +98,7 @@ function useMapData(index: number | undefined, showDeclined: boolean) {
   const loaded = useAsync(() => loadGraph(position), [position]);
   const graph = useMemo(() => (loaded.data ? visible(loaded.data, showDeclined) : undefined), [loaded.data, showDeclined]);
   const pending = useAsync(api.pending);
+  const duplicates = useAsync(api.duplicates);
   const proposed = useMemo(() => (position === undefined ? (pending.data?.assertions ?? NONE) : NONE), [pending.data, position]);
   const schema = status.data?.schema ?? null;
   const elements = useMemo(() => (graph ? toElements(graph, schema, proposed) : []), [graph, schema, proposed]);
@@ -106,14 +107,16 @@ function useMapData(index: number | undefined, showDeclined: boolean) {
     loaded.reload();
     pending.reload();
     positions.reload();
+    duplicates.reload();
   };
   useLive((head) => {
     setVersion(head);
     positions.reload();
     pending.reload();
+    duplicates.reload();
     if (index === undefined) loaded.reload();
   });
-  return { version, positions, graph, error: loaded.error, pending: pending.data, proposed, schema, elements, labels, refresh };
+  return { version, positions, graph, error: loaded.error, pending: pending.data, duplicates: duplicates.data, proposed, schema, elements, labels, refresh };
 }
 
 export function MapView(props: { focus?: string; navigate: Navigate }) {
@@ -122,7 +125,7 @@ export function MapView(props: { focus?: string; navigate: Navigate }) {
   const [highlight, setHighlight] = useState<string[]>([]);
   const [showDeclined, setShowDeclined] = useState(false);
   const [reviewed, setReviewed] = useState<Reviewed>();
-  const { version, positions, graph, error, pending, proposed, schema, elements, labels, refresh } = useMapData(index, showDeclined);
+  const { version, positions, graph, error, pending, duplicates, proposed, schema, elements, labels, refresh } = useMapData(index, showDeclined);
   const empty = graph && Object.keys(graph.nodes).length === 0 && proposed.length === 0;
   const onReviewed = (done: Reviewed) => {
     setReviewed(done.kind === "decline" ? done : undefined);
@@ -161,7 +164,7 @@ export function MapView(props: { focus?: string; navigate: Navigate }) {
     <div className="flex h-full flex-col">
       <TimeBar positions={positions.data ?? []} index={index} onChange={setIndex} onReverted={refresh} />
       <Legend schema={schema} showDeclined={showDeclined} onToggle={setShowDeclined} />
-      {index === undefined ? <ReviewBar proposed={proposed} pending={pending} graph={graph} onSelect={changeSelection} /> : null}
+      {index === undefined ? <ReviewBar proposed={proposed} pending={pending} graph={graph} duplicates={duplicates} onSelect={changeSelection} onCleaned={refresh} /> : null}
       <ErrorNote error={error} />
       <div className="flex min-h-0 flex-1">
         <div className="relative min-w-0 flex-1">

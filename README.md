@@ -50,9 +50,9 @@ npx tsx src/bin.ts schema schema/author.yaml    # apply a newer Schema version t
 
 | Tier | Tools |
 | --- | --- |
-| read | `get_schema`, `get_node`, `get_entry`, `list_entries`, `search_graph`, `search_evidence`, `trace_roots`, `find_loops`, `find_related`, `graph_at`, `get_selection`, `list_proposals` |
-| propose | `add_entry`, `propose`, `revise_entry`, `amend` |
-| commit | `approve`, `decline`, `review` |
+| read | `get_schema`, `get_node`, `get_entry`, `list_entries`, `search_graph`, `search_evidence`, `trace_roots`, `find_loops`, `find_related`, `graph_at`, `get_selection`, `list_proposals`, `find_duplicates` |
+| propose | `add_entry`, `propose`, `revise_entry`, `amend`, `merge_duplicates` |
+| commit | `approve`, `decline`, `review`, `restore`, `undo`, `revert` |
 
 Tools above a connection's tier are not registered at all.
 
@@ -110,6 +110,28 @@ npx tsx src/bin.ts serve --vault .experiments/best-case --port 4318
 `test/golden.test.ts` pins these down (e.g. entry 2 must yield the reinforcing
 Hider → Dissociator → Controller loop), so interpretation pipelines can be compared
 against them.
+
+## Look up before writing
+
+Every write path (local model, entry revisions, agents over MCP) resolves proposals against
+the graph before appending:
+
+- The model is shown the existing Nodes related to the Entry (all of them up to 60, then
+  per-sentence retrieval plus everything the Entry already supports).
+- A proposed Node that cites the same passage as an existing Node of the same type, or has
+  a near-identical label, is re-asserted instead of duplicated; a merely similar one is held
+  for review as "may duplicate X".
+- Edges are identified by (from, type, to); re-asserting one merges evidence.
+- Existing duplicates can be found and cleaned up (`find_duplicates`, `merge_duplicates`, or
+  "Clean up" in the graph view).
+
+## Undo
+
+The Log is append-only, so undo is a compensating Event and can itself be undone:
+`restore` brings back anything declined, `undo` reverses one Log Event (and the edges
+attached to what it touched), and `revert` returns the whole graph to any past point
+(with a preview). Declining in the graph view shows an Undo bar; "Show declined" makes
+retired items selectable.
 
 ## Quality gate
 

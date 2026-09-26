@@ -83,3 +83,26 @@ describe("proposed panel", () => {
     expect(screen.getByText("A —reinforces→ zz")).toBeTruthy();
   });
 });
+
+describe("duplicates notice", async () => {
+  const { DuplicatesNotice } = await import("./ReviewControls");
+  it("selects duplicates and cleans them up", async () => {
+    const onSelect = vi.fn();
+    const onCleaned = vi.fn();
+    render(<DuplicatesNotice groups={[{ kind: "edge", ids: ["a", "b"], reason: "same" }]} onSelect={onSelect} onCleaned={onCleaned} />);
+    fireEvent.click(screen.getByText("1 duplicate group"));
+    expect(onSelect).toHaveBeenCalledWith(["a", "b"]);
+    fireEvent.click(screen.getByText("Clean up"));
+    await waitFor(() => expect(onCleaned).toHaveBeenCalled());
+  });
+
+  it("reports failures and hides when there are none", async () => {
+    vi.stubGlobal("fetch", async () => new Response('{"error":"busy"}', { status: 400 }));
+    const { rerender } = render(<DuplicatesNotice groups={[{ kind: "node", ids: ["a"], reason: "x" }, { kind: "node", ids: ["b"], reason: "y" }]} onSelect={vi.fn()} onCleaned={vi.fn()} />);
+    fireEvent.click(screen.getByText("Clean up"));
+    expect(await screen.findByText("busy")).toBeTruthy();
+    expect(screen.getByText("2 duplicate groups")).toBeTruthy();
+    rerender(<DuplicatesNotice groups={[]} onSelect={vi.fn()} onCleaned={vi.fn()} />);
+    expect(screen.queryByText("Clean up")).toBeNull();
+  });
+});

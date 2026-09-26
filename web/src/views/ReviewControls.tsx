@@ -1,7 +1,7 @@
 // In-graph review: counts and quick selection, Approve/Decline actions, and a panel for a
 // single proposed (not yet merged) Node or Edge.
 import { useState } from "react";
-import { type Graph, type PendingChanges, type PendingItem, type ProposalView, api } from "../api";
+import { type DuplicateGroup, type Graph, type PendingChanges, type PendingItem, type ProposalView, api } from "../api";
 import { Button, ErrorNote } from "../components/ui";
 import { humanise } from "../lib/elements";
 import { actorLabel, describeEvent, spanText } from "../lib/format";
@@ -21,11 +21,40 @@ function otherTargets(pending: PendingChanges | undefined): string[] {
   });
 }
 
-export function ReviewBar(props: { proposed: PendingItem[]; pending?: PendingChanges; graph?: Graph; onSelect: (ids: string[]) => void }) {
+export function DuplicatesNotice(props: { groups: DuplicateGroup[]; onSelect: (ids: string[]) => void; onCleaned: () => void }) {
+  const [error, setError] = useState<string>();
+  if (props.groups.length === 0) return null;
+  const clean = () =>
+    api
+      .mergeDuplicates()
+      .then(props.onCleaned)
+      .catch((e: Error) => setError(e.message));
+  return (
+    <span className="flex items-center gap-2">
+      <button type="button" className="underline-offset-2 hover:underline" onClick={() => props.onSelect(props.groups.flatMap((g) => g.ids))}>
+        {props.groups.length} duplicate group{props.groups.length === 1 ? "" : "s"}
+      </button>
+      <button type="button" className="font-medium underline-offset-2 hover:underline" onClick={clean}>
+        Clean up
+      </button>
+      {error ? <span className="text-rose-700">{error}</span> : null}
+    </span>
+  );
+}
+
+export function ReviewBar(props: {
+  proposed: PendingItem[];
+  pending?: PendingChanges;
+  graph?: Graph;
+  duplicates?: DuplicateGroup[];
+  onSelect: (ids: string[]) => void;
+  onCleaned?: () => void;
+}) {
   const proposed = props.proposed.map((p) => p.item.id);
   const hypotheses = hypothesisIds(props.graph);
   const changed = [...new Set(otherTargets(props.pending))];
-  if (proposed.length + hypotheses.length + changed.length === 0) return null;
+  const duplicates = props.duplicates ?? [];
+  if (proposed.length + hypotheses.length + changed.length + duplicates.length === 0) return null;
   return (
     <div className="flex items-center gap-3 border-b border-amber-200 bg-amber-50/70 px-5 py-1.5 text-xs text-amber-900">
       <span>
@@ -36,6 +65,7 @@ export function ReviewBar(props: { proposed: PendingItem[]; pending?: PendingCha
           Select changed
         </button>
       ) : null}
+      <DuplicatesNotice groups={duplicates} onSelect={props.onSelect} onCleaned={() => props.onCleaned?.()} />
       <button type="button" disabled={proposed.length === 0} className="underline-offset-2 hover:underline disabled:opacity-40" onClick={() => props.onSelect(proposed)}>
         Select proposed
       </button>

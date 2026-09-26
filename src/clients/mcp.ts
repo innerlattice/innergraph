@@ -120,6 +120,20 @@ export function toolSpecs(vault: Vault, actor: ActorId): ToolSpec[] {
       run: (a) => ingest.decline(a.ids as string[], actor),
     },
     {
+      name: "find_duplicates",
+      tier: "read",
+      description: "Existing duplicate Nodes (same type; same passage or near-identical label) and Edges (same endpoints and type).",
+      input: {},
+      run: () => map.duplicates(),
+    },
+    {
+      name: "merge_duplicates",
+      tier: "propose",
+      description: "Propose cleaning up all current duplicates: Nodes merged with lineage, extra Edges retired after their evidence moves to the oldest copy. Arrives as proposals the user reviews.",
+      input: {},
+      run: () => map.mergeDuplicates(actor),
+    },
+    {
       name: "restore",
       tier: "commit",
       description: "Bring back a Node/Edge the user declined or that was retired (e.g. declined by accident). Only when the user asks.",

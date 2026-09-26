@@ -20,6 +20,8 @@ import type { AnalysisEngine, GraphDiff } from "../engines/analysisEngine.js";
 import type { InterpretationEngine } from "../engines/interpretationEngine.js";
 import { newId } from "../utilities/crypto.js";
 import { hlcAtTime } from "../utilities/hlc.js";
+import { mergeEvidence } from "../access/projection.js";
+import { type DuplicateGroup, findDuplicates } from "./resolve.js";
 import { type RevertPlan, planRevert, reassertRejected, targetsOf, withActor } from "./revert.js";
 import { ForbiddenError, NotFoundError, requireFound, runSession } from "./sessions.js";
 
@@ -156,6 +158,37 @@ export class MapManager {
     return this.deps.analysis.diff(this.graphAt(from).graph, this.graphAt(to).graph);
   }
 
+  /** Existing duplicate Nodes and Edges. */
+  duplicates(): DuplicateGroup[] {
+    return findDuplicates(this.deps.vault.state());
+  }
+
+  /**
+   * Cleans up duplicates: Nodes are merged (lineage kept); for Edges the oldest is kept,
+   * gains the others' evidence, and the rest are retired. Agents' cleanups await review.
+   */
+  mergeDuplicates(actor: ActorId = USER, groups: DuplicateGroup[] = this.duplicates()): ChangeResult[] {
+    const results: ChangeResult[] = [];
+    for (const group of groups.filter((g) => g.kind === "node")) {
+      const label = this.deps.vault.state().graph.nodes[group.ids[0]]?.label ?? "Merged";
+      results.push(this.merge(group.ids, { label }, actor));
+    }
+    const edges = groups.filter((g) => g.kind === "edge");
+    if (edges.length > 0) results.push(this.commit(actor, "deduplicate", edges.flatMap((g) => this.edgeCleanup(g))));
+    return results;
+  }
+
+  private edgeCleanup(group: DuplicateGroup): { type: "EdgeAsserted" | "StatusChanged"; body: unknown }[] {
+    const graph = this.deps.vault.state().graph;
+    const [keep, ...extra] = group.ids.map((id) => graph.edges[id]);
+    const { status: _s, assertedBy: _b, assertedAt: _a, updatedAt: _u, ...body } = keep;
+    const evidence = extra.reduce((acc, e) => mergeEvidence(acc, e.evidence), keep.evidence);
+    return [
+      { type: "EdgeAsserted", body: { ...body, evidence } },
+      ...extra.map((e) => ({ type: "StatusChanged" as const, body: { target: e.id, status: "superseded", reason: `duplicate of ${keep.id}` } })),
+    ];
+  }
+
   /** What reverting to a position would do, without doing it. */
   revertPreview(at: string): RevertPlan["summary"] {
     const position = toPosition(at);
@@ -229,7 +262,7 @@ export class MapManager {
   private commit(
     actor: ActorId,
     purpose: string,
-    changes: { type: "StatusChanged" | "AttributesChanged" | "NodesSplit" | "NodesMerged" | "SchemaChanged"; body: unknown }[],
+    changes: { type: "StatusChanged" | "AttributesChanged" | "NodesSplit" | "NodesMerged" | "SchemaChanged" | "EdgeAsserted"; body: unknown }[],
   ): ChangeResult {
     const { session } = runSession(this.deps.vault, actor, purpose, (s) =>
       changes.map((c) => ({ actor, session: s, type: c.type, body: c.body }) as never),

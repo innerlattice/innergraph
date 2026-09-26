@@ -88,6 +88,8 @@ describe("HTTP client", () => {
     expect((await call(app, `/api/edges/${anEdge}`)).json.fromLabel).toBeTruthy();
     expect((await call(app, "/api/edges/missing")).status).toBe(404);
     expect((await call(app, `/api/revert/preview?t=${positions[0]}`)).json).toHaveProperty("retired");
+    expect((await call(app, "/api/duplicates")).json).toEqual([]);
+    expect((await call(app, "/api/duplicates/merge", {})).json).toEqual([]);
     const undoTarget = (await call(app, "/api/timeline")).json.find((e: { type: string }) => e.type === "AttributesChanged");
     expect((await call(app, "/api/undo", { eventId: undoTarget.id })).status).toBe(200);
     expect((await call(app, "/api/restore", { id: "nope" })).status).toBe(404);
@@ -170,6 +172,8 @@ describe("MCP client", () => {
     const review = vault.explore.timeline(20).find((e) => e.type === "ProposalReviewed")?.id;
     expect(() => tool("undo")?.run({ eventId: review })).not.toThrow();
     expect(tool("revert")?.run({ t: "2020-01-01" })).toHaveProperty("summary");
+    expect(tool("find_duplicates")?.run({})).toEqual([]);
+    expect(tool("merge_duplicates")?.run({})).toEqual([]);
   });
 });
 

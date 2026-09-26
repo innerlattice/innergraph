@@ -2,6 +2,7 @@
 import type { Loop, RootTrace } from "../../src/engines/analysisEngine";
 import type { EdgeView, EntryView, EvidenceHit, LoopStepView, LoopView, NodeView, Selection } from "../../src/managers/exploreManager";
 import type { UndoResult } from "../../src/managers/mapManager";
+import type { DuplicateGroup } from "../../src/managers/resolve";
 import type { IngestResult, PendingChanges, PendingItem, ProposalView, ReviewDecision, RevisionResult } from "../../src/managers/ingestManager";
 import type { ReviewOutcome } from "../../src/managers/reviewActions";
 import type { ChangeResult, GraphAt } from "../../src/managers/mapManager";
@@ -9,7 +10,7 @@ import type { RelatedItem } from "../../src/managers/recallCorpus";
 import type { AnyEvent, EntryRecord, Graph, GraphEdge, GraphNode, Schema, Status } from "../../src/core/types";
 import type { Job } from "../../src/utilities/jobQueue";
 
-export type { EdgeView, LoopStepView, LoopView, UndoResult };
+export type { DuplicateGroup, EdgeView, LoopStepView, LoopView, UndoResult };
 export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, GraphEdge, GraphNode, IngestResult, Job, Loop, NodeView, ProposalView, PendingChanges, PendingItem, RelatedItem, ReviewOutcome, RevisionResult, RootTrace, Schema, Selection, Status };
 
 export interface VaultStatus {
@@ -34,6 +35,8 @@ export const api = {
   status: () => request<VaultStatus>("/status"),
   graph: (withDeclined = false) => request<Graph>(withDeclined ? "/graph?superseded=1" : "/graph"),
   edge: (id: string) => request<EdgeView>(`/edges/${enc(id)}`),
+  duplicates: () => request<DuplicateGroup[]>("/duplicates"),
+  mergeDuplicates: () => request<unknown[]>("/duplicates/merge", {}),
   undo: (eventId: string) => request<UndoResult>("/undo", { eventId }),
   restore: (id: string) => request<UndoResult>("/restore", { id }),
   revertPreview: (t: string) => request<UndoResult["summary"]>(`/revert/preview?t=${enc(t)}`),
