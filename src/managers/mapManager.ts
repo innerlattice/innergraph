@@ -4,6 +4,8 @@ import type { SchemaAccess } from "../access/schemaAccess.js";
 import type { VaultAccess } from "../access/vaultAccess.js";
 import {
   type ActorId,
+  type AnyDraft,
+  type AnyEvent,
   type Attributes,
   type Graph,
   type GraphEdge,
@@ -18,7 +20,8 @@ import type { AnalysisEngine, GraphDiff } from "../engines/analysisEngine.js";
 import type { InterpretationEngine } from "../engines/interpretationEngine.js";
 import { newId } from "../utilities/crypto.js";
 import { hlcAtTime } from "../utilities/hlc.js";
-import { ForbiddenError, requireFound, runSession } from "./sessions.js";
+import { type RevertPlan, planRevert, reassertRejected, targetsOf, withActor } from "./revert.js";
+import { ForbiddenError, NotFoundError, requireFound, runSession } from "./sessions.js";
 
 export interface MapDeps {
   vault: VaultAccess;
@@ -39,6 +42,32 @@ export interface GraphAt {
 }
 
 /** Accepts an HLC string or anything Date.parse understands. */
+export interface UndoResult {
+  session: string;
+  summary: RevertPlan["summary"];
+}
+
+/** Undoing a Node change also covers the Edges attached to it, before or after. */
+function withAttachedEdges(ids: Set<string>, graphs: Graph[]): Set<string> {
+  const edges = graphs.flatMap((g) => Object.values(g.edges)).filter((e) => ids.has(e.from) || ids.has(e.to));
+  return new Set([...ids, ...edges.map((e) => e.id)]);
+}
+
+function touchesParked(draft: { type: string; body: unknown }, graph: Graph): boolean {
+  const target = (draft.body as { target?: string }).target;
+  return target !== undefined && (graph.nodes[target] ?? graph.edges[target])?.status === "parked";
+}
+
+function rejections(events: AnyEvent[], actor: ActorId): AnyDraft[] {
+  const bySession = new Map<string, string[]>();
+  for (const e of events) bySession.set(e.session, [...(bySession.get(e.session) ?? []), e.id]);
+  return [...bySession].map(([session, ids]) => ({ actor, session: newId(), type: "ProposalReviewed" as const, body: { session, accepted: [], rejected: ids } }));
+}
+
+function selfReview(actor: ActorId, session: string, ids: string[]): AnyDraft {
+  return { actor, session: newId(), type: "ProposalReviewed", body: { session, accepted: ids, rejected: [] } };
+}
+
 export function toPosition(at: string): string {
   if (/^\d{15}\.\d{6}\./.test(at)) return at;
   const ms = Date.parse(at);
@@ -127,6 +156,46 @@ export class MapManager {
     return this.deps.analysis.diff(this.graphAt(from).graph, this.graphAt(to).graph);
   }
 
+  /** What reverting to a position would do, without doing it. */
+  revertPreview(at: string): RevertPlan["summary"] {
+    const position = toPosition(at);
+    return planRevert(this.deps.vault.stateAt(position), this.deps.vault.state(), position).summary;
+  }
+
+  /** Returns the whole graph to how it was at `at`, with new compensating Events. */
+  revert(at: string, actor: ActorId = USER): UndoResult {
+    const position = toPosition(at);
+    return this.applyPlan(planRevert(this.deps.vault.stateAt(position), this.deps.vault.state(), position), actor, "revert");
+  }
+
+  /** Undoes one Event: the items it touched return to how they were just before it. */
+  undo(eventId: string, actor: ActorId = USER): UndoResult {
+    const events = this.deps.vault.events();
+    const index = events.findIndex((e) => e.id === eventId);
+    const event = requireFound(events[index], `Event ${eventId}`);
+    const state = this.deps.vault.state();
+    const position = events[index - 1]?.hlc ?? "";
+    const before = this.deps.vault.stateAt(position);
+    const only = withAttachedEdges(new Set(targetsOf(event, state)), [before.graph, state.graph]);
+    const plan = planRevert(before, state, event.hlc, only);
+    const rejected = event.type === "ProposalReviewed" ? [...only].flatMap((id) => reassertRejected(state, id)) : [];
+    return this.applyPlan({ ...plan, drafts: [...plan.drafts, ...rejected] }, actor, "undo");
+  }
+
+  /** Brings back a declined or retired Node/Edge. */
+  restore(id: string, actor: ActorId = USER): UndoResult {
+    const state = this.deps.vault.state();
+    const item = state.graph.nodes[id] ?? state.graph.edges[id];
+    if (!item) {
+      const drafts = reassertRejected(state, id);
+      if (drafts.length === 0) throw new NotFoundError(`Nothing to restore for ${id}`);
+      return this.applyPlan({ drafts, reject: [], summary: { retired: 0, restored: 1, changed: 0, declined: 0 } }, actor, "restore");
+    }
+    const retiring = this.deps.vault.events().filter((e) => e.type === "StatusChanged" && e.body.target === id && e.body.status === "superseded").at(-1);
+    if (item.status !== "superseded" || !retiring) throw new Error(`${id} is not declined`);
+    return this.undo(retiring.id, actor);
+  }
+
   /** HLC positions of every Event, for time-travel sliders. */
   positions(): string[] {
     return this.deps.vault.events().map((e) => e.hlc);
@@ -141,6 +210,20 @@ export class MapManager {
   private item(target: string): GraphNode | GraphEdge {
     const graph = this.deps.vault.state().graph;
     return requireFound(graph.nodes[target] ?? graph.edges[target], `Node or Edge ${target}`);
+  }
+
+  /**
+   * Appends a revert plan as one Session. Agents can revert (commit tier) but never
+   * un-park; their changes are recorded as their own reviewed Proposal.
+   */
+  private applyPlan(plan: RevertPlan, actor: ActorId, purpose: string): UndoResult {
+    const graph = this.deps.vault.state().graph;
+    const allowed = plan.drafts.filter((d) => actor === USER || !touchesParked(d, graph));
+    const drafts = allowed.map((d) => ({ ...d, id: newId() }));
+    const { session } = runSession(this.deps.vault, actor, purpose, (s) => [...withActor(drafts, actor, s)]);
+    const reviews = [...rejections(plan.reject, actor), ...(actor === USER ? [] : [selfReview(actor, session, drafts.map((d) => d.id))])];
+    if (reviews.length > 0) this.deps.vault.append(reviews);
+    return { session, summary: plan.summary };
   }
 
   private commit(

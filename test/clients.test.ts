@@ -84,6 +84,11 @@ describe("HTTP client", () => {
     const merged = await call(app, "/api/merge", { sources: [shame.id, memory.id], into: { label: "m" } });
     expect(merged.status).toBe(400);
     expect((await call(app, "/api/nodes/missing")).status).toBe(404);
+    expect((await call(app, `/api/revert/preview?t=${positions[0]}`)).json).toHaveProperty("retired");
+    const undoTarget = (await call(app, "/api/timeline")).json.find((e: { type: string }) => e.type === "AttributesChanged");
+    expect((await call(app, "/api/undo", { eventId: undoTarget.id })).status).toBe(200);
+    expect((await call(app, "/api/restore", { id: "nope" })).status).toBe(404);
+    expect((await call(app, "/api/revert", { t: positions.at(-1) })).status).toBe(200);
     expect((await call(app, "/api/jobs/missing")).status).toBe(404);
   });
 });
@@ -154,6 +159,14 @@ describe("MCP client", () => {
     const spec = toolSpecs(vault, "agent:x").find((s) => s.name === "review");
     const view = spec?.run({ session: added.session, reject: [] }) as { session: string };
     expect(view.session).toBe(added.session);
+    const tool = (name: string) => toolSpecs(vault, "agent:x").find((s) => s.name === name);
+    const pending = vault.ingest.pendingChanges().assertions[0].item.id;
+    vault.ingest.decline([pending]);
+    tool("restore")?.run({ id: pending });
+    expect(vault.explore.graph().nodes[pending]).toBeDefined();
+    const review = vault.explore.timeline(20).find((e) => e.type === "ProposalReviewed")?.id;
+    expect(() => tool("undo")?.run({ eventId: review })).not.toThrow();
+    expect(tool("revert")?.run({ t: "2020-01-01" })).toHaveProperty("summary");
   });
 });
 

@@ -67,6 +67,7 @@ function registerReads(app: Hono, vault: Vault): void {
   app.get("/api/search", route((c) => explore.searchEvidence(c.req.query("q") ?? "")));
   app.get("/api/search/graph", route((c) => explore.searchGraph(c.req.query("q") ?? "", Number(c.req.query("limit") ?? 10))));
   app.get("/api/timeline", route(() => explore.timeline()));
+  app.get("/api/revert/preview", route((c) => map.revertPreview(c.req.query("t") ?? "")));
   app.get("/api/pending", route(() => ingest.pendingChanges()));
   app.get("/api/selection", route(() => explore.selection()));
   app.get("/api/stream", (c) => streamPositions(c, vault));
@@ -96,6 +97,9 @@ function registerWrites(app: Hono, vault: Vault): void {
     const input = await body(c);
     return ingest.reviseEntry(c.req.param("id") ?? "", input.content, { interpret: input.interpret !== false });
   }));
+  app.post("/api/undo", route(async (c) => map.undo((await body(c)).eventId)));
+  app.post("/api/restore", route(async (c) => map.restore((await body(c)).id)));
+  app.post("/api/revert", route(async (c) => map.revert((await body(c)).t)));
   app.post("/api/approve", route(async (c) => ingest.approve((await body(c)).ids ?? [])));
   app.post("/api/decline", route(async (c) => ingest.decline((await body(c)).ids ?? [])));
   app.put("/api/selection", route(async (c) => vault.explore.setSelection((await body(c)).ids ?? [])));

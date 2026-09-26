@@ -119,6 +119,27 @@ export function toolSpecs(vault: Vault, actor: ActorId): ToolSpec[] {
       input: { ids: z.array(z.string()).min(1) },
       run: (a) => ingest.decline(a.ids as string[], actor),
     },
+    {
+      name: "restore",
+      tier: "commit",
+      description: "Bring back a Node/Edge the user declined or that was retired (e.g. declined by accident). Only when the user asks.",
+      input: { id: z.string() },
+      run: (a) => map.restore(text(a, "id"), actor),
+    },
+    {
+      name: "undo",
+      tier: "commit",
+      description: "Undo one Log Event: the items it touched return to how they were just before it. Only when the user asks.",
+      input: { eventId: z.string() },
+      run: (a) => map.undo(text(a, "eventId"), actor),
+    },
+    {
+      name: "revert",
+      tier: "commit",
+      description: "Return the whole graph to how it was at a time (ISO date) or HLC position, with new compensating Events (history is kept). Confirm with the user first; parked items are never touched.",
+      input: { t: z.string() },
+      run: (a) => map.revert(text(a, "t"), actor),
+    },
     { name: "review", tier: "commit", description: "Accept or reject Events in a Proposal.", input: { session: z.string(), accept: z.array(z.string()).optional(), reject: z.array(z.string()).optional() }, run: (a) => ingest.review(text(a, "session"), a, actor) },
   ];
 }
