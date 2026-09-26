@@ -2,7 +2,7 @@
 import { rolesOf } from "../access/schemaAccess.js";
 import type { VaultAccess } from "../access/vaultAccess.js";
 import type { AnyEvent, EntryRecord, Evidence, Graph, GraphEdge, GraphNode, ProjectionState, Schema } from "../core/types.js";
-import { type AnalysisEngine, type Loop, type RootTrace, activeGraph } from "../engines/analysisEngine.js";
+import { type AnalysisEngine, type Loop, type LoopDetail, type LoopStep, type RootTrace, activeGraph } from "../engines/analysisEngine.js";
 import type { RecallEngine } from "../engines/recallEngine.js";
 import { byteOffset } from "../utilities/crypto.js";
 import { type RelatedItem, buildCorpus, describeMatches } from "./recallCorpus.js";
@@ -107,6 +107,19 @@ function describeInGraph(graph: Graph, id: string): SelectionItem | undefined {
   return { id, kind: "edge", type: edge.type, label, status: edge.status };
 }
 
+export interface LoopStepView extends LoopStep {
+  fromLabel: string;
+  toLabel: string;
+  quotes: string[];
+}
+
+export interface LoopView extends Omit<LoopDetail, "steps" | "inputs" | "outputs" | "weakest"> {
+  steps: LoopStepView[];
+  inputs: LoopStepView[];
+  outputs: LoopStepView[];
+  weakest: LoopStepView;
+}
+
 export class ExploreManager {
   constructor(private readonly deps: ExploreDeps) {}
 
@@ -142,6 +155,25 @@ export class ExploreManager {
   findLoops(): Loop[] {
     const state = this.deps.vault.state();
     return this.deps.analysis.findLoops(state.graph, rolesOf(state.schema));
+  }
+
+  /** Loops with their structure and the quoted evidence for each step. */
+  loopDetails(): LoopView[] {
+    const state = this.deps.vault.state();
+    const { nodes, edges } = state.graph;
+    const withText = (s: LoopStep): LoopStepView => ({
+      ...s,
+      fromLabel: nodes[s.from]?.label ?? s.from,
+      toLabel: nodes[s.to]?.label ?? s.to,
+      quotes: (edges[s.edge]?.evidence ?? []).map((e) => this.deps.vault.readSpan(e)),
+    });
+    return this.deps.analysis.loopDetails(state.graph, rolesOf(state.schema)).map((d) => ({
+      ...d,
+      steps: d.steps.map(withText),
+      inputs: d.inputs.map(withText),
+      outputs: d.outputs.map(withText),
+      weakest: withText(d.weakest),
+    }));
   }
 
   groups(): string[][] {

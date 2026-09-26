@@ -39,6 +39,19 @@ const nodeView = {
   derivedInto: [],
 } as unknown as NodeView;
 
+const step = (edge: string, from: string, to: string, sign: 1 | -1, confidence: number) => ({ edge, from, to, sign, confidence, fromLabel: from.toUpperCase(), toLabel: to.toUpperCase(), quotes: [`quote ${edge}`] });
+const LOOP = {
+  nodes: ["a", "b"],
+  edges: ["ab", "ba"],
+  polarity: "reinforcing",
+  steps: [step("ab", "a", "b", 1, 0.9), step("ba", "b", "a", 1, 0.4)],
+  inputs: [step("rb", "r", "b", -1, 0.7), step("fa", "f", "a", 1, 0.7)],
+  outputs: [step("ax", "a", "x", 1, 0.5)],
+  weakest: step("ba", "b", "a", 1, 0.4),
+  certainty: 0.36,
+  linkedLoops: 1,
+};
+
 const routes: Record<string, unknown> = {
   "/api/status": { model: "gemma", hosted: true, schema: { name: "author", version: 1, nodeTypes: {}, edgeTypes: {} } },
   "/api/proposals": [proposal],
@@ -46,7 +59,7 @@ const routes: Record<string, unknown> = {
   "/api/graph": graph,
   "/api/entries": [entryView.entry],
   "/api/entries/h": entryView,
-  "/api/loops": [{ nodes: ["n1", "n2"], edges: ["a", "b"], polarity: "reinforcing" }],
+  "/api/loops": [LOOP],
   "/api/timeline": [nodeEvent],
   "/api/nodes/n1": nodeView,
   "/api/nodes/n1/roots": { node: "n1", upstream: ["n2"], roots: [{ id: "n2", support: 1, path: ["n2", "n1"] }] },
@@ -149,17 +162,26 @@ describe("WriteView", () => {
 });
 
 describe("LoopsView and LogView", () => {
-  it("shows loops and opens a node on the map", async () => {
+  it("shows loop structure, implications and opens the loop on the map", async () => {
     const navigate = vi.fn();
     render(<LoopsView navigate={navigate} />);
-    expect(await screen.findByText(/Reinforcing/)).toBeTruthy();
-    fireEvent.click(screen.getAllByText("Needing is unsafe")[0]);
-    expect(navigate).toHaveBeenCalledWith("map", "n1");
+    expect(await screen.findByText("Reinforcing loop")).toBeTruthy();
+    expect(screen.getByText("A → B → A")).toBeTruthy();
+    expect(screen.getByText(/“R” dampens “B” from outside the loop/)).toBeTruthy();
+    expect(screen.getByText(/“F” feeds “A”/)).toBeTruthy();
+    expect(screen.getByText(/least certain link is B → A \(40%\)/)).toBeTruthy();
+    expect(screen.getByText("What this loop drives")).toBeTruthy();
+    expect(screen.getByText(/shares nodes with 1 other loop$/)).toBeTruthy();
+    fireEvent.click(screen.getByText("Show on map"));
+    expect(navigate).toHaveBeenCalledWith("map", "a,b,ab,ba");
   });
 
-  it("renders a balancing loop with unknown labels", () => {
-    render(<LoopCard loop={{ nodes: ["x"], edges: ["e"], polarity: "balancing" }} labels={{}} onOpen={vi.fn()} />);
-    expect(screen.getAllByText("x")).toHaveLength(2);
+  it("renders a certain balancing loop without extra notes", () => {
+    const loop = { ...LOOP, polarity: "balancing" as const, steps: [step("ab", "a", "b", -1, 0.9)], inputs: [], outputs: [], weakest: step("ab", "a", "b", -1, 0.9), certainty: 0.9, linkedLoops: 2 };
+    render(<LoopCard loop={loop} onOpen={vi.fn()} />);
+    expect(screen.getByText("Balancing loop")).toBeTruthy();
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    expect(screen.getByText(/2 other loops/)).toBeTruthy();
   });
 
   it("renders the log", async () => {

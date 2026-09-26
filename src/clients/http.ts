@@ -60,7 +60,7 @@ function registerReads(app: Hono, vault: Vault): void {
   app.get("/api/nodes/:id", route((c) => explore.node(c.req.param("id") ?? "")));
   app.get("/api/nodes/:id/roots", route((c) => explore.traceRoots(c.req.param("id") ?? "")));
   app.get("/api/nodes/:id/related", route((c) => explore.findRelated({ nodeId: c.req.param("id") })));
-  app.get("/api/loops", route(() => explore.findLoops()));
+  app.get("/api/loops", route(() => explore.loopDetails()));
   app.get("/api/groups", route(() => explore.groups()));
   app.get("/api/entries", route(() => explore.entries()));
   app.get("/api/entries/:id", route((c) => explore.entry(c.req.param("id") ?? "")));

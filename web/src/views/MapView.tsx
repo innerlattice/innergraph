@@ -114,17 +114,26 @@ function useMapData(index: number | undefined) {
 }
 
 export function MapView(props: { focus?: string; navigate: Navigate }) {
-  const [selection, setSelection] = useState<string[]>(props.focus ? [props.focus] : []);
+  const [selection, setSelection] = useState<string[]>(props.focus ? props.focus.split(",") : []);
   const [index, setIndex] = useState<number>();
   const [highlight, setHighlight] = useState<string[]>([]);
   const { version, positions, graph, proposed, schema, elements, labels, refresh } = useMapData(index);
   const empty = graph.data && Object.keys(graph.data.nodes).length === 0 && proposed.length === 0;
 
+  const [synced, setSynced] = useState(0);
   const changeSelection = (ids: string[]) => {
     setSelection(ids);
     setHighlight([]);
-    api.setSelection(ids).catch(() => undefined);
+    api
+      .setSelection(ids)
+      .then(() => setSynced((n) => n + 1))
+      .catch(() => undefined);
   };
+
+  // A selection handed over by another view (e.g. "Show on map") is shared too.
+  useEffect(() => {
+    if (selection.length > 0) changeSelection(selection);
+  }, []);
 
   // Items can leave the graph (declined, merged away): keep the selection to what still exists.
   useEffect(() => {
@@ -150,7 +159,7 @@ export function MapView(props: { focus?: string; navigate: Navigate }) {
           graph={graph.data}
           proposed={proposed}
           labels={labels}
-          version={version}
+          version={`${version}:${synced}`}
           readOnly={index !== undefined}
           onClear={() => changeSelection([])}
           onChanged={refresh}

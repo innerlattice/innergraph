@@ -1,6 +1,6 @@
 // Typed client for the local HTTP API. Types come straight from the core.
 import type { Loop, RootTrace } from "../../src/engines/analysisEngine";
-import type { EntryView, EvidenceHit, NodeView, Selection } from "../../src/managers/exploreManager";
+import type { EntryView, EvidenceHit, LoopStepView, LoopView, NodeView, Selection } from "../../src/managers/exploreManager";
 import type { IngestResult, PendingChanges, PendingItem, ProposalView, ReviewDecision, RevisionResult } from "../../src/managers/ingestManager";
 import type { ReviewOutcome } from "../../src/managers/reviewActions";
 import type { ChangeResult, GraphAt } from "../../src/managers/mapManager";
@@ -8,6 +8,7 @@ import type { RelatedItem } from "../../src/managers/recallCorpus";
 import type { AnyEvent, EntryRecord, Graph, GraphEdge, GraphNode, Schema, Status } from "../../src/core/types";
 import type { Job } from "../../src/utilities/jobQueue";
 
+export type { LoopStepView, LoopView };
 export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, GraphEdge, GraphNode, IngestResult, Job, Loop, NodeView, ProposalView, PendingChanges, PendingItem, RelatedItem, ReviewOutcome, RevisionResult, RootTrace, Schema, Selection, Status };
 
 export interface VaultStatus {
@@ -36,7 +37,7 @@ export const api = {
   node: (id: string) => request<NodeView>(`/nodes/${enc(id)}`),
   roots: (id: string) => request<RootTrace>(`/nodes/${enc(id)}/roots`),
   relatedToNode: (id: string) => request<RelatedItem[]>(`/nodes/${enc(id)}/related`),
-  loops: () => request<Loop[]>("/loops"),
+  loops: () => request<LoopView[]>("/loops"),
   entries: () => request<EntryRecord[]>("/entries"),
   entry: (id: string) => request<EntryView>(`/entries/${enc(id)}`),
   search: (q: string) => request<EvidenceHit[]>(`/search?q=${enc(q)}`),

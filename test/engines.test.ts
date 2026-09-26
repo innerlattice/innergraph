@@ -185,6 +185,22 @@ describe("AnalysisEngine", () => {
     expect(Object.keys(activeGraph(graph).edges)).toEqual(["1", "2"]);
   });
 
+  it("describes loops with their inputs, outputs and weakest link", () => {
+    const graph = graphOf(["a", "b", "brake", "out"], [
+      gEdge("1", "a", "b", "c", { sign: 1, confidence: 0.9 }),
+      gEdge("2", "b", "a", "c", { sign: 1, confidence: 0.4 }),
+      gEdge("3", "brake", "b", "c", { sign: -1 }),
+      gEdge("4", "a", "out", "c"),
+    ]);
+    const [loop] = engine.loopDetails(graph, roles);
+    expect(loop.steps.map((s) => s.edge)).toEqual(["1", "2"]);
+    expect(loop.inputs).toEqual([{ edge: "3", from: "brake", to: "b", sign: -1, confidence: 0.5 }]);
+    expect(loop.outputs.map((s) => s.edge)).toEqual(["4"]);
+    expect(loop.weakest.edge).toBe("2");
+    expect(loop.certainty).toBeCloseTo(0.36);
+    expect(loop.linkedLoops).toBe(0);
+  });
+
   it("groups identity components and diffs graphs", () => {
     const before = graphOf(["a", "b", "gone"], [gEdge("1", "a", "b", "i")]);
     expect(engine.groups(before, roles)).toEqual([["a", "b"]]);

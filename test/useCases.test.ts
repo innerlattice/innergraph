@@ -126,6 +126,9 @@ describe("4. Find loops", () => {
     expect(loops).toHaveLength(1);
     expect(loops[0].polarity).toBe("reinforcing");
     expect(new Set(loops[0].nodes)).toEqual(new Set([byLabel("Freezing").id, byLabel("Shame").id]));
+    const [detail] = t.vault.explore.loopDetails();
+    expect(detail.inputs.map((s) => [s.fromLabel, s.sign])).toEqual([["Rest", -1]]);
+    expect(detail.steps.every((s) => s.quotes.length > 0)).toBe(true);
   });
 });
 
