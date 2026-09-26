@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import YAML from "yaml";
 import { z } from "zod";
-import type { Attributes, EdgeTypeDef, Role, Schema } from "../core/types.js";
+import { type Attributes, type EdgeTypeDef, NODE_SHAPES, type Role, type Schema } from "../core/types.js";
 import type { Db } from "./database.js";
 
 const attributeDef = z.object({
@@ -18,7 +18,16 @@ const schemaDoc = z.object({
   name: z.string(),
   version: z.number().int().positive(),
   description: z.string().optional(),
-  nodeTypes: z.record(z.string(), z.object({ description: z.string().optional(), attributes })),
+  nodeTypes: z.record(
+    z.string(),
+    z.object({
+      description: z.string().optional(),
+      label: z.enum(["name", "statement", "title"]).optional(),
+      labelHint: z.string().optional(),
+      display: z.object({ shape: z.enum(NODE_SHAPES).optional(), color: z.string().optional() }).optional(),
+      attributes,
+    }),
+  ),
   edgeTypes: z.record(
     z.string(),
     z.object({

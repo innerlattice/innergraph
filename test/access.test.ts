@@ -144,6 +144,11 @@ describe("SchemaAccess", () => {
     expect(checkEdge(schema, "nope", "a", "b")).toHaveLength(1);
   });
 
+  it("reads label styles and display hints", () => {
+    expect(schema.nodeTypes.part).toMatchObject({ label: "name", display: { shape: "ellipse" } });
+    expect(() => parseSchema("name: x\nversion: 1\nnodeTypes: {a: {display: {shape: blob}}}\nedgeTypes: {}")).toThrow(SchemaError);
+  });
+
   it("rejects malformed Schemas", () => {
     expect(() => parseSchema("name: x")).toThrow(SchemaError);
     expect(() => parseSchema("name: x\nversion: 1\nnodeTypes: {a: {}}\nedgeTypes: {e: {from: [b], to: [a]}}")).toThrow("unknown node types: b");

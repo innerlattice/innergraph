@@ -2,51 +2,82 @@
 # Core memories -> (irrational abduction) -> core beliefs -> derived belief graph
 #   -> constrains cognitive appraisals (component process model) and perception.
 # Suffering persists via causal feedback loops.
+#
+# v2 (from the first real entries): part relations (protects, polarized_with, enacts,
+# felt_as), plus label styles and display hints per node type.
 name: author
-version: 1
-description: Core memories, belief derivation, appraisals and feedback loops.
+version: 2
+description: Core memories, belief derivation, appraisals, parts and feedback loops.
 
 nodeTypes:
   core_memory:
     description: A formative remembered episode, possibly held somatically.
+    label: title
+    labelHint: a few words naming the episode, e.g. "Laughed at, dinner table (7)"
+    display: { shape: round-octagon, color: "#b08968" }
     attributes:
       episodic: { type: string, description: What happened, in the person's words }
       somatic_signature: { type: string, description: How it is felt in the body }
       age: { type: string }
   belief:
     description: A belief about self, others or the world, from core to leaf.
+    label: statement
+    labelHint: a short first-person statement, e.g. "Needing things drives people away"
+    display: { shape: round-rectangle, color: "#7c9885" }
     attributes:
       depth: { type: enum, values: [core, derived, leaf] }
       precision: { type: number, description: How strongly held, 0..1 }
   appraisal:
     description: A cognitive appraisal of a situation (component process model).
+    label: statement
+    labelHint: the situation and its meaning, e.g. "Being asked = being exposed"
+    display: { shape: rhomboid, color: "#5f8fa8" }
     attributes:
       relevance: { type: string }
       implication: { type: string }
       coping: { type: string }
       normative: { type: string }
   part:
-    description: A partition of inference with its own context and policies.
+    description: A partition of inference with its own context and policies. One node per part, however its activation changes.
+    label: name
+    labelHint: a short name for the part, e.g. "The Hider" or "The Controller"
+    display: { shape: ellipse, color: "#8e7dbe" }
     attributes:
       context: { type: string }
       policies: { type: string }
+      intent: { type: string, description: What the part is trying to achieve or protect }
   policy:
     description: A recurring strategy or behaviour.
+    label: name
+    labelHint: a verb phrase of one to three words, e.g. "Keep scrolling"
+    display: { shape: round-hexagon, color: "#a3a35c" }
     attributes:
       kind: { type: enum, values: [avoid, control, collapse, appease, fight, seek, other] }
   process_node:
     description: A state or process that can take part in loops (sleep, rumination, shame).
+    label: name
+    labelHint: one or two words, e.g. "Shame" or "Rumination"
+    display: { shape: round-diamond, color: "#c97b84" }
     attributes: {}
   interoceptive:
     description: A bodily sensation.
+    label: name
+    labelHint: location and quality, e.g. "Tight chest"
+    display: { shape: round-triangle, color: "#d4a373" }
     attributes:
       location: { type: string }
       quality: { type: string }
   relational_prediction:
-    description: An expectation about how others respond ("if I need, I get punished").
+    description: An expectation about how others respond.
+    label: statement
+    labelHint: an if-then, e.g. "If I need, I get punished"
+    display: { shape: round-rectangle, color: "#6d8a96" }
     attributes: {}
   event:
     description: Something that happened in time.
+    label: title
+    labelHint: a few words naming what happened, e.g. "Standup, asked for update"
+    display: { shape: round-tag, color: "#9c6644" }
     attributes:
       time: { type: string }
       context: { type: string }
@@ -71,10 +102,26 @@ edgeTypes:
     from: [event]
     to: [part, appraisal, policy]
   reinforces:
-    description: A increases (+) or decreases (-) B.
+    description: A increases (+) or decreases (-) the activation of B.
     from: "*"
     to: "*"
     role: causal
+  protects:
+    description: A part shields another part or a memory from being reached.
+    from: [part]
+    to: [part, core_memory]
+  polarized_with:
+    description: Two parts pull in opposite directions.
+    from: [part]
+    to: [part]
+  enacts:
+    description: A part carries out a policy.
+    from: [part]
+    to: [policy]
+  felt_as:
+    description: Something is experienced as a bodily sensation.
+    from: "*"
+    to: [interoceptive]
   stored_as:
     description: A memory is held as a bodily sensation.
     from: [core_memory]

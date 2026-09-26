@@ -24,8 +24,33 @@ export interface AttributeDef {
   description?: string;
 }
 
+/** How a Node's label reads: a short name, a first-person statement, or an episode title. */
+export type LabelStyle = "name" | "statement" | "title";
+
+export const NODE_SHAPES = [
+  "ellipse",
+  "round-rectangle",
+  "round-diamond",
+  "round-hexagon",
+  "round-octagon",
+  "round-triangle",
+  "round-tag",
+  "rhomboid",
+  "barrel",
+] as const;
+
+/** Presentation hints. Data, not theory: Clients read them without knowing type names. */
+export interface NodeDisplay {
+  shape?: (typeof NODE_SHAPES)[number];
+  color?: string;
+}
+
 export interface NodeTypeDef {
   description?: string;
+  label?: LabelStyle;
+  /** Guidance for Actors writing labels of this type, e.g. "a short name like 'The Hider'". */
+  labelHint?: string;
+  display?: NodeDisplay;
   attributes: Record<string, AttributeDef>;
 }
 

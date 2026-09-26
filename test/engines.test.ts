@@ -50,6 +50,8 @@ describe("InterpretationEngine", () => {
   it("describes the Schema and builds a prompt with context", () => {
     expect(describeSchema(schema)).toContain("abduces (core_memory -> belief) [derivational]");
     expect(describeSchema(schema)).toContain("depth: core|derived|leaf");
+    expect(describeSchema(schema)).toContain('Label: name, a short name for the part, e.g. "The Hider"');
+    expect(describeSchema({ ...schema, nodeTypes: { x: { attributes: {} } } })).toContain("- x: ");
     const prompt = buildPrompt(input);
     expect(prompt.user).toContain("- id=old type=belief: Old belief");
     expect(buildPrompt({ ...input, context: [] }).user).toContain("(none)");
