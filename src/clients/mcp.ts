@@ -72,7 +72,13 @@ export function toolSpecs(vault: Vault, actor: ActorId): ToolSpec[] {
     { name: "find_related", tier: "read", description: "Related past Entries and Nodes for a text or Node id. Parked Nodes are never returned.", input: { text: z.string().optional(), nodeId: z.string().optional() }, run: (a) => explore.findRelated(a) },
     { name: "graph_at", tier: "read", description: "The Graph as it was at a time (ISO date) or HLC position.", input: { t: z.string() }, run: (a) => map.graphAt(text(a, "t")) },
     { name: "list_proposals", tier: "read", description: "Proposals with Events awaiting review, and why each was surfaced.", input: { all: z.boolean().optional() }, run: (a) => ingest.listProposals(a.all ? "all" : "pending") },
-    { name: "add_entry", tier: "propose", description: "Add a raw Entry (journal, transcript, reflection). The local model interprets it into a Proposal.", input: { content: z.string(), title: z.string().optional(), format: z.enum(["text", "markdown", "chat-json"]).optional() }, run: (a) => ingest.addEntry(a as never, { actor }) },
+    {
+      name: "add_entry",
+      tier: "propose",
+      description: "Add a raw Entry (journal, transcript, reflection). By default the local model interprets it into a Proposal; pass interpret=false to decompose it yourself with `propose`.",
+      input: { content: z.string(), title: z.string().optional(), format: z.enum(["text", "markdown", "chat-json"]).optional(), interpret: z.boolean().optional() },
+      run: (a) => ingest.addEntry(a as never, { actor, interpret: a.interpret !== false }),
+    },
     { name: "propose", tier: "propose", description: "Propose Nodes and Edges citing verbatim quotes from an Entry. Low-impact items are auto-accepted as hypotheses; the rest await review.", input: assertion, run: (a) => ingest.propose(actor, text(a, "entry"), a) },
     { name: "review", tier: "commit", description: "Accept or reject Events in a Proposal.", input: { session: z.string(), accept: z.array(z.string()).optional(), reject: z.array(z.string()).optional() }, run: (a) => ingest.review(text(a, "session"), a, actor) },
   ];

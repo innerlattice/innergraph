@@ -1,4 +1,4 @@
-import { rmSync, writeFileSync } from "node:fs";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
@@ -99,6 +99,8 @@ describe("MCP client", () => {
       const result = (await client.callTool({ name, arguments: args })) as { content: { text: string }[]; isError?: boolean };
       return { body: result.content[0].text, isError: result.isError };
     };
+    const stored = JSON.parse((await text("add_entry", { content: "Kept for my own decomposition.", interpret: false })).body);
+    expect(stored.job).toBeUndefined();
     const added = JSON.parse((await text("add_entry", { content: ENTRY_1 })).body);
     await t.vault.queue.idle();
     const proposed = JSON.parse(
@@ -139,6 +141,11 @@ describe("CLI client", () => {
     await runCli(["add", file, "--vault", dir], env);
     expect(JSON.parse(lines.at(-1) as string).job.state).toBe("done");
     await expect(runCli(["add", "--vault", dir], env)).rejects.toThrow("Usage");
+    const next = join(dir, "next.yaml");
+    writeFileSync(next, readFileSync(SCHEMA_FILE, "utf8").replace(/^version: \d+$/m, "version: 99"));
+    await runCli(["schema", next, "--vault", dir], env);
+    expect(lines.at(-1)).toContain("applied");
+    await expect(runCli(["schema", "--vault", dir], env)).rejects.toThrow("Usage");
 
     const running = await runCli(["serve", "--vault", dir, "--port", "43917"], env);
     const res = await fetch("http://127.0.0.1:43917/api/entries");

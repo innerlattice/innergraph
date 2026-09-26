@@ -8,6 +8,7 @@ import { type ServerType, serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { InputFormat } from "../access/ingestAccess.js";
+import { loadSchemaFile } from "../access/schemaAccess.js";
 import type { ModelGateway } from "../utilities/modelGateway.js";
 import { type Vault, initVault, openVault, vaultExists } from "../vault.js";
 import { createApp } from "./http.js";
@@ -16,7 +17,7 @@ import { type Tier, connectionNotice, createMcpServer } from "./mcp.js";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 export const USAGE =
-  "Usage: inner-graph <init|serve|mcp|add> [--vault dir] [--schema file] [--port n] [--tier read|propose|commit] [--agent name]";
+  "Usage: inner-graph <init|serve|mcp|add|schema> [--vault dir] [--schema file] [--port n] [--tier read|propose|commit] [--agent name]";
 
 export interface CliEnv {
   log: (message: string) => void;
@@ -87,6 +88,15 @@ const commands: Record<string, Command> = {
     env.log(connectionNotice(options));
     await server.connect(new StdioServerTransport());
     return { stop: async () => server.close().then(() => vault.close()) };
+  },
+  schema: (args, env) => {
+    const file = args.positionals[1];
+    if (!file) throw new Error("Usage: inner-graph schema <file>");
+    const vault = open(args, env);
+    vault.map.changeSchema(loadSchemaFile(file));
+    vault.close();
+    env.log(`Schema ${file} applied to ${args.values.vault}`);
+    return undefined;
   },
   add: async (args, env) => {
     const file = args.positionals[1];
