@@ -7,6 +7,8 @@ import {
   type AnyDraft,
   type AnyEvent,
   type Decision,
+  type GraphEdge,
+  type GraphNode,
   type ProjectionState,
   type Proposal,
   REVIEW_POLICY_ACTOR,
@@ -18,6 +20,8 @@ import { DEFAULT_POLICY, type ReviewEngine, type ReviewPolicy } from "../engines
 import { newId, utf8 } from "../utilities/crypto.js";
 import type { Job, JobQueue } from "../utilities/jobQueue.js";
 import { type RelatedItem, buildCorpus, describeMatches } from "./recallCorpus.js";
+import { pendingAssertions } from "./pending.js";
+import { type ReviewOutcome, approve, decline } from "./reviewActions.js";
 import { NotFoundError, requireFound, runSession } from "./sessions.js";
 
 export interface IngestDeps {
@@ -53,6 +57,21 @@ export interface ProposalView extends Omit<Proposal, "events"> {
   entryTitle?: string;
   pending: number;
   items: ProposalItem[];
+}
+
+export interface PendingItem {
+  eventId: string;
+  session: string;
+  kind: "node" | "edge";
+  item: GraphNode | GraphEdge;
+  reasons: string[];
+}
+
+export interface PendingChanges {
+  /** Proposed Nodes/Edges not yet in the Graph, drawn as ghosts. */
+  assertions: PendingItem[];
+  /** Other waiting Events (refactors, status changes, re-assertions). */
+  other: ProposalItem[];
 }
 
 export interface ProposeResult {
@@ -145,6 +164,26 @@ export class IngestManager {
   proposal(session: string): ProposalView {
     const state = this.deps.vault.state();
     return this.view(state, requireFound(state.proposals[session], `Proposal ${session}`));
+  }
+
+  /** Everything waiting for review, with the reasons it was surfaced. */
+  pendingChanges(): PendingChanges {
+    const state = this.deps.vault.state();
+    const items = this.listProposals().flatMap((p) => p.items.filter((i) => i.decision === "pending"));
+    const reasons = new Map(items.map((i) => [i.event.id, i.reasons]));
+    const assertions = pendingAssertions(state).map((a) => ({ ...a, reasons: reasons.get(a.eventId) ?? [] }));
+    const shown = new Set(assertions.map((a) => a.eventId));
+    return { assertions, other: items.filter((i) => !shown.has(i.event.id)) };
+  }
+
+  /** Approve by Node, Edge or Event id: merges what is pending and marks it accepted. */
+  approve(ids: string[], actor: ActorId = USER): ReviewOutcome {
+    return approve(this.deps.vault, ids, actor);
+  }
+
+  /** Decline by Node, Edge or Event id: rejects what is pending, retires merged hypotheses. */
+  decline(ids: string[], actor: ActorId = USER): ReviewOutcome {
+    return decline(this.deps.vault, this.deps.review, ids, actor);
   }
 
   job(id: string): Job | undefined {

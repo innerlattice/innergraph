@@ -8,8 +8,10 @@ import { EntriesView, EntryText } from "./EntriesView";
 import { LogView } from "./LogView";
 import { LoopCard, LoopsView } from "./LoopsView";
 import { NodePanel } from "./NodePanel";
-import { ProposalCard, ReviewView, evidenceOf } from "./ReviewView";
 import { Related, WriteView, useJob } from "./WriteView";
+
+// Cytoscape needs a real canvas; the Map view is covered in MapView.test.tsx.
+vi.mock("../components/GraphCanvas", () => ({ GraphCanvas: () => <div data-testid="graph-canvas" /> }));
 
 const HLC = "001758800000000.000000.d";
 const base = { attributes: {}, confidence: 0.5, evidence: [], assertedBy: "model:m", assertedAt: HLC, updatedAt: HLC, derivedFrom: [] };
@@ -40,6 +42,7 @@ const nodeView = {
 const routes: Record<string, unknown> = {
   "/api/status": { model: "gemma", hosted: true, schema: { name: "author", version: 1, nodeTypes: {}, edgeTypes: {} } },
   "/api/proposals": [proposal],
+  "/api/pending": { assertions: [{ eventId: "ev1", session: "s1", kind: "node", item: { ...nodeEvent.body, status: "hypothesis", derivedFrom: [], assertedBy: "model:m", assertedAt: HLC, updatedAt: HLC }, reasons: ["new root-level node"] }], other: [] },
   "/api/graph": graph,
   "/api/entries": [entryView.entry],
   "/api/entries/h": entryView,
@@ -96,10 +99,10 @@ describe("App shell", () => {
     render(<App />);
     expect(await screen.findByText(/entry text leaves this device/)).toBeTruthy();
     expect(await screen.findByText("1")).toBeTruthy();
-    for (const label of ["Review", "Loops", "Entries", "Log", "Write"]) {
+    for (const label of ["Loops", "Entries", "Log", "Write", "Map"]) {
       fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${label}`) }));
     }
-    expect(screen.getByPlaceholderText("Write freely…")).toBeTruthy();
+    expect(screen.getByLabelText("Time travel")).toBeTruthy();
   });
 });
 
@@ -111,10 +114,10 @@ describe("WriteView", () => {
     fireEvent.change(screen.getByPlaceholderText("Write freely…"), { target: { value: "Something happened" } });
     fireEvent.change(screen.getByLabelText("Format"), { target: { value: "markdown" } });
     fireEvent.click(screen.getByText("Add entry"));
-    await screen.findByText(/Proposal ready/);
+    await screen.findByText(/New items are on the map/);
     expect(posted[0].body).toEqual({ content: "Something happened", title: "Title", format: "markdown" });
-    fireEvent.click(screen.getByText("Open review"));
-    expect(navigate).toHaveBeenCalledWith("review");
+    fireEvent.click(screen.getByText("See it on the map"));
+    expect(navigate).toHaveBeenCalledWith("map");
     fireEvent.click(screen.getByText(/may be related \(1\)/));
     expect(screen.getByText("old words")).toBeTruthy();
     fireEvent.click(screen.getByText("Hide related material"));
@@ -142,35 +145,6 @@ describe("WriteView", () => {
     }
     render(<Probe />);
     expect(await screen.findByText("failed")).toBeTruthy();
-  });
-});
-
-describe("ReviewView", () => {
-  it("lists proposals with reasons and evidence, and records decisions", async () => {
-    render(<ReviewView />);
-    expect(await screen.findByText("new root-level node")).toBeTruthy();
-    expect(await screen.findByText(/needing thing/)).toBeTruthy();
-    fireEvent.click(screen.getByText("Accept"));
-    fireEvent.click(screen.getByText("Decline all"));
-    await waitFor(() => expect(posted).toHaveLength(2));
-    expect(posted[0].body).toEqual({ accept: ["ev1"] });
-    expect(posted[1].body).toEqual({ reject: ["ev1"] });
-  });
-
-  it("shows review errors and an empty state", async () => {
-    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) =>
-      init?.method === "POST" ? new Response('{"error":"conflict"}', { status: 400 }) : new Response(JSON.stringify(url.includes("proposals") ? [] : graph)),
-    );
-    render(<ProposalCard proposal={{ ...proposal, entry: undefined }} onChange={vi.fn()} />);
-    fireEvent.click(screen.getByText("Accept all"));
-    expect(await screen.findByText("conflict")).toBeTruthy();
-    cleanup();
-    render(<ReviewView />);
-    expect(await screen.findByText("Nothing is waiting for review.")).toBeTruthy();
-  });
-
-  it("reads evidence from events that carry it", () => {
-    expect(evidenceOf({ event: { body: {} } } as never)).toEqual([]);
   });
 });
 
@@ -220,7 +194,7 @@ describe("NodePanel", () => {
     expect(await screen.findByText("Needing is unsafe", { selector: "h3" })).toBeTruthy();
     expect(screen.getByText("→ scaffolds → Dinner table")).toBeTruthy();
     expect(screen.getByText(/from “Dinner table”/)).toBeTruthy();
-    fireEvent.click(screen.getByText("This fits"));
+    fireEvent.click(screen.getByText("Approve"));
     fireEvent.click(screen.getByText("Not now (park)"));
     fireEvent.click(screen.getByText("Trace roots"));
     expect(await screen.findByText(/supports 1 downstream/)).toBeTruthy();
@@ -233,7 +207,7 @@ describe("NodePanel", () => {
     fireEvent.change(screen.getByLabelText("Merge with"), { target: { value: "n2" } });
     fireEvent.click(screen.getByText("Merge"));
     fireEvent.click(screen.getByText(/needing things is unsafe/));
-    await waitFor(() => expect(posted.map((p) => p.url)).toEqual(["/api/items/n1/status", "/api/items/n1/status", "/api/items/n1/attributes", "/api/nodes/n1/split", "/api/merge"]));
+    await waitFor(() => expect(posted.map((p) => p.url)).toEqual(["/api/approve", "/api/items/n1/status", "/api/items/n1/attributes", "/api/nodes/n1/split", "/api/merge"]));
     expect(props.onHighlight).toHaveBeenCalledWith(["n2", "n1"]);
     expect(props.navigate).toHaveBeenCalledWith("entries", "h@15-39");
     expect(screen.getByRole("button", { name: "Open “Tuesday” at this passage" })).toBeTruthy();

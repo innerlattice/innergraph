@@ -31,6 +31,10 @@ const routes: Record<string, unknown> = {
     schema: { name: "s", version: 1, edgeTypes: {}, nodeTypes: { t: { attributes: {}, display: { shape: "round-rectangle", color: "#111111" } }, u: { attributes: {}, display: { shape: "barrel" } }, v: { attributes: {} } } },
   },
   "/api/graph": now,
+  "/api/pending": {
+    assertions: [{ eventId: "e9", session: "s", kind: "node", reasons: ["new root-level node"], item: { ...node, id: "p9", label: "Ghost", status: "hypothesis", evidence: [] } }],
+    other: [],
+  },
   "/api/graph/at": { position: HLC1, graph: { nodes: {}, edges: {} } },
   "/api/nodes/n1": { node: now.nodes.n1, evidence: [], outgoing: [], incoming: [], derivedFrom: [], derivedInto: [] },
   "/api/selection": { ids: ["n1", "n2"], at: "", items: [{ id: "n1", kind: "node", type: "t", label: "One", status: "accepted" }, { id: "n2", kind: "node", type: "t", label: "Two", status: "hypothesis" }] },
@@ -81,6 +85,21 @@ it("lists node types from the Schema in the legend", async () => {
   render(<MapView navigate={vi.fn()} />);
   expect(await screen.findByText("t")).toBeTruthy();
   expect(screen.getByText("u")).toBeTruthy();
+});
+
+it("shows proposed items and opens the proposal panel for one", async () => {
+  render(<MapView navigate={vi.fn()} />);
+  fireEvent.click(await screen.findByText("node:p9"));
+  expect(await screen.findByText("Ghost")).toBeTruthy();
+  expect(screen.getByText(/Waiting for your review/)).toBeTruthy();
+  fireEvent.click(screen.getByText("Select proposed"));
+});
+
+it("drops selected items that leave the graph", async () => {
+  routes["/api/graph"] = { nodes: {}, edges: {} };
+  render(<MapView focus="n1" navigate={vi.fn()} />);
+  await waitFor(() => expect(screen.queryByText("One", { selector: "h3" })).toBeNull());
+  routes["/api/graph"] = now;
 });
 
 it("opens with a focused node", async () => {

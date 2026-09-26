@@ -81,6 +81,20 @@ export function toolSpecs(vault: Vault, actor: ActorId): ToolSpec[] {
       run: (a) => ingest.addEntry(a as never, { actor, interpret: a.interpret !== false }),
     },
     { name: "propose", tier: "propose", description: "Propose Nodes and Edges citing verbatim quotes from an Entry. Low-impact items are auto-accepted as hypotheses; the rest await review.", input: assertion, run: (a) => ingest.propose(actor, text(a, "entry"), a) },
+    {
+      name: "approve",
+      tier: "commit",
+      description: "Approve Nodes/Edges by id: merges proposed items and marks hypotheses accepted. Resolve 'the selected ones' with get_selection, and names or chains with search_graph or get_node. Never approve on your own initiative; only when the user asks.",
+      input: { ids: z.array(z.string()).min(1) },
+      run: (a) => ingest.approve(a.ids as string[], actor),
+    },
+    {
+      name: "decline",
+      tier: "commit",
+      description: "Decline Nodes/Edges by id: rejects proposed items (and edges that depend on them) and retires merged hypotheses. Only when the user asks.",
+      input: { ids: z.array(z.string()).min(1) },
+      run: (a) => ingest.decline(a.ids as string[], actor),
+    },
     { name: "review", tier: "commit", description: "Accept or reject Events in a Proposal.", input: { session: z.string(), accept: z.array(z.string()).optional(), reject: z.array(z.string()).optional() }, run: (a) => ingest.review(text(a, "session"), a, actor) },
   ];
 }

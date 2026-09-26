@@ -66,6 +66,7 @@ function registerReads(app: Hono, vault: Vault): void {
   app.get("/api/entries/:id", route((c) => explore.entry(c.req.param("id") ?? "")));
   app.get("/api/search", route((c) => explore.searchEvidence(c.req.query("q") ?? "")));
   app.get("/api/timeline", route(() => explore.timeline()));
+  app.get("/api/pending", route(() => ingest.pendingChanges()));
   app.get("/api/selection", route(() => explore.selection()));
   app.get("/api/stream", (c) => streamPositions(c, vault));
   app.get("/api/jobs/:id", route((c) => requireFound(ingest.job(c.req.param("id") ?? ""), "Job")));
@@ -90,6 +91,8 @@ function registerWrites(app: Hono, vault: Vault): void {
     const input = await body(c);
     return map.merge(input.sources, input.into);
   }));
+  app.post("/api/approve", route(async (c) => ingest.approve((await body(c)).ids ?? [])));
+  app.post("/api/decline", route(async (c) => ingest.decline((await body(c)).ids ?? [])));
   app.put("/api/selection", route(async (c) => vault.explore.setSelection((await body(c)).ids ?? [])));
   app.post("/api/related", route(async (c) => vault.explore.findRelated({ text: (await body(c)).text })));
 }

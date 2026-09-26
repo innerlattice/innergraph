@@ -4,6 +4,7 @@ import { type NodeView, type RelatedItem, type RootTrace, api } from "../api";
 import { Button, ErrorNote, StatusPill } from "../components/ui";
 import { actorLabel, entryFocus } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
+import { ReviewActions } from "./ReviewControls";
 import { Related } from "./WriteView";
 
 export interface NodePanelProps {
@@ -70,12 +71,12 @@ function EdgeList(props: { view: NodeView; labels: Record<string, string> }) {
   );
 }
 
-function StatusActions(props: { view: NodeView; run: Run }) {
+function StatusActions(props: { view: NodeView; run: Run; onDone: () => void }) {
   const { node } = props.view;
-  const set = (status: "accepted" | "parked" | "hypothesis") => props.run(() => api.setStatus(node.id, status));
+  const set = (status: "parked" | "hypothesis") => props.run(() => api.setStatus(node.id, status));
   return (
-    <div className="flex flex-wrap gap-2">
-      {node.status === "hypothesis" ? <Button onClick={() => set("accepted")}>This fits</Button> : null}
+    <div className="flex flex-wrap items-start gap-2">
+      {node.status === "hypothesis" ? <ReviewActions ids={[node.id]} onDone={props.onDone} approveLabel="Approve" /> : null}
       {node.status === "parked" ? <Button onClick={() => set("hypothesis")}>Un-park</Button> : <Button onClick={() => set("parked")}>Not now (park)</Button>}
     </div>
   );
@@ -147,7 +148,7 @@ export function NodePanel(props: NodePanelProps) {
         <StatusPill status={node.status} />
       </header>
       <ErrorNote error={error} />
-      {readOnly ? null : <StatusActions view={view.data} run={run} />}
+      {readOnly ? null : <StatusActions view={view.data} run={run} onDone={() => (view.reload(), onChanged())} />}
       <Section title="Evidence">
         {view.data.evidence.map((e) => (
           <EvidenceCard key={`${e.entry}-${e.start}`} evidence={e} onOpen={() => navigate("entries", entryFocus(e.entry, e.start, e.end))} />

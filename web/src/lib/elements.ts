@@ -2,7 +2,7 @@
 // hints; edges are styled by Role and sign. No type names are hard-coded here.
 import type { ElementDefinition, StylesheetJson } from "cytoscape";
 import type { LabelStyle } from "../../../src/core/types";
-import type { Graph, GraphEdge, GraphNode, Schema } from "../api";
+import type { Graph, GraphEdge, GraphNode, PendingItem, Schema } from "../api";
 import { colorFor } from "./format";
 
 const MAX_LABEL = 60;
@@ -59,8 +59,20 @@ function edgeElement(e: GraphEdge, schema: Schema | null): ElementDefinition {
   };
 }
 
-export function toElements(graph: Graph, schema: Schema | null): ElementDefinition[] {
-  return [...Object.values(graph.nodes).map((n) => nodeElement(n, schema)), ...Object.values(graph.edges).map((e) => edgeElement(e, schema))];
+function asProposed(el: ElementDefinition): ElementDefinition {
+  return { ...el, classes: `${el.classes} proposed` };
+}
+
+/** Graph elements plus proposed (unreviewed) Nodes/Edges drawn as ghosts. */
+export function toElements(graph: Graph, schema: Schema | null, proposed: PendingItem[] = []): ElementDefinition[] {
+  const nodes = proposed.flatMap((p) => (p.kind === "node" ? [asProposed(nodeElement(p.item as GraphNode, schema))] : []));
+  const edges = proposed.flatMap((p) => (p.kind === "edge" ? [asProposed(edgeElement(p.item as GraphEdge, schema))] : []));
+  return [
+    ...Object.values(graph.nodes).map((n) => nodeElement(n, schema)),
+    ...nodes,
+    ...Object.values(graph.edges).map((e) => edgeElement(e, schema)),
+    ...edges,
+  ];
 }
 
 export const GRAPH_STYLE: StylesheetJson = [
@@ -129,6 +141,8 @@ export const GRAPH_STYLE: StylesheetJson = [
   { selector: "edge.causal.positive", style: { "line-color": "#c2410c", "target-arrow-color": "#c2410c", color: "#c2410c" } },
   { selector: "edge.causal.negative", style: { "line-color": "#0369a1", "target-arrow-color": "#0369a1", color: "#0369a1" } },
   { selector: "edge.identity", style: { "line-style": "dotted", "target-arrow-shape": "none" } },
+  { selector: "node.proposed", style: { "background-opacity": 0.2, "border-color": "#d97706", "border-style": "dashed", "border-width": 2.5, "border-opacity": 1 } },
+  { selector: "edge.proposed", style: { "line-color": "#d97706", "target-arrow-color": "#d97706", "line-style": "dashed", width: 2 } },
   { selector: "node.appeared", style: { "underlay-color": "#16a34a", "underlay-opacity": 0.25, "underlay-padding": 7 } },
   { selector: "node.highlight", style: { "border-color": "#ca8a04", "border-width": 4, "border-style": "solid" } },
   { selector: "edge.highlight", style: { "line-color": "#ca8a04", "target-arrow-color": "#ca8a04", width: 3.5 } },

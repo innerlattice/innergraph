@@ -58,13 +58,13 @@ function JobStatus(props: { job?: Job; model?: string; navigate: Navigate }) {
   const text: Record<Job["state"], string> = {
     queued: "Waiting to interpret…",
     running: "Reading your entry and drafting a proposal…",
-    done: "Proposal ready. Low-impact items were added as hypotheses.",
+    done: "Done. New items are on the map as hypotheses; anything higher-impact is shown as proposed.",
     failed: `Interpretation did not finish: ${job.error ?? "unknown error"}. The entry is saved.`,
   };
   return (
     <Card className="flex items-center justify-between gap-4">
       <p className="text-sm text-stone-600">{text[job.state]}</p>
-      {job.state === "done" ? <Button onClick={() => navigate("review")}>Open review</Button> : null}
+      {job.state === "done" ? <Button onClick={() => navigate("map")}>See it on the map</Button> : null}
     </Card>
   );
 }

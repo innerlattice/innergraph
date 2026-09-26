@@ -1,11 +1,12 @@
 // ExploreManager: queries and Projections (root tracing, loops, recall, evidence search).
 import { rolesOf } from "../access/schemaAccess.js";
 import type { VaultAccess } from "../access/vaultAccess.js";
-import type { AnyEvent, EntryRecord, Evidence, Graph, GraphEdge, GraphNode, Schema } from "../core/types.js";
+import type { AnyEvent, EntryRecord, Evidence, Graph, GraphEdge, GraphNode, ProjectionState, Schema } from "../core/types.js";
 import { type AnalysisEngine, type Loop, type RootTrace, activeGraph } from "../engines/analysisEngine.js";
 import type { RecallEngine } from "../engines/recallEngine.js";
 import { byteOffset } from "../utilities/crypto.js";
 import { type RelatedItem, buildCorpus, describeMatches } from "./recallCorpus.js";
+import { pendingAssertions } from "./pending.js";
 import { requireFound } from "./sessions.js";
 
 export interface ExploreDeps {
@@ -86,7 +87,18 @@ export interface Selection {
   items: SelectionItem[];
 }
 
-function describeItem(graph: Graph, id: string): SelectionItem | undefined {
+function describeItem(state: ProjectionState, id: string): SelectionItem | undefined {
+  const proposed = pendingAssertions(state).find((a) => a.item.id === id);
+  const graph: Graph = proposed ? withProposed(state.graph, proposed.item) : state.graph;
+  const item = describeInGraph(graph, id);
+  return item && proposed ? { ...item, status: "proposed" } : item;
+}
+
+function withProposed(graph: Graph, item: GraphNode | GraphEdge): Graph {
+  return "from" in item ? { ...graph, edges: { ...graph.edges, [item.id]: item } } : { ...graph, nodes: { ...graph.nodes, [item.id]: item } };
+}
+
+function describeInGraph(graph: Graph, id: string): SelectionItem | undefined {
   const node = graph.nodes[id];
   if (node) return { id, kind: "node", type: node.type, label: node.label, status: node.status };
   const edge = graph.edges[id];
@@ -169,8 +181,8 @@ export class ExploreManager {
   /** What the user currently has selected in the graph view. */
   selection(): Selection {
     const stored = this.deps.vault.readSetting<{ ids: string[]; at: string }>("selection") ?? { ids: [], at: "" };
-    const graph = this.deps.vault.state().graph;
-    const items = stored.ids.map((id) => describeItem(graph, id)).filter((i): i is SelectionItem => i !== undefined);
+    const state = this.deps.vault.state();
+    const items = stored.ids.map((id) => describeItem(state, id)).filter((i): i is SelectionItem => i !== undefined);
     return { ...stored, items };
   }
 

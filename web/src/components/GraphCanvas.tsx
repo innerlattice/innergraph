@@ -37,13 +37,17 @@ export function GraphCanvas({ elements, selection, highlight = [], onSelectionCh
   const report = useRef(onSelectionChange);
   const positions = useRef<Positions>(loadPositions());
   const shown = useRef<Set<string>>(undefined);
+  const redrawing = useRef(false);
+  const current = useRef(selection);
   report.current = onSelectionChange;
+  current.current = selection;
 
   useEffect(() => {
     const el = container.current as HTMLDivElement;
     const instance = cytoscape({ container: el, style: GRAPH_STYLE, boxSelectionEnabled: true, userPanningEnabled: false, userZoomingEnabled: false });
     let pending = 0;
     instance.on("select unselect", () => {
+      if (redrawing.current) return;
       clearTimeout(pending);
       pending = window.setTimeout(() => report.current(selectedIds(instance)), 0);
     });
@@ -63,7 +67,12 @@ export function GraphCanvas({ elements, selection, highlight = [], onSelectionCh
   useKeys(cy);
 
   useEffect(() => {
-    if (cy) shown.current = render(cy, elements, positions.current, shown.current);
+    if (!cy) return;
+    // Redraws must not look like the user changing the selection.
+    redrawing.current = true;
+    shown.current = render(cy, elements, positions.current, shown.current);
+    applySelection(cy, current.current);
+    redrawing.current = false;
   }, [cy, elements]);
 
   useEffect(() => applySelection(cy, selection), [cy, selection, elements]);
