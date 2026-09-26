@@ -1,0 +1,86 @@
+# Seed Schema drafted from the author's theory. Theory vocabulary lives here, never in core.
+# Core memories -> (irrational abduction) -> core beliefs -> derived belief graph
+#   -> constrains cognitive appraisals (component process model) and perception.
+# Suffering persists via causal feedback loops.
+name: author
+version: 1
+description: Core memories, belief derivation, appraisals and feedback loops.
+
+nodeTypes:
+  core_memory:
+    description: A formative remembered episode, possibly held somatically.
+    attributes:
+      episodic: { type: string, description: What happened, in the person's words }
+      somatic_signature: { type: string, description: How it is felt in the body }
+      age: { type: string }
+  belief:
+    description: A belief about self, others or the world, from core to leaf.
+    attributes:
+      depth: { type: enum, values: [core, derived, leaf] }
+      precision: { type: number, description: How strongly held, 0..1 }
+  appraisal:
+    description: A cognitive appraisal of a situation (component process model).
+    attributes:
+      relevance: { type: string }
+      implication: { type: string }
+      coping: { type: string }
+      normative: { type: string }
+  part:
+    description: A partition of inference with its own context and policies.
+    attributes:
+      context: { type: string }
+      policies: { type: string }
+  policy:
+    description: A recurring strategy or behaviour.
+    attributes:
+      kind: { type: enum, values: [avoid, control, collapse, appease, fight, seek, other] }
+  process_node:
+    description: A state or process that can take part in loops (sleep, rumination, shame).
+    attributes: {}
+  interoceptive:
+    description: A bodily sensation.
+    attributes:
+      location: { type: string }
+      quality: { type: string }
+  relational_prediction:
+    description: An expectation about how others respond ("if I need, I get punished").
+    attributes: {}
+  event:
+    description: Something that happened in time.
+    attributes:
+      time: { type: string }
+      context: { type: string }
+
+edgeTypes:
+  abduces:
+    description: An irrational abduction from a memory to a belief.
+    from: [core_memory]
+    to: [belief]
+    role: derivational
+  scaffolds:
+    description: One belief supports or produces another.
+    from: [belief]
+    to: [belief, relational_prediction]
+    role: derivational
+  constrains:
+    description: A belief shapes an appraisal or perception.
+    from: [belief, relational_prediction]
+    to: [appraisal]
+  triggers:
+    description: An event activates a part, appraisal or policy.
+    from: [event]
+    to: [part, appraisal, policy]
+  reinforces:
+    description: A increases (+) or decreases (-) B.
+    from: "*"
+    to: "*"
+    role: causal
+  stored_as:
+    description: A memory is held as a bodily sensation.
+    from: [core_memory]
+    to: [interoceptive]
+  aspect_of:
+    description: A is an aspect or instance of B.
+    from: "*"
+    to: "*"
+    role: identity

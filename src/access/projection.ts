@@ -1,0 +1,269 @@
+// The Graph Projection: a pure fold over the Log. Graph at T = fold(Log[<= T]).
+import {
+  type ActorId,
+  type AnyEvent,
+  type Attributes,
+  type EventBodies,
+  type Evidence,
+  type Graph,
+  type GraphEdge,
+  type GraphNode,
+  type ProjectionState,
+  type Proposal,
+  type Status,
+  type VaultEvent,
+  GRAPH_EVENT_TYPES,
+  USER,
+} from "../core/types.js";
+
+export function emptyState(): ProjectionState {
+  return { graph: { nodes: {}, edges: {} }, schema: null, entries: {}, proposals: {}, position: "" };
+}
+
+export function fold(events: readonly AnyEvent[], upTo?: string): ProjectionState {
+  const state = emptyState();
+  for (const event of events) {
+    if (upTo !== undefined && event.hlc > upTo) break;
+    applyEvent(state, event);
+  }
+  return state;
+}
+
+export function applyEvent(state: ProjectionState, event: AnyEvent): void {
+  state.position = event.hlc;
+  if (GRAPH_EVENT_TYPES.includes(event.type)) {
+    recordGraphEvent(state, event);
+    return;
+  }
+  workflowHandlers[event.type]?.(state, event as never);
+}
+
+// ---- workflow events -------------------------------------------------------------
+
+type Handler<K extends keyof EventBodies> = (state: ProjectionState, event: VaultEvent<K>) => void;
+type HandlerTable = { [K in keyof EventBodies]?: Handler<K> };
+
+const workflowHandlers: HandlerTable = {
+  EntryAdded: (state, e) => {
+    state.entries[e.body.entry] = {
+      id: e.body.entry,
+      source: e.body.source,
+      title: e.body.title,
+      bytes: e.body.bytes,
+      addedAt: e.hlc,
+      session: e.session,
+    };
+  },
+  SchemaChanged: (state, e) => {
+    migrateGraph(state.graph, e.body.migration.nodeTypes, e.body.migration.edgeTypes);
+    state.schema = e.body.schema;
+  },
+  SessionOpened: (state, e) => {
+    state.proposals[e.session] = {
+      session: e.session,
+      actor: e.actor,
+      purpose: e.body.purpose,
+      entry: e.body.entry,
+      openedAt: e.hlc,
+      closed: false,
+      events: [],
+    };
+  },
+  SessionClosed: (state, e) => {
+    proposalFor(state, e).closed = true;
+  },
+  ProposalReviewed: (state, e) => {
+    const proposal = state.proposals[e.body.session];
+    if (!proposal) return;
+    for (const item of proposal.events) {
+      decide(state, item, e.body.accepted, e.body.rejected);
+    }
+  },
+};
+
+function decide(
+  state: ProjectionState,
+  item: Proposal["events"][number],
+  accepted: string[],
+  rejected: string[],
+): void {
+  if (item.decision !== "pending") return;
+  if (accepted.includes(item.event.id)) {
+    item.decision = "accepted";
+    applyGraphEvent(state.graph, item.event);
+  } else if (rejected.includes(item.event.id)) {
+    item.decision = "rejected";
+  }
+}
+
+function proposalFor(state: ProjectionState, event: AnyEvent): Proposal {
+  state.proposals[event.session] ??= {
+    session: event.session,
+    actor: event.actor,
+    purpose: "unspecified",
+    openedAt: event.hlc,
+    closed: false,
+    events: [],
+  };
+  return state.proposals[event.session];
+}
+
+/** User events are direct commits; every other Actor's graph events wait for Review. */
+function recordGraphEvent(state: ProjectionState, event: AnyEvent): void {
+  const direct = event.actor === USER;
+  proposalFor(state, event).events.push({ event, decision: direct ? "accepted" : "pending" });
+  if (direct) applyGraphEvent(state.graph, event);
+}
+
+function migrateGraph(graph: Graph, nodeMap: Record<string, string>, edgeMap: Record<string, string>): void {
+  for (const node of Object.values(graph.nodes)) node.type = nodeMap[node.type] ?? node.type;
+  for (const edge of Object.values(graph.edges)) edge.type = edgeMap[edge.type] ?? edge.type;
+}
+
+// ---- graph events ----------------------------------------------------------------
+
+export function statusFor(actor: ActorId): Status {
+  return actor === USER ? "accepted" : "hypothesis";
+}
+
+export function mergeEvidence(a: Evidence[], b: Evidence[]): Evidence[] {
+  const seen = new Set(a.map(evidenceKey));
+  return [...a, ...b.filter((e) => !seen.has(evidenceKey(e)))];
+}
+
+function evidenceKey(e: Evidence): string {
+  return `${e.entry}:${e.start}:${e.end}`;
+}
+
+type GraphHandlers = { [K in keyof EventBodies]?: (graph: Graph, event: VaultEvent<K>) => void };
+
+const graphHandlers: GraphHandlers = {
+  NodeAsserted: assertNode,
+  EdgeAsserted: assertEdge,
+  AttributesChanged: changeAttributes,
+  StatusChanged: (graph, e) => {
+    const target = graph.nodes[e.body.target] ?? graph.edges[e.body.target];
+    if (target) touch(target, e).status = e.body.status;
+  },
+  NodesSplit: splitNode,
+  NodesMerged: mergeNodes,
+};
+
+export function applyGraphEvent(graph: Graph, event: AnyEvent): void {
+  graphHandlers[event.type]?.(graph, event as never);
+}
+
+function touch<T extends { updatedAt: string }>(item: T, event: AnyEvent): T {
+  item.updatedAt = event.hlc;
+  return item;
+}
+
+function assertNode(graph: Graph, e: VaultEvent<"NodeAsserted">): void {
+  const existing = graph.nodes[e.body.id];
+  if (existing) {
+    reassert(existing, e.body, e);
+    return;
+  }
+  graph.nodes[e.body.id] = {
+    ...e.body,
+    status: statusFor(e.actor),
+    derivedFrom: [],
+    assertedBy: e.actor,
+    assertedAt: e.hlc,
+    updatedAt: e.hlc,
+  };
+}
+
+function reassert(
+  item: GraphNode | GraphEdge,
+  body: { type: string; attributes: Attributes; confidence: number; evidence: Evidence[] },
+  e: AnyEvent,
+): void {
+  if (item.type !== body.type) return;
+  item.attributes = { ...item.attributes, ...body.attributes };
+  item.confidence = body.confidence;
+  item.evidence = mergeEvidence(item.evidence, body.evidence);
+  touch(item, e);
+}
+
+function assertEdge(graph: Graph, e: VaultEvent<"EdgeAsserted">): void {
+  const existing = graph.edges[e.body.id];
+  if (existing) {
+    reassert(existing, e.body, e);
+    return;
+  }
+  if (!graph.nodes[e.body.from] || !graph.nodes[e.body.to]) return;
+  graph.edges[e.body.id] = {
+    ...e.body,
+    status: statusFor(e.actor),
+    assertedBy: e.actor,
+    assertedAt: e.hlc,
+    updatedAt: e.hlc,
+  };
+}
+
+function changeAttributes(graph: Graph, e: VaultEvent<"AttributesChanged">): void {
+  const target = graph.nodes[e.body.target] ?? graph.edges[e.body.target];
+  if (!target) return;
+  target.attributes = patchAttributes(target.attributes, e.body.patch);
+  if ("label" in target && e.body.label) target.label = e.body.label;
+  if (e.body.confidence !== undefined) target.confidence = e.body.confidence;
+  touch(target, e);
+}
+
+/** Last-writer-wins per field; a null value removes the field. */
+export function patchAttributes(base: Attributes, patch: Attributes): Attributes {
+  const next = { ...base };
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === null) delete next[key];
+    else next[key] = value;
+  }
+  return next;
+}
+
+function reattach(edge: GraphEdge | undefined, from: string, to: string): void {
+  if (!edge) return;
+  if (edge.from === from) edge.from = to;
+  if (edge.to === from) edge.to = to;
+}
+
+function splitNode(graph: Graph, e: VaultEvent<"NodesSplit">): void {
+  const source = graph.nodes[e.body.source];
+  if (!source) return;
+  for (const part of e.body.into) {
+    graph.nodes[part.id] = {
+      ...source,
+      id: part.id,
+      label: part.label,
+      type: part.type ?? source.type,
+      attributes: { ...source.attributes, ...part.attributes },
+      status: statusFor(e.actor),
+      evidence: part.evidence,
+      derivedFrom: [source.id],
+      assertedBy: e.actor,
+      assertedAt: e.hlc,
+      updatedAt: e.hlc,
+    };
+    for (const edgeId of part.edges) reattach(graph.edges[edgeId], source.id, part.id);
+  }
+  touch(source, e).status = "superseded";
+}
+
+function mergeNodes(graph: Graph, e: VaultEvent<"NodesMerged">): void {
+  const sources = e.body.sources.map((id) => graph.nodes[id]).filter(Boolean);
+  if (sources.length === 0) return;
+  graph.nodes[e.body.into.id] = {
+    ...e.body.into,
+    confidence: Math.max(...sources.map((s) => s.confidence)),
+    status: statusFor(e.actor),
+    evidence: sources.reduce<Evidence[]>((acc, s) => mergeEvidence(acc, s.evidence), []),
+    derivedFrom: sources.map((s) => s.id),
+    assertedBy: e.actor,
+    assertedAt: e.hlc,
+    updatedAt: e.hlc,
+  };
+  for (const source of sources) {
+    touch(source, e).status = "superseded";
+    for (const edge of Object.values(graph.edges)) reattach(edge, source.id, e.body.into.id);
+  }
+}
