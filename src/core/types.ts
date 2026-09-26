@@ -77,6 +77,11 @@ export interface MigrationMap {
 
 // ---- Events ---------------------------------------------------------------
 
+export interface SpanMove {
+  from: { start: number; end: number };
+  to: { start: number; end: number };
+}
+
 export interface SplitPart {
   id: string;
   label: string;
@@ -87,7 +92,16 @@ export interface SplitPart {
 }
 
 export interface EventBodies {
-  EntryAdded: { entry: string; source: string; title: string; bytes: number };
+  EntryAdded: {
+    entry: string;
+    source: string;
+    title: string;
+    bytes: number;
+    /** When set, this Entry is a revision of an earlier one (Entries themselves stay immutable). */
+    revises?: string;
+    /** Evidence spans of the revised Entry and where the same text sits in this one. */
+    remap?: SpanMove[];
+  };
   NodeAsserted: {
     id: string;
     type: string;
@@ -201,6 +215,8 @@ export interface EntryRecord {
   bytes: number;
   addedAt: string;
   session: string;
+  revises?: string;
+  revisedBy?: string;
 }
 
 export type Decision = "pending" | "accepted" | "rejected";

@@ -167,8 +167,11 @@ export class ExploreManager {
       .slice(0, limit);
   }
 
+  /** Latest version of each Entry, newest first. */
   entries(): EntryRecord[] {
-    return Object.values(this.deps.vault.state().entries).sort((a, b) => b.addedAt.localeCompare(a.addedAt));
+    return Object.values(this.deps.vault.state().entries)
+      .filter((e) => !e.revisedBy)
+      .sort((a, b) => b.addedAt.localeCompare(a.addedAt));
   }
 
   entry(id: string): EntryView {

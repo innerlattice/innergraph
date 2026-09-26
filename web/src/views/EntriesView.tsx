@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { Navigate } from "../App";
-import { type EntryView, api } from "../api";
-import { Card, Empty, ErrorNote, Page } from "../components/ui";
+import { type EntryView, type RevisionResult, api } from "../api";
+import { Button, Card, Empty, ErrorNote, Page } from "../components/ui";
 import { formatHlc, highlightSegments, parseEntryFocus } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
+import { useJob } from "./WriteView";
 
 const FOCUS = "\u0000focus";
 
@@ -51,10 +52,65 @@ export function EntryText(props: { view: EntryView; focus?: Span; onOpen: (id: s
   );
 }
 
+function revisionSummary(result: RevisionResult): string {
+  const stale = result.cited.filter((c) => !c.moved).length;
+  const moved = `${result.remapped} cited passage${result.remapped === 1 ? "" : "s"} carried over`;
+  return stale > 0 ? `${moved}; ${stale} item${stale === 1 ? "" : "s"} cite text that changed.` : `${moved}.`;
+}
+
+/** Edit an Entry. Saving stores a revision; the old version stays in history. */
+export function EntryEditor(props: { view: EntryView; onSaved: (result: RevisionResult) => void; onCancel: () => void }) {
+  const [text, setText] = useState(props.view.text);
+  const [interpret, setInterpret] = useState(true);
+  const [error, setError] = useState<string>();
+  const save = () =>
+    api
+      .revise(props.view.entry.id, text, interpret)
+      .then(props.onSaved)
+      .catch((e: Error) => setError(e.message));
+  return (
+    <div className="space-y-3">
+      <textarea aria-label="Entry text" className="h-72 w-full resize-y rounded-md border border-stone-200 p-3 font-serif leading-relaxed outline-none focus:border-stone-400" value={text} onChange={(e) => setText(e.target.value)} />
+      <label className="flex items-center gap-2 text-sm text-stone-600">
+        <input type="checkbox" checked={interpret} onChange={(e) => setInterpret(e.target.checked)} />
+        Update the map from the changes (the model sees the old and new text and the items citing it)
+      </label>
+      <ErrorNote error={error} />
+      <div className="flex gap-2">
+        <Button tone="primary" disabled={text === props.view.text} onClick={save}>
+          Save revision
+        </Button>
+        <Button onClick={props.onCancel}>Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
+function EntryCard(props: { view: EntryView; focus?: Span; navigate: Navigate; revision?: RevisionResult; onRevised: (result: RevisionResult) => void }) {
+  const [editing, setEditing] = useState(false);
+  const result = props.revision?.entry === props.view.entry.id ? props.revision : undefined;
+  const job = useJob(result?.job?.id);
+  const saved = (r: RevisionResult) => {
+    setEditing(false);
+    props.onRevised(r);
+  };
+  return (
+    <Card className="space-y-4">
+      <header className="flex items-center justify-between gap-3">
+        <p className="text-xs text-stone-400">{props.view.entry.revises ? "Revised version · earlier versions stay in history" : formatHlc(props.view.entry.addedAt)}</p>
+        {editing ? null : <Button onClick={() => setEditing(true)}>Edit</Button>}
+      </header>
+      {result ? <p className="text-sm text-stone-600">Saved. {revisionSummary(result)} {job?.state === "running" || job?.state === "queued" ? "Updating the map…" : ""}</p> : null}
+      {editing ? <EntryEditor view={props.view} onSaved={saved} onCancel={() => setEditing(false)} /> : <EntryText view={props.view} focus={props.focus} onOpen={(id) => props.navigate("map", id)} />}
+    </Card>
+  );
+}
+
 export function EntriesView(props: { focus?: string; navigate: Navigate }) {
   const initial = parseEntryFocus(props.focus);
   const [selected, setSelected] = useState(initial.entry);
   const [focus, setFocus] = useState(initial.span);
+  const [revision, setRevision] = useState<RevisionResult>();
   const entries = useAsync(api.entries);
   const entry = useAsync(() => (selected ? api.entry(selected) : Promise.resolve(undefined)), [selected]);
   const choose = (id: string) => {
@@ -77,9 +133,7 @@ export function EntriesView(props: { focus?: string; navigate: Navigate }) {
           ))}
         </ul>
         {entry.data ? (
-          <Card>
-            <EntryText view={entry.data} focus={focus} onOpen={(id) => props.navigate("map", id)} />
-          </Card>
+          <EntryCard key={entry.data.entry.id} view={entry.data} focus={focus} navigate={props.navigate} revision={revision} onRevised={(r) => (setRevision(r), entries.reload(), setSelected(r.entry))} />
         ) : null}
       </div>
     </Page>

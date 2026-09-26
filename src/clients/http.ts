@@ -91,6 +91,10 @@ function registerWrites(app: Hono, vault: Vault): void {
     const input = await body(c);
     return map.merge(input.sources, input.into);
   }));
+  app.post("/api/entries/:id/revise", route(async (c) => {
+    const input = await body(c);
+    return ingest.reviseEntry(c.req.param("id") ?? "", input.content, { interpret: input.interpret !== false });
+  }));
   app.post("/api/approve", route(async (c) => ingest.approve((await body(c)).ids ?? [])));
   app.post("/api/decline", route(async (c) => ingest.decline((await body(c)).ids ?? [])));
   app.put("/api/selection", route(async (c) => vault.explore.setSelection((await body(c)).ids ?? [])));

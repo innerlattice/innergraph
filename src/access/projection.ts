@@ -10,6 +10,7 @@ import {
   type GraphNode,
   type ProjectionState,
   type Proposal,
+  type SpanMove,
   type Status,
   type VaultEvent,
   GRAPH_EVENT_TYPES,
@@ -52,7 +53,9 @@ const workflowHandlers: HandlerTable = {
       bytes: e.body.bytes,
       addedAt: e.hlc,
       session: e.session,
+      revises: e.body.revises,
     };
+    if (e.body.revises) reviseEntry(state, e.body.revises, e.body.entry, e.body.remap ?? []);
   },
   SchemaChanged: (state, e) => {
     migrateGraph(state.graph, e.body.migration.nodeTypes, e.body.migration.edgeTypes);
@@ -80,6 +83,20 @@ const workflowHandlers: HandlerTable = {
     }
   },
 };
+
+/** Moves Evidence from a revised Entry to the same text in its revision; unmatched spans stay put. */
+function reviseEntry(state: ProjectionState, previous: string, next: string, remap: SpanMove[]): void {
+  const old = state.entries[previous];
+  if (old) old.revisedBy = next;
+  const moves = new Map(remap.map((m) => [`${m.from.start}:${m.from.end}`, m.to]));
+  const move = (e: Evidence): Evidence => {
+    const to = e.entry === previous ? moves.get(`${e.start}:${e.end}`) : undefined;
+    return to ? { entry: next, ...to } : e;
+  };
+  for (const item of [...Object.values(state.graph.nodes), ...Object.values(state.graph.edges)]) {
+    item.evidence = item.evidence.map(move);
+  }
+}
 
 function decide(
   state: ProjectionState,

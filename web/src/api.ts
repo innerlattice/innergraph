@@ -1,14 +1,14 @@
 // Typed client for the local HTTP API. Types come straight from the core.
 import type { Loop, RootTrace } from "../../src/engines/analysisEngine";
 import type { EntryView, EvidenceHit, NodeView, Selection } from "../../src/managers/exploreManager";
-import type { IngestResult, PendingChanges, PendingItem, ProposalView, ReviewDecision } from "../../src/managers/ingestManager";
+import type { IngestResult, PendingChanges, PendingItem, ProposalView, ReviewDecision, RevisionResult } from "../../src/managers/ingestManager";
 import type { ReviewOutcome } from "../../src/managers/reviewActions";
 import type { ChangeResult, GraphAt } from "../../src/managers/mapManager";
 import type { RelatedItem } from "../../src/managers/recallCorpus";
 import type { AnyEvent, EntryRecord, Graph, GraphEdge, GraphNode, Schema, Status } from "../../src/core/types";
 import type { Job } from "../../src/utilities/jobQueue";
 
-export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, GraphEdge, GraphNode, IngestResult, Job, Loop, NodeView, ProposalView, PendingChanges, PendingItem, RelatedItem, ReviewOutcome, RootTrace, Schema, Selection, Status };
+export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, GraphEdge, GraphNode, IngestResult, Job, Loop, NodeView, ProposalView, PendingChanges, PendingItem, RelatedItem, ReviewOutcome, RevisionResult, RootTrace, Schema, Selection, Status };
 
 export interface VaultStatus {
   model: string;
@@ -48,6 +48,7 @@ export const api = {
   setStatus: (id: string, status: Status) => request<ChangeResult>(`/items/${enc(id)}/status`, { status }),
   rename: (id: string, label: string) => request<ChangeResult>(`/items/${enc(id)}/attributes`, { label }),
   split: (id: string, labels: string[]) => request<ChangeResult>(`/nodes/${enc(id)}/split`, { parts: labels.map((label) => ({ label })) }),
+  revise: (id: string, content: string, interpret: boolean) => request<RevisionResult>(`/entries/${enc(id)}/revise`, { content, interpret }),
   pending: () => request<PendingChanges>("/pending"),
   approve: (ids: string[]) => request<ReviewOutcome>("/approve", { ids }),
   decline: (ids: string[]) => request<ReviewOutcome>("/decline", { ids }),

@@ -14,13 +14,14 @@ import {
   REVIEW_POLICY_ACTOR,
   USER,
 } from "../core/types.js";
-import type { ContextNode, InterpretInput, Interpretation, InterpretationEngine } from "../engines/interpretationEngine.js";
+import type { CitedItem, ContextNode, InterpretInput, Interpretation, InterpretationEngine, Revision } from "../engines/interpretationEngine.js";
 import type { RecallEngine } from "../engines/recallEngine.js";
 import { DEFAULT_POLICY, type ReviewEngine, type ReviewPolicy } from "../engines/reviewEngine.js";
 import { newId, utf8 } from "../utilities/crypto.js";
 import type { Job, JobQueue } from "../utilities/jobQueue.js";
 import { type RelatedItem, buildCorpus, describeMatches } from "./recallCorpus.js";
 import { pendingAssertions } from "./pending.js";
+import { citedItems, citedSpans, computeRemap } from "./revision.js";
 import { type ReviewOutcome, approve, decline } from "./reviewActions.js";
 import { NotFoundError, requireFound, runSession } from "./sessions.js";
 
@@ -88,6 +89,37 @@ function graphDrafts(result: Interpretation, actor: ActorId, session: string): A
   ];
 }
 
+export interface Amendment {
+  id: string;
+  label?: string;
+  attributes?: Record<string, unknown>;
+}
+
+export interface RevisionResult {
+  session: string;
+  entry: string;
+  previous: string;
+  /** How many cited passages were found again in the new text. */
+  remapped: number;
+  /** Items that cite the entry, with their old passages; `moved: false` means the passage changed. */
+  cited: CitedItem[];
+  job?: Job;
+}
+
+function amendmentDraft(change: Amendment, actor: ActorId, session: string): AnyDraft {
+  return { actor, session, type: "AttributesChanged", body: { target: change.id, patch: change.attributes ?? {}, label: change.label } };
+}
+
+function revisionDrafts(revision: Revision, actor: ActorId, session: string): AnyDraft[] {
+  const retractions = revision.retract.map((target) => ({
+    actor,
+    session,
+    type: "StatusChanged" as const,
+    body: { target, status: "superseded" as const, reason: "no longer supported by the edited entry" },
+  }));
+  return [...revision.updates.map((u) => amendmentDraft(u, actor, session)), ...retractions, ...graphDrafts(revision.added, actor, session)];
+}
+
 function contextNodes(state: ProjectionState): ContextNode[] {
   return Object.values(state.graph.nodes)
     .filter((n) => n.status === "hypothesis" || n.status === "accepted")
@@ -119,6 +151,42 @@ export class IngestManager {
     const related = this.related(entry.text, [hash]);
     const job = options.interpret === false ? this.close(session, actor) : this.enqueueInterpretation(session, hash);
     return { session, entry: hash, related, job };
+  }
+
+  /**
+   * Edit an Entry: stores a revision (Entries stay immutable), moves Evidence to the same
+   * passages in the new text and, unless told not to, lets the model update cited items.
+   */
+  reviseEntry(entry: string, content: string, options: { interpret?: boolean; actor?: ActorId } = {}): RevisionResult {
+    const { vault } = this.deps;
+    const state = vault.state();
+    const previous = requireFound(state.entries[entry], `Entry ${entry}`);
+    if (previous.revisedBy) throw new Error("Edit the latest version of this Entry");
+    const next = normalise({ content, title: previous.title, source: previous.source });
+    const bytes = utf8(next.text);
+    const hash = vault.putBlob(bytes, next.media);
+    if (hash === entry) throw new Error("The Entry is unchanged");
+    const remap = computeRemap(vault, entry, hash, next.text, citedSpans(state, entry));
+    const cited = citedItems(vault, state, entry, remap);
+    const session = newId();
+    const actor = options.actor ?? USER;
+    vault.append([
+      { actor, session, type: "SessionOpened", body: { purpose: "revise", entry: hash } },
+      { actor, session, type: "EntryAdded", body: { entry: hash, source: next.source, title: next.title, bytes: bytes.length, revises: entry, remap } },
+    ]);
+    const job = options.interpret === false ? this.close(session, actor) : this.enqueueRevision(session, entry, hash, cited);
+    return { session, entry: hash, previous: entry, remapped: remap.length, cited, job };
+  }
+
+  /** Label/attribute corrections by any Actor; low impact, so the review policy usually merges them. */
+  amend(actor: ActorId, changes: Amendment[]): ProposeResult {
+    const known = this.deps.vault.state().graph;
+    const valid = changes.filter((c) => known.nodes[c.id] || known.edges[c.id]);
+    const { session } = runSession(this.deps.vault, actor, "amend", (s) => valid.map((c) => amendmentDraft(c, actor, s)));
+    const accepted = actor === USER ? [] : this.autoReview(session);
+    const dropped = changes.filter((c) => !valid.includes(c)).map((c) => `${c.id}: not found`);
+    const pending = this.deps.vault.state().proposals[session].events.filter((i) => i.decision === "pending");
+    return { session, accepted, awaitingReview: pending.map((i) => i.event.id), dropped };
   }
 
   related(text: string, exclude: string[] = []): RelatedItem[] {
@@ -209,6 +277,20 @@ export class IngestManager {
       try {
         const result = await this.deps.interpretation.interpret(this.interpretInput(entry));
         this.deps.vault.append(graphDrafts(result, actor, session));
+      } finally {
+        this.close(session, actor);
+        this.autoReview(session);
+      }
+    });
+  }
+
+  private enqueueRevision(session: string, previous: string, entry: string, cited: CitedItem[]): Job {
+    const actor = `model:${this.deps.interpretation.modelName}`;
+    return this.deps.queue.enqueue(session, "revise", async () => {
+      try {
+        const input = { ...this.interpretInput(entry), oldText: this.deps.vault.readText(previous), cited };
+        const revision = await this.deps.interpretation.revise(input);
+        this.deps.vault.append(revisionDrafts(revision, actor, session));
       } finally {
         this.close(session, actor);
         this.autoReview(session);

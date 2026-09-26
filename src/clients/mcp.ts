@@ -71,6 +71,8 @@ export function toolSpecs(vault: Vault, actor: ActorId): ToolSpec[] {
     { name: "find_loops", tier: "read", description: "Feedback loops over causal Edges, classified reinforcing or balancing.", input: {}, run: () => explore.findLoops() },
     { name: "find_related", tier: "read", description: "Related past Entries and Nodes for a text or Node id. Parked Nodes are never returned.", input: { text: z.string().optional(), nodeId: z.string().optional() }, run: (a) => explore.findRelated(a) },
     { name: "graph_at", tier: "read", description: "The Graph as it was at a time (ISO date) or HLC position.", input: { t: z.string() }, run: (a) => map.graphAt(text(a, "t")) },
+    { name: "get_entry", tier: "read", description: "An Entry's full text and which Nodes/Edges cite which passages.", input: { id: z.string() }, run: (a) => explore.entry(text(a, "id")) },
+    { name: "list_entries", tier: "read", description: "The latest version of every Entry, newest first.", input: {}, run: () => explore.entries() },
     { name: "get_selection", tier: "read", description: "The Nodes and Edges the user currently has selected in the graph view. Use when the user says 'these', 'the selected ones' or similar.", input: {}, run: () => explore.selection() },
     { name: "list_proposals", tier: "read", description: "Proposals with Events awaiting review, and why each was surfaced.", input: { all: z.boolean().optional() }, run: (a) => ingest.listProposals(a.all ? "all" : "pending") },
     {
@@ -81,6 +83,20 @@ export function toolSpecs(vault: Vault, actor: ActorId): ToolSpec[] {
       run: (a) => ingest.addEntry(a as never, { actor, interpret: a.interpret !== false }),
     },
     { name: "propose", tier: "propose", description: "Propose Nodes and Edges citing verbatim quotes from an Entry. Low-impact items are auto-accepted as hypotheses; the rest await review.", input: assertion, run: (a) => ingest.propose(actor, text(a, "entry"), a) },
+    {
+      name: "revise_entry",
+      tier: "propose",
+      description: "Replace an Entry's text with an edited version (e.g. a typo fix). Evidence moves to the same passages in the new text. With interpret=false, returns the cited items (label, attributes, old quotes, moved) so you can fix them yourself with `amend` and add new material with `propose`.",
+      input: { entry: z.string(), content: z.string(), interpret: z.boolean().optional() },
+      run: (a) => ingest.reviseEntry(text(a, "entry"), text(a, "content"), { actor, interpret: a.interpret !== false }),
+    },
+    {
+      name: "amend",
+      tier: "propose",
+      description: "Correct labels or attributes of existing Nodes/Edges, e.g. after an Entry was edited. Low-impact, so usually merged automatically.",
+      input: { changes: z.array(z.object({ id: z.string(), label: z.string().optional(), attributes: z.record(z.string(), z.unknown()).optional() })).min(1) },
+      run: (a) => ingest.amend(actor, a.changes as never),
+    },
     {
       name: "approve",
       tier: "commit",

@@ -180,6 +180,38 @@ describe("EntriesView", () => {
     fireEvent.click(screen.getByText("Tuesday"));
   });
 
+  it("edits an entry and reports how evidence carried over", async () => {
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        posted.push({ url, body: JSON.parse(String(init.body)) });
+        if (url.includes("fail")) return new Response('{"error":"The Entry is unchanged"}', { status: 400 });
+        return new Response(JSON.stringify({ session: "s9", entry: "h", previous: "h0", remapped: 1, cited: [{ moved: false }, { moved: true }] }));
+      }
+      const body = routes[url.split("?")[0]];
+      return new Response(JSON.stringify(body ?? { id: "s9", state: "running" }));
+    });
+    render(<EntriesView focus="h" navigate={vi.fn()} />);
+    fireEvent.click(await screen.findByText("Edit"));
+    fireEvent.change(screen.getByLabelText("Entry text"), { target: { value: "I learned that needing things is fine." } });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByText("Save revision"));
+    expect(await screen.findByText(/1 cited passage carried over; 1 item cite text that changed/)).toBeTruthy();
+    expect(posted[0]).toEqual({ url: "/api/entries/h/revise", body: { content: "I learned that needing things is fine.", interpret: false } });
+    fireEvent.click(screen.getByText("Edit"));
+    fireEvent.click(screen.getByText("Cancel"));
+  });
+
+  it("shows revision errors", async () => {
+    vi.stubGlobal("fetch", async (_url: string, init?: RequestInit) =>
+      init?.method === "POST" ? new Response('{"error":"The Entry is unchanged"}', { status: 400 }) : new Response(JSON.stringify(entryView)),
+    );
+    const { EntryEditor } = await import("./EntriesView");
+    render(<EntryEditor view={entryView} onSaved={vi.fn()} onCancel={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Entry text"), { target: { value: "changed" } });
+    fireEvent.click(screen.getByText("Save revision"));
+    expect(await screen.findByText("The Entry is unchanged")).toBeTruthy();
+  });
+
   it("renders plain text without citations", () => {
     render(<EntryText view={{ ...entryView, citations: [] }} onOpen={vi.fn()} />);
     expect(screen.getByText(text)).toBeTruthy();
