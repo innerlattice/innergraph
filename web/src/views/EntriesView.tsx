@@ -3,7 +3,7 @@ import { Chip, ItemLabel } from "../components/Chip";
 import type { Navigate } from "../App";
 import { type EntryView, type RevisionResult, api } from "../api";
 import { Button, Card, Empty, ErrorNote, Page } from "../components/ui";
-import { formatHlc, highlightSegments, parseEntryFocus } from "../lib/format";
+import { formatHlc, citedRuns, parseEntryFocus } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 import { useJob } from "../lib/useJob";
 
@@ -21,7 +21,7 @@ export function EntryText(props: { view: EntryView; focus?: Span; onOpen: (id: s
   const container = useRef<HTMLParagraphElement>(null);
   const labels = Object.fromEntries(view.citations.map((c) => [c.target, c.label]));
   const spans = view.citations.map((c) => ({ target: c.target, ...c.evidence }));
-  const segments = highlightSegments(view.text, focus ? [...spans, { target: FOCUS, ...focus }] : spans);
+  const segments = citedRuns(view.text, focus ? [...spans, { target: FOCUS, ...focus }] : spans);
 
   useEffect(() => {
     container.current?.querySelector("[data-focus]")?.scrollIntoView?.({ block: "center" });

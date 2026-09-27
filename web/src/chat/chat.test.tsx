@@ -11,7 +11,7 @@ import { MessageBoundary } from "./Message";
 import { SettingsDialog, linkPoll } from "./SettingsDialog";
 import { ToolCard } from "./ToolCard";
 import { budgetLevel } from "../../../src/core/budget";
-import { describeTool, errorText, friendlyError, isFullError, isSilent, latestTokens, marksFor, recordedEntry, repliesTo, segments, textOf } from "./parts";
+import { describeTool, errorText, friendlyError, isFullError, isSilent, latestTokens, marksFor, recordedEntry, repliesTo, markedRuns, textOf } from "./parts";
 
 vi.mock("../components/GraphCanvas", () => ({ GraphCanvas: () => <div data-testid="graph-canvas" /> }));
 
@@ -121,7 +121,7 @@ describe("reading a conversation", () => {
     const marks = marksFor(TEXT, "h1", replies);
     expect(marks.map((m) => TEXT.slice(m.start, m.end))).toEqual(["I froze in the meeting", "The shame", "made it worse"]);
     expect(marks[2]).toMatchObject({ ids: [], labels: ["Worse"] });
-    const parts = segments("abcdef", [
+    const parts = markedRuns("abcdef", [
       { start: 1, end: 4, ids: ["x"], labels: ["X"] },
       { start: 2, end: 5, ids: ["y"], labels: [] },
     ]);

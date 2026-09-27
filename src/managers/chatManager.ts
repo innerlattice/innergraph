@@ -28,7 +28,7 @@ export interface ChatBudget {
   level: BudgetLevel;
 }
 
-export interface ChatView {
+export interface OpenChat {
   chat: ChatRecord;
   budget: ChatBudget;
 }
@@ -82,12 +82,12 @@ export class ChatManager {
     return this.deps.chats.list().map((c) => ({ ...c, budget: { contextTokens: c.contextTokens, contextWindow, level: budgetLevel(c.contextTokens, contextWindow) } }));
   }
 
-  get(id: string): ChatView {
+  get(id: string): OpenChat {
     const chat = requireFound(this.deps.chats.read(id), `Conversation ${id}`);
     return { chat, budget: this.budget(chat) };
   }
 
-  create(id: string = newId(), title = NEW_TITLE): ChatView {
+  create(id: string = newId(), title = NEW_TITLE): OpenChat {
     const at = this.now().toISOString();
     const chat = { id, title, createdAt: at, updatedAt: at, contextTokens: 0, messages: [] };
     this.deps.chats.write(chat);
@@ -95,11 +95,11 @@ export class ChatManager {
   }
 
   /** The conversation, created on first use so a Client can pick its own id. */
-  open(id: string): ChatView {
+  open(id: string): OpenChat {
     return this.deps.chats.read(id) ? this.get(id) : this.create(id);
   }
 
-  rename(id: string, title: string): ChatView {
+  rename(id: string, title: string): OpenChat {
     const { chat } = this.get(id);
     this.deps.chats.write({ ...chat, title: title.trim() || chat.title });
     return this.get(id);
@@ -110,7 +110,7 @@ export class ChatManager {
   }
 
   /** Stores a finished turn; the first message names a new conversation. */
-  save(id: string, messages: unknown[], contextTokens: number): ChatView {
+  save(id: string, messages: unknown[], contextTokens: number): OpenChat {
     const { chat } = this.open(id);
     const title = chat.title === NEW_TITLE ? (titleFrom(messages) ?? chat.title) : chat.title;
     this.deps.chats.write({ ...chat, title, messages, contextTokens, updatedAt: this.now().toISOString() });

@@ -28,7 +28,7 @@ export function charIndex(text: string, byteOffset: number): number {
   return spanText(text, 0, byteOffset).length;
 }
 
-export interface Segment {
+export interface CitedRun {
   text: string;
   cited: string[];
 }
@@ -43,7 +43,7 @@ export function runsOf<R extends { start: number; end: number }>(text: string, r
 }
 
 /** Splits text into runs, each tagged with the targets whose Evidence (byte offsets) covers it. */
-export function highlightSegments(text: string, spans: { target: string; start: number; end: number }[]): Segment[] {
+export function citedRuns(text: string, spans: { target: string; start: number; end: number }[]): CitedRun[] {
   const ranges = spans.map((s) => ({ target: s.target, start: charIndex(text, s.start), end: charIndex(text, s.end) }));
   return runsOf(text, ranges).map((run) => ({ text: run.text, cited: run.covering.map((r) => r.target) }));
 }

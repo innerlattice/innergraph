@@ -13,22 +13,22 @@ function values(attributes: Record<string, unknown>): string {
   return Object.values(attributes).filter((v) => typeof v === "string" && v).join("; ");
 }
 
-function edgeText(vault: VaultAccess, e: ViewEdge, view: GraphView): string {
+function edgeDoc(vault: VaultAccess, e: ViewEdge, view: GraphView): string {
   const sign = e.sign === -1 ? " (decreases)" : e.sign === 1 ? " (increases)" : "";
   const from = view.nodes[e.from]?.label ?? e.from;
   const to = view.nodes[e.to]?.label ?? e.to;
   return [`${from} ${humanise(e.type)}${sign} ${to}`, ...e.evidence.map((ev) => vault.readSpan(ev))].join("\n");
 }
 
-function nodeText(vault: VaultAccess, n: ViewNode): string {
+function nodeDoc(vault: VaultAccess, n: ViewNode): string {
   return [`${n.label} (${humanise(n.type)})`, values(n.attributes), ...n.evidence.map((ev) => vault.readSpan(ev))].filter(Boolean).join("\n");
 }
 
 /** Searchable items: everything on the map. Removed items never are. */
 export function graphDocs(vault: VaultAccess, state: ProjectionState): RecallDoc[] {
   const view = materialize(state, ACTIVE);
-  const nodes = Object.values(view.nodes).map((n) => ({ id: n.id, kind: "node" as const, text: nodeText(vault, n) }));
-  const edges = Object.values(view.edges).map((e) => ({ id: e.id, kind: "edge" as const, text: edgeText(vault, e, view) }));
+  const nodes = Object.values(view.nodes).map((n) => ({ id: n.id, kind: "node" as const, text: nodeDoc(vault, n) }));
+  const edges = Object.values(view.edges).map((e) => ({ id: e.id, kind: "edge" as const, text: edgeDoc(vault, e, view) }));
   return [...nodes, ...edges];
 }
 

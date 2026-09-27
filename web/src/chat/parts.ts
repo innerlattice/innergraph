@@ -160,7 +160,7 @@ function marksOf(text: string, item: Quoted): Mark[] {
   return quotes.map((q) => ({ q, start: text.indexOf(q) })).filter((m) => m.start >= 0).map((m) => ({ start: m.start, end: m.start + m.q.length, ids, labels }));
 }
 
-export interface Segment {
+export interface MarkedRun {
   text: string;
   ids: string[];
   labels: string[];
@@ -168,7 +168,7 @@ export interface Segment {
 }
 
 /** The text cut at every mark boundary; overlapping marks combine their items. */
-export function segments(text: string, marks: Mark[]): Segment[] {
+export function markedRuns(text: string, marks: Mark[]): MarkedRun[] {
   return runsOf(text, marks).map(({ text: run, covering }) => ({
     text: run,
     ids: [...new Set(covering.flatMap((m) => m.ids))],

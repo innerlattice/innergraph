@@ -5,7 +5,7 @@ import { humanise } from "../../../src/core/edgeText";
 import { boxSize, clip, edgeLabel, labelStyleOf, roleOf, toElements } from "./elements";
 import { appeared, loadPositions, partition, savePositions } from "./layoutCache";
 import { entryFocus, parseEntryFocus } from "./format";
-import { actorLabel, charIndex, colorFor, describeEvent, formatHlc, highlightSegments, labelsFrom, spanText } from "./format";
+import { actorLabel, charIndex, colorFor, describeEvent, formatHlc, citedRuns, labelsFrom, spanText } from "./format";
 
 const schema = {
   name: "s",
@@ -41,7 +41,7 @@ describe("format helpers", () => {
   });
 
   it("splits text into cited and uncited segments", () => {
-    const segments = highlightSegments("abcdef", [{ target: "x", start: 1, end: 3 }, { target: "y", start: 2, end: 4 }]);
+    const segments = citedRuns("abcdef", [{ target: "x", start: 1, end: 3 }, { target: "y", start: 2, end: 4 }]);
     expect(segments).toEqual([
       { text: "a", cited: [] },
       { text: "b", cited: ["x"] },
