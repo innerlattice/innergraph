@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { type Call, failure, fakeServer, sent } from "../testing/fakeServer";
 import type { EntryView, NodeView } from "../api";
 import { Button, Card, Empty, ErrorNote, Page, Quote, StatusPill } from "../components/ui";
 import { EntriesView, EntryText, SupportedItems } from "./EntriesView";
@@ -69,19 +70,15 @@ const routes: Record<string, unknown> = {
   "/api/positions": [HLC],
 };
 
-let posted: { url: string; body: unknown }[];
+let calls: Call[];
 
 beforeEach(() => {
-  posted = [];
-  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
-    const path = url.split("?")[0];
-    if (init?.method === "POST") {
-      posted.push({ url: path, body: JSON.parse(String(init.body)) });
-      if (path === "/api/entries") return new Response(JSON.stringify({ session: "s2", entry: "h2", related: [{ id: "h", kind: "entry", score: 0.4, terms: [], title: "Tuesday", snippet: "old words" }], job: { id: "s2", name: "interpret", state: "queued" } }));
-      return new Response(JSON.stringify({ ok: true }));
+  calls = fakeServer((call) => {
+    if (call.method === "POST") {
+      if (call.path === "/api/entries") return ({ session: "s2", entry: "h2", related: [{ id: "h", kind: "entry", score: 0.4, terms: [], title: "Tuesday", snippet: "old words" }], job: { id: "s2", name: "interpret", state: "queued" } });
+      return { ok: true };
     }
-    const body = routes[path];
-    return body === undefined ? new Response('{"error":"missing"}', { status: 404 }) : new Response(JSON.stringify(body));
+    return routes[call.path];
   });
 });
 afterEach(() => {
@@ -133,7 +130,7 @@ describe("Related and useJob", () => {
 
   it("keeps polling running jobs and reports failures", async () => {
     const states = ["running", "failed"];
-    vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ id: "j", name: "i", state: states.shift() ?? "failed", error: "model offline" })));
+    fakeServer(() => ({ id: "j", name: "i", state: states.shift() ?? "failed", error: "model offline" }));
     function Probe() {
       const job = useJob("j", 5);
       return <p>{job?.state ?? "none"}</p>;
@@ -185,14 +182,9 @@ describe("EntriesView", () => {
   });
 
   it("edits an entry and reports how evidence carried over", async () => {
-    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
-      if (init?.method === "POST") {
-        posted.push({ url, body: JSON.parse(String(init.body)) });
-        if (url.includes("fail")) return new Response('{"error":"The Entry is unchanged"}', { status: 400 });
-        return new Response(JSON.stringify({ session: "s9", entry: "h", previous: "h0", remapped: 1, cited: [{ moved: false }, { moved: true }] }));
-      }
-      const body = routes[url.split("?")[0]];
-      return new Response(JSON.stringify(body ?? { id: "s9", state: "running" }));
+    calls = fakeServer((call) => {
+      if (call.method === "POST") return call.path.includes("fail") ? failure("The Entry is unchanged") : { session: "s9", entry: "h", previous: "h0", remapped: 1, cited: [{ moved: false }, { moved: true }] };
+      return routes[call.path] ?? { id: "s9", state: "running" };
     });
     render(<EntriesView focus="h" navigate={vi.fn()} />);
     fireEvent.click(await screen.findByText("Edit"));
@@ -200,15 +192,13 @@ describe("EntriesView", () => {
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByText("Save revision"));
     expect(await screen.findByText(/1 cited passage carried over; 1 item cite text that changed/)).toBeTruthy();
-    expect(posted[0]).toEqual({ url: "/api/entries/h/revise", body: { content: "I learned that needing things is fine.", interpret: false } });
+    expect(sent(calls)[0]).toEqual({ url: "/api/entries/h/revise", body: { content: "I learned that needing things is fine.", interpret: false } });
     fireEvent.click(screen.getByText("Edit"));
     fireEvent.click(screen.getByText("Cancel"));
   });
 
   it("shows revision errors", async () => {
-    vi.stubGlobal("fetch", async (_url: string, init?: RequestInit) =>
-      init?.method === "POST" ? new Response('{"error":"The Entry is unchanged"}', { status: 400 }) : new Response(JSON.stringify(entryView)),
-    );
+    fakeServer((call) => (call.method === "POST" ? failure("The Entry is unchanged") : entryView));
     const { EntryEditor } = await import("./EntriesView");
     render(<EntryEditor view={entryView} onSaved={vi.fn()} onCancel={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("Entry text"), { target: { value: "changed" } });
@@ -250,7 +240,7 @@ describe("NodePanel", () => {
     fireEvent.change(screen.getByLabelText("Merge with"), { target: { value: "n2" } });
     fireEvent.click(screen.getByText("Merge"));
     fireEvent.click(screen.getByText(/needing things is unsafe/));
-    await waitFor(() => expect(posted.map((p) => p.url)).toEqual(["/api/confirm", "/api/items/n1/attributes", "/api/nodes/n1/split", "/api/merge"]));
+    await waitFor(() => expect(sent(calls).map((p) => p.url)).toEqual(["/api/confirm", "/api/items/n1/attributes", "/api/nodes/n1/split", "/api/merge"]));
     expect(props.onHighlight).toHaveBeenCalledWith(["n2", "n1"]);
     expect(props.navigate).toHaveBeenCalledWith("entries", "h@15-39");
     expect(screen.getByRole("button", { name: "Open “Tuesday” at this passage" })).toBeTruthy();

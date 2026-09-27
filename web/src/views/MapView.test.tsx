@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { type Call, fakeServer } from "../testing/fakeServer";
 import type { GraphCanvasProps } from "../components/GraphCanvas";
 import { MapView } from "./MapView";
 
@@ -37,7 +38,7 @@ const routes: Record<string, unknown> = {
   "/api/selection": { ids: ["n1", "n2"], at: "", items: [{ id: "n1", kind: "node", type: "t", label: "One", status: "active", confirmed: true }, { id: "n2", kind: "node", type: "t", label: "Two", status: "active", confirmed: false }] },
   "/api/nodes/n1/roots": { node: "n1", upstream: ["n0"], roots: [{ id: "n0", support: 1, path: ["n0", "n1"] }] },
 };
-const respond = (url: string) => new Response(JSON.stringify(/[?&]t=/.test(url) ? past : (routes[url.split("?")[0]] ?? { ok: true })));
+const respond = (call: Call) => (/[?&]t=/.test(call.url) ? past : (routes[call.path] ?? { ok: true }));
 
 /** The shell owns the selection; this stands in for it. */
 function Harness(props: { initial?: string[] }) {
@@ -46,7 +47,7 @@ function Harness(props: { initial?: string[] }) {
 }
 
 beforeEach(() => {
-  vi.stubGlobal("fetch", async (url: string) => respond(url));
+  fakeServer(respond);
 });
 afterEach(() => {
   cleanup();
@@ -88,15 +89,14 @@ it("lists node types from the Schema in the legend", async () => {
 });
 
 it("opens what changed from the status bar and shows removed items on request", async () => {
-  const urls: string[] = [];
-  vi.stubGlobal("fetch", async (url: string) => (urls.push(url), respond(url)));
+  const calls = fakeServer(respond);
   render(<Harness />);
   fireEvent.click(await screen.findByText("What changed"));
   expect(await screen.findByText("New entry")).toBeTruthy();
   fireEvent.click(screen.getByText("Ghost"));
   expect(await screen.findByText("Ghost", { selector: "h3" })).toBeTruthy();
   fireEvent.click(screen.getByLabelText("Show removed (1)"));
-  await waitFor(() => expect(urls.some((u) => u.includes("statuses=active,removed"))).toBe(true));
+  await waitFor(() => expect(calls.some((c) => c.url.includes("statuses=active,removed"))).toBe(true));
 });
 
 it("drops selected items that leave the graph", async () => {

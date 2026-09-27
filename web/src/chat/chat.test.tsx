@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { type Call, fakeServer, json } from "../testing/fakeServer";
 import { App } from "../App";
 import type { ChatMessage, PublicChatSettings } from "../api";
 import { ViewRail } from "../components/ViewRail";
@@ -46,12 +47,10 @@ const TURN = [
   { type: "finish", finishReason: "stop", messageMetadata: { contextTokens: 24_000, contextWindow: 32_000 } },
 ];
 
-let calls: { method: string; url: string; body?: unknown }[];
+let calls: Call[];
 let routes: Record<string, () => Response>;
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 
 beforeEach(() => {
-  calls = [];
   routes = {
     "GET /api/chat/settings": () => json(SETTINGS),
     "GET /api/chats": () => json([{ id: "old", title: "Earlier", createdAt: "2026-09-20T00:00:00Z", updatedAt: new Date().toISOString(), contextTokens: 10, budget: { contextTokens: 10, contextWindow: 32_000, level: "ok" } }]),
@@ -62,13 +61,7 @@ beforeEach(() => {
     "GET /api/view": () => json({ nodes: { n7: { id: "n7", type: "part", label: "Freezing", status: "active", confirmed: false, attributes: {}, evidence: [], staleEvidence: 0 } }, edges: {}, counts: { active: 1, removed: 0 }, position: "p" }),
     "POST /api/undo-session": () => json({ session: "u", summary: { retired: 1, restored: 0, changed: 0 } }),
   };
-  vi.stubGlobal("fetch", async (input: string | URL | Request, init?: RequestInit) => {
-    const url = String(input instanceof Request ? input.url : input);
-    const method = init?.method ?? "GET";
-    calls.push({ method, url, body: init?.body ? JSON.parse(String(init.body)) : undefined });
-    const route = routes[`${method} ${url.split("?")[0]}`];
-    return route ? route() : json({ error: "missing" }, 404);
-  });
+  calls = fakeServer((call) => routes[`${call.method} ${call.path}`]?.());
 });
 afterEach(() => {
   cleanup();

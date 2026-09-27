@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { type Call, failure, fakeServer, sent } from "../testing/fakeServer";
 import type { SessionChanges } from "../api";
 import { ChangesPanel } from "./ChangesPanel";
 import { ItemActions, UndoBar, kindsFor } from "./ItemControls";
@@ -17,13 +18,11 @@ const CHANGES = [
   { ...change("s2", [{ id: "n3", kind: "node", label: "X", action: "removed" }]), purpose: "mystery" },
 ];
 
-let posted: { url: string; body: unknown }[];
+let calls: Call[];
 beforeEach(() => {
-  posted = [];
-  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
-    if (init?.body) posted.push({ url, body: JSON.parse(String(init.body)) });
-    if (url.startsWith("/api/changes")) return new Response(JSON.stringify(CHANGES));
-    return url.includes("remove") ? new Response('{"error":"nope"}', { status: 400 }) : new Response("{}");
+  calls = fakeServer((call) => {
+    if (call.path.startsWith("/api/changes")) return CHANGES;
+    return call.url.includes("remove") ? failure("nope") : {};
   });
 });
 afterEach(() => {
@@ -45,7 +44,7 @@ describe("item actions", () => {
     render(<ItemActions ids={["a", "b"]} items={[{ status: "active", confirmed: false }]} onDone={onDone} count />);
     fireEvent.click(screen.getByText("Looks right 2"));
     await waitFor(() => expect(onDone).toHaveBeenCalledWith({ kind: "confirm", ids: ["a", "b"] }));
-    expect(posted[0]).toEqual({ url: "/api/confirm", body: { ids: ["a", "b"] } });
+    expect(sent(calls)[0]).toEqual({ url: "/api/confirm", body: { ids: ["a", "b"] } });
     fireEvent.click(screen.getByText("Remove 2"));
     expect(await screen.findByText("nope")).toBeTruthy();
     cleanup();
@@ -85,7 +84,7 @@ describe("what changed", () => {
     fireEvent.click(screen.getByText("The Hider", { selector: "span" }));
     expect(onFocus).toHaveBeenCalledWith(["n1"]);
     fireEvent.click(screen.getAllByText("Undo")[0]);
-    await waitFor(() => expect(posted).toContainEqual({ url: "/api/undo-session", body: { session: "s1" } }));
+    await waitFor(() => expect(sent(calls)).toContainEqual({ url: "/api/undo-session", body: { session: "s1" } }));
     fireEvent.click(screen.getByText("“The Hider” is recorded 2 times"));
     expect(onFocus).toHaveBeenCalledWith(["n1", "n4"]);
     fireEvent.click(screen.getByText("Merge"));
@@ -93,7 +92,7 @@ describe("what changed", () => {
   });
 
   it("says when nothing has changed and reports undo failures", async () => {
-    vi.stubGlobal("fetch", async (url: string) => (url.startsWith("/api/changes") ? new Response("[]") : new Response('{"error":"bad"}', { status: 400 })));
+    fakeServer((call) => (call.path.startsWith("/api/changes") ? [] : failure("bad")));
     render(<ChangesPanel version="1" labels={{}} onFocus={vi.fn()} onChanged={vi.fn()} onClose={vi.fn()} />);
     expect(await screen.findByText("Nothing yet.")).toBeTruthy();
   });
