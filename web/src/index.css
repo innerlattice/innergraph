@@ -118,6 +118,9 @@
 @utility max-w-inset {
   max-width: calc(100% - --spacing(6));
 }
+@utility max-h-inset {
+  max-height: calc(100% - --spacing(6));
+}
 @utility max-h-popover {
   max-height: 60vh;
 }

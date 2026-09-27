@@ -67,7 +67,10 @@ function SidePanel(props: PanelProps & { panel: RefObject<HTMLElement | null> })
   const content = panelFor(props);
   if (!content) return null;
   return (
-    <aside ref={props.panel} className="absolute top-3 right-3 bottom-3 z-20 w-panel max-w-inset animate-rise overflow-auto rounded-2xl bg-white/95 shadow-floating backdrop-blur">
+    <aside
+      ref={props.panel}
+      className="absolute top-3 right-3 z-20 max-h-inset w-panel max-w-inset animate-rise overflow-auto rounded-2xl bg-white/95 shadow-floating backdrop-blur"
+    >
       {content}
     </aside>
   );
