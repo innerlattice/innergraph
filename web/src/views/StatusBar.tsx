@@ -1,6 +1,7 @@
 // One quiet bar over the map: what changed recently, and whether removed items are shown.
 export interface StatusBarProps {
-  counts?: { active: number; removed: number };
+  /** How many removed items the toggle would bring back. */
+  removed?: number;
   showRemoved: boolean;
   onShowRemoved: (show: boolean) => void;
   changesOpen: boolean;
@@ -9,7 +10,7 @@ export interface StatusBarProps {
 }
 
 export function StatusBar(props: StatusBarProps) {
-  const removed = props.counts?.removed ?? 0;
+  const removed = props.removed ?? 0;
   return (
     <div className="flex flex-wrap items-center gap-4 bg-stone-50 px-5 shadow-raised py-1.5 text-sm">
       <button
@@ -21,7 +22,6 @@ export function StatusBar(props: StatusBarProps) {
         What changed
         {props.duplicates > 0 ? <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 text-xs text-amber-800">{props.duplicates} duplicate{props.duplicates === 1 ? "" : "s"}</span> : null}
       </button>
-      <span className="text-xs text-stone-400">{props.counts?.active ?? 0} on the map</span>
       <label className="ml-auto flex items-center gap-1.5 text-xs text-stone-500">
         <input type="checkbox" checked={props.showRemoved} onChange={(e) => props.onShowRemoved(e.target.checked)} />
         Show removed ({removed})

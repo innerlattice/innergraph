@@ -129,7 +129,7 @@ export function MapView(props: MapViewProps) {
   return (
     <div className="flex h-full flex-col">
       <TimeBar positions={positions.data ?? []} index={index} onChange={setIndex} onReverted={refresh} />
-      <StatusBar counts={view?.counts} showRemoved={showRemoved} onShowRemoved={setShowRemoved} changesOpen={mode === "changes"} onChanges={() => setMode(mode === "changes" ? "items" : "changes")} duplicates={duplicates?.length ?? 0} />
+      <StatusBar removed={view?.counts.removed} showRemoved={showRemoved} onShowRemoved={setShowRemoved} changesOpen={mode === "changes"} onChanges={() => setMode(mode === "changes" ? "items" : "changes")} duplicates={duplicates?.length ?? 0} />
       <ErrorNote error={error} />
       <div className="relative min-h-0 flex-1">
         <div className="absolute inset-0">
