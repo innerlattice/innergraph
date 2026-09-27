@@ -1,6 +1,6 @@
 import cytoscape, { type Core, type ElementDefinition } from "cytoscape";
 import { useEffect, useRef, useState } from "react";
-import { applyHighlight, applySelection, onKeyDown, onKeyUp, pointerOnHover, remember, render, selectedIds, tidy, wheelToViewport } from "../lib/canvasController";
+import { applyHighlight, applySearch, applySelection, onKeyDown, onKeyUp, pointerOnHover, remember, render, selectedIds, tidy, wheelToViewport } from "../lib/canvasController";
 import { GRAPH_STYLE } from "../design/graph";
 import { type Positions, loadPositions } from "../lib/layoutCache";
 import { MiniMap } from "./MiniMap";
@@ -9,6 +9,8 @@ export interface GraphCanvasProps {
   elements: ElementDefinition[];
   selection: string[];
   highlight?: string[];
+  /** What a search found, lit while everything else fades; null when not searching. */
+  found?: Set<string> | null;
   onSelectionChange: (ids: string[]) => void;
   /** Counts requests to lay the whole map out afresh. */
   tidied?: number;
@@ -33,7 +35,7 @@ function useKeys(cy: Core | undefined): void {
  * Owns one Cytoscape instance. Click selects; Shift/Cmd/Ctrl-click adds; dragging on the
  * background draws a selection box. Node positions stay put across changes and time travel.
  */
-export function GraphCanvas({ elements, selection, highlight = [], onSelectionChange, tidied = 0 }: GraphCanvasProps) {
+export function GraphCanvas({ elements, selection, highlight = [], found = null, onSelectionChange, tidied = 0 }: GraphCanvasProps) {
   const container = useRef<HTMLDivElement>(null);
   const [cy, setCy] = useState<Core>();
   const report = useRef(onSelectionChange);
@@ -83,6 +85,8 @@ export function GraphCanvas({ elements, selection, highlight = [], onSelectionCh
   useEffect(() => applySelection(cy, selection), [cy, selection, elements]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-apply when the elements are rebuilt
   useEffect(() => applyHighlight(cy, highlight), [cy, highlight, elements]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-apply when the elements are rebuilt
+  useEffect(() => applySearch(cy, found), [cy, found, elements]);
 
   return (
     <div className="relative h-full w-full overflow-hidden">

@@ -8,6 +8,7 @@ import { toElements } from "../lib/elements";
 import { labelsFrom } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 import { useLive } from "../lib/useLive";
+import { searchHits } from "../lib/search";
 import { ChangesPanel } from "./ChangesPanel";
 import { EdgePanel } from "./EdgePanel";
 import { type Done, UndoBar } from "./ItemControls";
@@ -118,8 +119,10 @@ export function MapView(props: MapViewProps) {
   const [mode, setMode] = useState<"items" | "changes">("items");
   const [done, setDone] = useState<Done>();
   const [tidied, setTidied] = useState(0);
+  const [query, setQuery] = useState("");
   const { version, positions, view, error, duplicates, schema, elements, labels, refresh } = useMapData(index, filter);
   const empty = view && Object.keys(view.nodes).length === 0;
+  const found = useMemo(() => (view ? searchHits(view, query) : null), [view, query]);
 
   const changeSelection = (ids: string[]) => {
     setHighlight([]);
@@ -154,6 +157,9 @@ export function MapView(props: MapViewProps) {
         changesOpen={mode === "changes"}
         onChanges={() => setMode(mode === "changes" ? "items" : "changes")}
         duplicates={duplicates?.length ?? 0}
+        query={query}
+        onQuery={setQuery}
+        found={found ? [...found].filter((id) => view?.nodes[id]).length : undefined}
         onTidy={() => setTidied(tidied + 1)}
       />
       <ErrorNote error={error} />
@@ -164,7 +170,7 @@ export function MapView(props: MapViewProps) {
               <Empty>Nothing on the map here yet. Add an entry to begin.</Empty>
             </div>
           ) : null}
-          <GraphCanvas elements={elements} selection={selection} highlight={highlight} onSelectionChange={changeSelection} tidied={tidied} />
+          <GraphCanvas elements={elements} selection={selection} highlight={highlight} found={found} onSelectionChange={changeSelection} tidied={tidied} />
           <GraphKey schema={schema} />
           <UndoBar done={done} onUndo={undoRemove} onClose={() => setDone(undefined)} />
         </div>

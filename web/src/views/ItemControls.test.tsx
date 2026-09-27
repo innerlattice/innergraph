@@ -115,12 +115,23 @@ describe("history", () => {
 });
 
 describe("status bar", () => {
-  it("opens history, counts duplicates, tidies and toggles removed items", () => {
+  it("opens history, counts duplicates, searches, tidies and toggles removed items", () => {
     const onChanges = vi.fn();
     const onTidy = vi.fn();
     const onShowRemoved = vi.fn();
+    const onQuery = vi.fn();
     const { rerender } = render(
-      <StatusBar removed={2} showRemoved={false} onShowRemoved={onShowRemoved} changesOpen={false} onChanges={onChanges} duplicates={2} onTidy={onTidy} />,
+      <StatusBar
+        removed={2}
+        showRemoved={false}
+        onShowRemoved={onShowRemoved}
+        changesOpen={false}
+        onChanges={onChanges}
+        duplicates={2}
+        query=""
+        onQuery={onQuery}
+        onTidy={onTidy}
+      />,
     );
     fireEvent.click(screen.getByText("Tidy up"));
     expect(onTidy).toHaveBeenCalled();
@@ -129,8 +140,13 @@ describe("status bar", () => {
     expect(screen.getByText("2 duplicates")).toBeTruthy();
     fireEvent.click(screen.getByLabelText("Show removed (2)"));
     expect(onShowRemoved).toHaveBeenCalledWith(true);
-    rerender(<StatusBar showRemoved changesOpen onShowRemoved={onShowRemoved} onChanges={onChanges} duplicates={1} onTidy={onTidy} />);
+    rerender(<StatusBar showRemoved changesOpen onShowRemoved={onShowRemoved} onChanges={onChanges} duplicates={1} query="x" onQuery={onQuery} found={0} onTidy={onTidy} />);
     expect(screen.getByText("1 duplicate")).toBeTruthy();
     expect(screen.getByLabelText("Show removed (0)")).toBeTruthy();
+    expect(screen.getByText("Nothing found")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Find on the map"), { target: { value: "sham" } });
+    expect(onQuery).toHaveBeenCalledWith("sham");
+    fireEvent.keyDown(screen.getByLabelText("Find on the map"), { key: "Escape" });
+    expect(onQuery).toHaveBeenLastCalledWith("");
   });
 });

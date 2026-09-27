@@ -169,7 +169,8 @@ const nodeRules: StylesheetJson = [
   { selector: "node.appeared", style: { "underlay-color": COLOR.sage, "underlay-opacity": 0.3, "underlay-padding": 8, "underlay-shape": "ellipse" } },
   { selector: "node:selected", style: { "underlay-color": COLOR.deep, "underlay-opacity": 0.16, "underlay-padding": 8, "underlay-shape": "ellipse" } },
   { selector: "node.style-statement:selected", style: { "underlay-shape": "round-rectangle" } },
-  { selector: "node.highlight", style: { "outline-width": 3, "outline-color": HIGHLIGHT, "outline-style": "solid", "outline-offset": 3, "outline-opacity": 1 } },
+  { selector: "node.dimmed", style: { opacity: 0.18 } },
+  { selector: "node.highlight, node.found", style: { "outline-width": 3, "outline-color": HIGHLIGHT, "outline-style": "solid", "outline-offset": 3, "outline-opacity": 1 } },
 ];
 
 /** Canvas edges can't be drawn double, so a double line is a paper-coloured line over a wider
@@ -213,8 +214,9 @@ const edgeRules: StylesheetJson = [
   ...lookRules,
   { selector: "edge.removed", style: { opacity: 0.3 } },
   { selector: "edge:selected", style: { "underlay-color": COLOR.deep, "underlay-opacity": 0.14, "underlay-padding": 5 } },
-  { selector: "edge.highlight", style: { "line-color": HIGHLIGHT, "target-arrow-color": HIGHLIGHT, width: 3.5 } },
-  { selector: "edge.look-builds-on.highlight", style: { "line-color": PAPER, "line-outline-color": HIGHLIGHT, width: 1.2 } },
+  { selector: "edge.dimmed", style: { opacity: 0.1 } },
+  { selector: "edge.highlight, edge.found", style: { "line-color": HIGHLIGHT, "target-arrow-color": HIGHLIGHT, width: 3.5 } },
+  { selector: "edge.look-builds-on.highlight, edge.look-builds-on.found", style: { "line-color": PAPER, "line-outline-color": HIGHLIGHT, width: 1.2 } },
 ];
 
 // Pressing on the map or an item shows nothing of its own: selection is what answers a click.

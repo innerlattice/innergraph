@@ -1,6 +1,6 @@
 import cytoscape from "cytoscape";
 import { describe, expect, it } from "vitest";
-import { applyHighlight, applySelection, isTyping, onKeyDown, onKeyUp, render, selectedIds, setPanMode, tidy, wheelToViewport } from "./canvasController";
+import { applyHighlight, applySearch, applySelection, isTyping, onKeyDown, onKeyUp, render, selectedIds, setPanMode, tidy, wheelToViewport } from "./canvasController";
 import type { Positions } from "./layoutCache";
 
 const node = (id: string) => ({ data: { id } });
@@ -36,6 +36,12 @@ describe("canvas controller (headless)", () => {
     expect(cy.getElementById("ab").hasClass("highlight")).toBe(true);
     expect(cy.getElementById("bc").hasClass("highlight")).toBe(false);
     applyHighlight(undefined, ["a"]);
+    applySearch(cy, new Set(["a"]));
+    expect(cy.getElementById("a").hasClass("found")).toBe(true);
+    expect(cy.getElementById("ab").hasClass("dimmed")).toBe(true);
+    applySearch(cy, null);
+    expect(cy.$(".found, .dimmed")).toHaveLength(0);
+    applySearch(undefined, null);
     applySelection(undefined, ["a"]);
   });
 });

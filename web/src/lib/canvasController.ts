@@ -125,6 +125,13 @@ export function applyHighlight(cy: Core | undefined, highlight: string[]): void 
     .addClass("highlight");
 }
 
+/** Lights what a search found and fades the rest; `found` null clears the search. */
+export function applySearch(cy: Core | undefined, found: Set<string> | null): void {
+  if (!cy) return;
+  cy.elements().removeClass("found dimmed");
+  if (found) cy.elements().forEach((el) => void el.addClass(found.has(el.id()) ? "found" : "dimmed"));
+}
+
 type KeyLike = { code: string; key: string; target: EventTarget | null };
 
 export function isTyping(target: EventTarget | null): boolean {
