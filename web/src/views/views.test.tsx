@@ -26,7 +26,16 @@ const graph = {
   position: HLC,
 };
 const text = "I learned that needing things is unsafe.";
-const nodeEvent = { id: "ev1", hlc: HLC, device: "d", actor: "model:m", session: "s1", parents: [], type: "NodeAsserted", body: { id: "n3", type: "belief", label: "New one", attributes: {}, confidence: 0.7, evidence: [{ entry: "h", start: 15, end: 28 }] } };
+const nodeEvent = {
+  id: "ev1",
+  hlc: HLC,
+  device: "d",
+  actor: "model:m",
+  session: "s1",
+  parents: [],
+  type: "NodeAsserted",
+  body: { id: "n3", type: "belief", label: "New one", attributes: {}, confidence: 0.7, evidence: [{ entry: "h", start: 15, end: 28 }] },
+};
 const entryView: EntryView = {
   entry: { id: "h", source: "text", title: "Tuesday", bytes: 40, addedAt: HLC, session: "s1" },
   text,
@@ -41,7 +50,17 @@ const nodeView = {
   derivedInto: [],
 } as unknown as NodeView;
 
-const step = (edge: string, from: string, to: string, sign: 1 | -1, confidence: number) => ({ edge, type: "reinforces", from, to, sign, confidence, fromLabel: from.toUpperCase(), toLabel: to.toUpperCase(), quotes: [`quote ${edge}`] });
+const step = (edge: string, from: string, to: string, sign: 1 | -1, confidence: number) => ({
+  edge,
+  type: "reinforces",
+  from,
+  to,
+  sign,
+  confidence,
+  fromLabel: from.toUpperCase(),
+  toLabel: to.toUpperCase(),
+  quotes: [`quote ${edge}`],
+});
 const LOOP = {
   nodes: ["a", "b"],
   edges: ["ab", "ba"],
@@ -75,7 +94,13 @@ let calls: Call[];
 beforeEach(() => {
   calls = fakeServer((call) => {
     if (call.method === "POST") {
-      if (call.path === "/api/entries") return ({ session: "s2", entry: "h2", related: [{ id: "h", kind: "entry", score: 0.4, terms: [], title: "Tuesday", snippet: "old words" }], job: { id: "s2", name: "interpret", state: "queued" } });
+      if (call.path === "/api/entries")
+        return {
+          session: "s2",
+          entry: "h2",
+          related: [{ id: "h", kind: "entry", score: 0.4, terms: [], title: "Tuesday", snippet: "old words" }],
+          job: { id: "s2", name: "interpret", state: "queued" },
+        };
       return { ok: true };
     }
     return routes[call.path];
@@ -163,7 +188,16 @@ describe("LoopsView and LogView", () => {
   });
 
   it("renders a certain balancing loop without extra notes", () => {
-    const loop = { ...LOOP, polarity: "balancing" as const, steps: [step("ab", "a", "b", -1, 0.9)], inputs: [], outputs: [], weakest: step("ab", "a", "b", -1, 0.9), certainty: 0.9, linkedLoops: 2 };
+    const loop = {
+      ...LOOP,
+      polarity: "balancing" as const,
+      steps: [step("ab", "a", "b", -1, 0.9)],
+      inputs: [],
+      outputs: [],
+      weakest: step("ab", "a", "b", -1, 0.9),
+      certainty: 0.9,
+      linkedLoops: 2,
+    };
     render(<LoopCard loop={loop} onOpen={vi.fn()} />);
     expect(screen.getByText("Balancing loop")).toBeTruthy();
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
@@ -191,7 +225,11 @@ describe("EntriesView", () => {
   it("lights a passage's items when the pointer is on it, and a chip's passages when it is on the chip", async () => {
     render(<EntriesView focus="h" navigate={vi.fn()} />);
     const mark = await screen.findByRole("button", { name: /— supports Needing is unsafe/ });
-    const chip = () => screen.getAllByTitle("Needing is unsafe").find((e) => e.tagName === "BUTTON")?.closest("[data-tone]") as HTMLElement;
+    const chip = () =>
+      screen
+        .getAllByTitle("Needing is unsafe")
+        .find((e) => e.tagName === "BUTTON")
+        ?.closest("[data-tone]") as HTMLElement;
     fireEvent.mouseEnter(mark);
     expect(chip().dataset.lit).toBe("true");
     fireEvent.mouseLeave(mark);
@@ -209,7 +247,8 @@ describe("EntriesView", () => {
       class {
         listeners: ((e: { data: string }) => void)[] = [];
         constructor() {
-          sources.push({ emit: (data) => {
+          sources.push({
+            emit: (data) => {
               for (const fn of this.listeners) fn({ data });
             },
           });
@@ -223,14 +262,17 @@ describe("EntriesView", () => {
     render(<EntriesView focus="h" navigate={vi.fn()} />);
     expect(await screen.findByText("Needing is unsafe")).toBeTruthy();
     routes["/api/entries/h"] = { ...entryView, citations: [{ ...entryView.citations[0], label: "Needing is allowed" }] };
-    for (const source of sources) (source.emit("p1"), source.emit("p2"));
+    for (const source of sources) source.emit("p1"), source.emit("p2");
     expect(await screen.findByText("Needing is allowed")).toBeTruthy();
     routes["/api/entries/h"] = entryView;
   });
 
   it("edits an entry and reports how evidence carried over", async () => {
     calls = fakeServer((call) => {
-      if (call.method === "POST") return call.path.includes("fail") ? failure("The Entry is unchanged") : { session: "s9", entry: "h", previous: "h0", remapped: 1, cited: [{ moved: false }, { moved: true }] };
+      if (call.method === "POST")
+        return call.path.includes("fail")
+          ? failure("The Entry is unchanged")
+          : { session: "s9", entry: "h", previous: "h0", remapped: 1, cited: [{ moved: false }, { moved: true }] };
       return routes[call.path] ?? { id: "s9", state: "running" };
     });
     render(<EntriesView focus="h" navigate={vi.fn()} />);

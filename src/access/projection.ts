@@ -136,11 +136,7 @@ function assertNode(graph: Graph, e: VaultEvent<"NodeAsserted">): void {
   };
 }
 
-function reassert(
-  item: GraphNode | GraphEdge,
-  body: { type: string; attributes: Attributes; confidence: number; evidence: Evidence[] },
-  e: AnyEvent,
-): void {
+function reassert(item: GraphNode | GraphEdge, body: { type: string; attributes: Attributes; confidence: number; evidence: Evidence[] }, e: AnyEvent): void {
   if (item.type !== body.type) return;
   item.attributes = { ...item.attributes, ...body.attributes };
   item.confidence = body.confidence;

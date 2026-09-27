@@ -89,12 +89,14 @@ function amendmentDraft(change: Amendment, actor: ActorId, session: string): Any
 /** A retraction of something the same revision re-asserts is a contradiction: keep the assertion. */
 function revisionDrafts(revision: Revision, actor: ActorId, session: string, added: Interpretation = revision.added): AnyDraft[] {
   const reasserted = new Set([...added.nodes, ...added.edges].map((a) => a.id));
-  const retractions = revision.retract.filter((id) => !reasserted.has(id)).map((target) => ({
-    actor,
-    session,
-    type: "StatusChanged" as const,
-    body: { target, status: "superseded" as const, reason: "no longer supported by the edited entry" },
-  }));
+  const retractions = revision.retract
+    .filter((id) => !reasserted.has(id))
+    .map((target) => ({
+      actor,
+      session,
+      type: "StatusChanged" as const,
+      body: { target, status: "superseded" as const, reason: "no longer supported by the edited entry" },
+    }));
   return [...revision.updates.map((u) => amendmentDraft(u, actor, session)), ...retractions, ...graphDrafts(revision.added, actor, session)];
 }
 

@@ -21,7 +21,6 @@ export interface PublicChatSettings extends Omit<ChatSettings, "apiKey"> {
   hosted: boolean;
 }
 
-
 export interface ChatBudget {
   contextTokens: number;
   contextWindow: number;
@@ -50,7 +49,11 @@ interface TextMessage {
 /** A title from the first thing the person said, cut at a word boundary. */
 export function titleFrom(messages: unknown[]): string | undefined {
   const first = (messages as TextMessage[]).find((m) => m.role === "user");
-  const text = (first?.parts ?? []).map((p) => (p.type === "text" ? p.text : "")).join(" ").replace(/\s+/g, " ").trim();
+  const text = (first?.parts ?? [])
+    .map((p) => (p.type === "text" ? p.text : ""))
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!text) return undefined;
   return text.length <= 60 ? text : `${text.slice(0, 60).replace(/\s+\S*$/, "")}…`;
 }

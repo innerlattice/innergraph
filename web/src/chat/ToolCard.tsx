@@ -63,13 +63,14 @@ export function ToolCard(props: ToolCardProps) {
   const [failure, setFailure] = useState<string>();
   const info = describeTool(props.part, props.labels);
   if (info.quiet) return <Lookup info={info} />;
-  const title = info.entry && !undone ? (
-    <button type="button" className="text-left hover:underline" onClick={() => props.onOpenEntry(info.entry as string)}>
-      {info.title}
-    </button>
-  ) : (
-    info.title
-  );
+  const title =
+    info.entry && !undone ? (
+      <button type="button" className="text-left hover:underline" onClick={() => props.onOpenEntry(info.entry as string)}>
+        {info.title}
+      </button>
+    ) : (
+      info.title
+    );
   return (
     <div className="my-2 animate-rise rounded-xl bg-stone-200/40 px-3 py-2 shadow-inset">
       <div className="flex items-center gap-2 text-xs text-stone-600">

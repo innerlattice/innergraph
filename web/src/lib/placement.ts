@@ -21,7 +21,10 @@ const REACH = 90;
 /** Turns successive starts round a point so they spread evenly rather than stack. */
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
-const around = (centre: Point, radius: number, turn: number): Point => ({ x: centre.x + radius * Math.cos(turn * GOLDEN_ANGLE), y: centre.y + radius * Math.sin(turn * GOLDEN_ANGLE) });
+const around = (centre: Point, radius: number, turn: number): Point => ({
+  x: centre.x + radius * Math.cos(turn * GOLDEN_ANGLE),
+  y: centre.y + radius * Math.sin(turn * GOLDEN_ANGLE),
+});
 
 function centroid(points: Point[]): Point {
   return { x: points.reduce((s, p) => s + p.x, 0) / points.length, y: points.reduce((s, p) => s + p.y, 0) / points.length };
@@ -46,7 +49,9 @@ export function seed(fresh: string[], neighbours: (id: string) => string[], plac
   for (let progress = true; progress && waiting.length > 0; ) {
     const before = waiting.length;
     waiting = waiting.filter((id) => {
-      const anchors = neighbours(id).map(at).filter((p): p is Point => p !== undefined);
+      const anchors = neighbours(id)
+        .map(at)
+        .filter((p): p is Point => p !== undefined);
       if (anchors.length > 0) starts.set(id, around(centroid(anchors), REACH, starts.size + 1));
       return anchors.length === 0;
     });

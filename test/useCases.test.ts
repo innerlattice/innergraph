@@ -17,7 +17,6 @@ async function ingestFirst() {
   return result;
 }
 
-
 beforeEach(() => {
   t = makeVault([INTERPRETATION_1]);
 });
@@ -29,7 +28,9 @@ describe("1. Ingest", () => {
     expect(result.job?.state).toBe("done");
 
     const graph = t.vault.explore.graph();
-    const labels = Object.values(graph.nodes).map((n) => n.label).sort();
+    const labels = Object.values(graph.nodes)
+      .map((n) => n.label)
+      .sort();
     expect(labels).toEqual(["Father laughed when I cried", "Freezing", "Needing things makes people turn away", "Rest", "Shame"]);
     expect(Object.values(graph.nodes).every((n) => n.status === "hypothesis")).toBe(true);
     expect(Object.values(graph.nodes).every((n) => n.assertedBy === "model:scripted")).toBe(true);
@@ -121,7 +122,12 @@ describe("5. Refactor", () => {
     await ingestFirst();
     const shame = byLabel("Shame");
     const edges = Object.values(t.vault.explore.graph().edges).filter((e) => e.from === shame.id || e.to === shame.id);
-    t.gateway.generateJson = async () => ({ parts: [{ evidence: [0], edges: [0, 1] }, { evidence: [], edges: [2] }] });
+    t.gateway.generateJson = async () => ({
+      parts: [
+        { evidence: [0], edges: [0, 1] },
+        { evidence: [], edges: [2] },
+      ],
+    });
     const result = await t.vault.map.split(shame.id, [{ label: "Social shame" }, { label: "Body shame" }]);
     expect(result.session).toBeTruthy();
     expect(byLabel("Shame").status).toBe("superseded");

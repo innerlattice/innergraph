@@ -66,7 +66,8 @@
     "chat": "tsx src/bin.ts chat",
     "fixture:reset": "tsx experiments/best-case/decompose.ts --fresh",
     "unused": "knip",
-    "lint": "biome lint .",
+    "lint": "biome check .",
+    "format": "biome check --write .",
     "styles": "tsx scripts/auditStyles.ts",
     "fingerprint": "tsx scripts/fingerprint.ts"
   }

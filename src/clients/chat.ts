@@ -103,7 +103,11 @@ function coerce(value: unknown, key?: string): unknown {
   if (Array.isArray(value)) return value.map((v) => coerce(v));
   if (typeof value === "string" && key && LISTS.has(key)) return [value];
   if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== null).map(([k, v]) => [k, coerce(v, k)]));
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, v]) => v !== null)
+      .map(([k, v]) => [k, coerce(v, k)]),
+  );
 }
 
 /** Fixes the usual slips in a tool call's JSON input (a string for a list, null for absent); undefined when there is nothing to fix. */

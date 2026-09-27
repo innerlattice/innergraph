@@ -7,8 +7,14 @@ let clock = 0;
 const ev = (partial: Partial<AnyEvent> & Pick<AnyEvent, "type" | "body">): AnyEvent =>
   ({ id: `e${++clock}`, hlc: String(clock).padStart(4, "0"), device: "d", actor: "user", session: "s", parents: [], ...partial }) as AnyEvent;
 const span = (start: number, end: number, entry = "h2") => ({ entry, start, end });
-const node = (id: string, extra: object = {}) => ({ type: "NodeAsserted" as const, body: { id, type: "t", label: id, attributes: {}, confidence: 1, evidence: [span(0, 10)], ...extra } });
-const edge = (id: string, from: string, to: string) => ({ type: "EdgeAsserted" as const, body: { id, type: "r", from, to, attributes: {}, confidence: 1, evidence: [span(0, 3)] } });
+const node = (id: string, extra: object = {}) => ({
+  type: "NodeAsserted" as const,
+  body: { id, type: "t", label: id, attributes: {}, confidence: 1, evidence: [span(0, 10)], ...extra },
+});
+const edge = (id: string, from: string, to: string) => ({
+  type: "EdgeAsserted" as const,
+  body: { id, type: "r", from, to, attributes: {}, confidence: 1, evidence: [span(0, 3)] },
+});
 
 function scenario() {
   clock = 0;
@@ -80,7 +86,10 @@ describe("view through ExploreManager", async () => {
     t.vault.ingest.addEntry({ content: ENTRY_1, format: "markdown" });
     await t.vault.queue.idle();
     const nodes = Object.values(t.vault.explore.view().nodes).filter((n) => n.label === "Rest" || n.label === "Freezing");
-    t.vault.map.merge(nodes.map((n) => n.id), { label: "Merged" });
+    t.vault.map.merge(
+      nodes.map((n) => n.id),
+      { label: "Merged" },
+    );
     const old = t.vault.explore.node(nodes[0].id);
     expect(old.node.status).toBe("removed");
     expect(old.derivedInto.map((n) => n.label)).toEqual(["Merged"]);

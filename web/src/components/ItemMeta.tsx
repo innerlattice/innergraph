@@ -7,7 +7,14 @@ import { actorLabel, pct } from "../lib/format";
 function Confidence(props: { value: number }) {
   return (
     // biome-ignore lint/a11y/useSemanticElements: a native meter can't take the design's track and fill
-    <span role="meter" aria-label="Confidence" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(props.value * 100)} className="inline-flex shrink-0 items-center gap-1.5 text-xs text-stone-500">
+    <span
+      role="meter"
+      aria-label="Confidence"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(props.value * 100)}
+      className="inline-flex shrink-0 items-center gap-1.5 text-xs text-stone-500"
+    >
       <span className="h-1.5 w-12 overflow-hidden rounded-full bg-stone-200 shadow-inset">
         <span className="block h-full rounded-full bg-clay-400" style={{ width: pct(props.value) }} />
       </span>

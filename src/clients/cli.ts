@@ -18,8 +18,7 @@ import { connectionNotice, createMcpServer, tierOf } from "./mcp.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
-const USAGE =
-  "Usage: inner-graph [chat|init|serve|mcp|add|schema] [--vault dir] [--harness claude|<command>] [--schema file] [--port n] [--tier read|write] [--agent name]";
+const USAGE = "Usage: inner-graph [chat|init|serve|mcp|add|schema] [--vault dir] [--harness claude|<command>] [--schema file] [--port n] [--tier read|write] [--agent name]";
 
 export interface CliEnv {
   log: (message: string) => void;

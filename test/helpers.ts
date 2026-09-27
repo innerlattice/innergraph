@@ -46,7 +46,14 @@ export function makeVault(responses: unknown[] = []): TestVault {
 export const INTERPRETATION_1 = {
   nodes: [
     { ref: "m1", type: "core_memory", label: "Father laughed when I cried", attributes: { age: "7" }, confidence: 0.8, quotes: ["my father laughed at me when I cried"] },
-    { ref: "b1", type: "belief", label: "Needing things makes people turn away", attributes: { depth: "core" }, confidence: 0.7, quotes: ["needing things makes people turn away"] },
+    {
+      ref: "b1",
+      type: "belief",
+      label: "Needing things makes people turn away",
+      attributes: { depth: "core" },
+      confidence: 0.7,
+      quotes: ["needing things makes people turn away"],
+    },
     { ref: "p1", type: "process_node", label: "Freezing", confidence: 0.8, quotes: ["I froze"] },
     { ref: "p2", type: "process_node", label: "Shame", confidence: 0.8, quotes: ["Freezing makes me ashamed"] },
     { ref: "p3", type: "process_node", label: "Rest", confidence: 0.6, quotes: ["When I rest properly"] },

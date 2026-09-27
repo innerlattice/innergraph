@@ -15,9 +15,17 @@ const usage = (input: number, output: number) => ({
   inputTokens: { total: input, noCache: input, cacheRead: undefined, cacheWrite: undefined },
   outputTokens: { total: output, text: output, reasoning: undefined },
 });
-const finish = (reason: "stop" | "tool-calls", input = 100, output = 20) => ({ type: "finish" as const, finishReason: { unified: reason, raw: undefined }, usage: usage(input, output) });
+const finish = (reason: "stop" | "tool-calls", input = 100, output = 20) => ({
+  type: "finish" as const,
+  finishReason: { unified: reason, raw: undefined },
+  usage: usage(input, output),
+});
 const toolCall = (id: string, toolName: string, input: object) => ({ type: "tool-call" as const, toolCallId: id, toolName, input: JSON.stringify(input) });
-const text = (words: string) => [{ type: "text-start" as const, id: "t" }, { type: "text-delta" as const, id: "t", delta: words }, { type: "text-end" as const, id: "t" }];
+const text = (words: string) => [
+  { type: "text-start" as const, id: "t" },
+  { type: "text-delta" as const, id: "t", delta: words },
+  { type: "text-end" as const, id: "t" },
+];
 
 /** A scripted model: each call streams the next list of chunks. */
 function scripted(steps: ((call: number) => unknown[])[]) {
@@ -153,7 +161,13 @@ describe("tool input from small models", () => {
     const entryId = () => t.vault.explore.entries()[0].id;
     const model = scripted([
       () => [toolCall("c1", "record_entry", {}), finish("tool-calls")],
-      () => [toolCall("c2", "add_to_graph", { entry: entryId(), nodes: [{ ref: "f", existing_id: null, type: "process_node", label: "Freezing", confidence: 0.8, quotes: "I froze in the meeting" }] }), finish("tool-calls")],
+      () => [
+        toolCall("c2", "add_to_graph", {
+          entry: entryId(),
+          nodes: [{ ref: "f", existing_id: null, type: "process_node", label: "Freezing", confidence: 0.8, quotes: "I froze in the meeting" }],
+        }),
+        finish("tool-calls"),
+      ],
       () => [...text("Done."), finish("stop")],
     ]);
     await (await respondToChat(t.vault, { id: "r", message: userMessage() }, model)).text();

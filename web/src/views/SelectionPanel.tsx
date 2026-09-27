@@ -6,13 +6,7 @@ import { useAsync } from "../lib/useAsync";
 import { type Done, ItemActions } from "./ItemControls";
 
 /** Several selected Nodes/Edges. The selection is shared with agents over MCP (get_selection). */
-export function SelectionPanel(props: {
-  ids: string[];
-  version?: string;
-  onClear: () => void;
-  onFocus: (id: string) => void;
-  onDone: (done: Done) => void;
-}) {
+export function SelectionPanel(props: { ids: string[]; version?: string; onClear: () => void; onFocus: (id: string) => void; onDone: (done: Done) => void }) {
   const selection = useAsync(api.selection, [props.ids.join(), props.version]);
   const items = selection.data?.items ?? [];
   const states = items.map((i) => ({ status: i.status as ViewStatus, confirmed: i.confirmed }));

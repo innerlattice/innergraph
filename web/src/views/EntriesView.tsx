@@ -81,7 +81,12 @@ export function EntryEditor(props: { view: EntryView; onSaved: (result: Revision
       .catch((e: Error) => setError(e.message));
   return (
     <div className="space-y-3">
-      <textarea aria-label="Entry text" className="h-72 w-full resize-y rounded-md border border-stone-200 p-3 font-serif leading-relaxed outline-none focus:border-stone-400" value={text} onChange={(e) => setText(e.target.value)} />
+      <textarea
+        aria-label="Entry text"
+        className="h-72 w-full resize-y rounded-md border border-stone-200 p-3 font-serif leading-relaxed outline-none focus:border-stone-400"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
       <label className="flex items-center gap-2 text-sm text-stone-600">
         <input type="checkbox" checked={interpret} onChange={(e) => setInterpret(e.target.checked)} />
         Update the map from the changes (the model sees the old and new text and the items citing it)
@@ -120,7 +125,11 @@ export function SupportedItems(props: { view: EntryView; onOpen: (ids: string) =
 function RevisionNote(props: { result: RevisionResult }) {
   const job = useJob(props.result.job?.id);
   const updating = job?.state === "running" || job?.state === "queued";
-  return <p className="text-sm text-stone-600">Saved. {revisionSummary(props.result)} {updating ? "Updating the map…" : ""}</p>;
+  return (
+    <p className="text-sm text-stone-600">
+      Saved. {revisionSummary(props.result)} {updating ? "Updating the map…" : ""}
+    </p>
+  );
 }
 
 function EntryCard(props: { view: EntryView; focus?: Span; navigate: Navigate; revision?: RevisionResult; onRevised: (result: RevisionResult) => void }) {
@@ -139,7 +148,11 @@ function EntryCard(props: { view: EntryView; focus?: Span; navigate: Navigate; r
         {editing ? null : <Button onClick={() => setEditing(true)}>Edit</Button>}
       </header>
       {result ? <RevisionNote result={result} /> : null}
-      {editing ? <EntryEditor view={props.view} onSaved={saved} onCancel={() => setEditing(false)} /> : <EntryText view={props.view} focus={props.focus} hover={hover} onOpen={(id) => props.navigate("map", id)} />}
+      {editing ? (
+        <EntryEditor view={props.view} onSaved={saved} onCancel={() => setEditing(false)} />
+      ) : (
+        <EntryText view={props.view} focus={props.focus} hover={hover} onOpen={(id) => props.navigate("map", id)} />
+      )}
       <SupportedItems view={props.view} hover={hover} onOpen={(ids) => props.navigate("map", ids)} />
     </Card>
   );
@@ -166,7 +179,11 @@ export function EntriesView(props: { focus?: string; navigate: Navigate }) {
         <ul className="space-y-1">
           {entries.data?.map((e) => (
             <li key={e.id}>
-              <button type="button" onClick={() => choose(e.id)} className={`w-full rounded-md px-3 py-2 text-left text-sm ${selected === e.id ? "bg-stone-200" : "hover:bg-stone-100"}`}>
+              <button
+                type="button"
+                onClick={() => choose(e.id)}
+                className={`w-full rounded-md px-3 py-2 text-left text-sm ${selected === e.id ? "bg-stone-200" : "hover:bg-stone-100"}`}
+              >
                 <span className="block truncate text-stone-800">{e.title}</span>
                 <span className="text-xs text-stone-400">{formatHlc(e.addedAt)}</span>
               </button>
@@ -174,7 +191,14 @@ export function EntriesView(props: { focus?: string; navigate: Navigate }) {
           ))}
         </ul>
         {entry.data ? (
-          <EntryCard key={entry.data.entry.id} view={entry.data} focus={focus} navigate={props.navigate} revision={revision} onRevised={(r) => (setRevision(r), entries.reload(), setSelected(r.entry))} />
+          <EntryCard
+            key={entry.data.entry.id}
+            view={entry.data}
+            focus={focus}
+            navigate={props.navigate}
+            revision={revision}
+            onRevised={(r) => (setRevision(r), entries.reload(), setSelected(r.entry))}
+          />
         ) : null}
       </div>
     </Page>

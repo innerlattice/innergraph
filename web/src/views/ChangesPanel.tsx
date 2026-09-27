@@ -77,7 +77,11 @@ const PURPOSE: Record<string, string> = {
 function SessionCard(props: { change: SessionChanges; onFocus: (ids: string[]) => void; onUndone: () => void }) {
   const { change } = props;
   const [error, setError] = useState<string>();
-  const undo = () => api.undoSession(change.session).then(props.onUndone).catch((e: Error) => setError(e.message));
+  const undo = () =>
+    api
+      .undoSession(change.session)
+      .then(props.onUndone)
+      .catch((e: Error) => setError(e.message));
   const focusable = change.rows.filter((r) => r.kind !== "entry");
   return (
     <li className="space-y-2 rounded-xl bg-white p-3 shadow-raised">

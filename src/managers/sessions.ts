@@ -9,18 +9,9 @@ export function openSession(actor: ActorId, session: string, purpose: string, en
 }
 
 /** Appends `drafts` wrapped in SessionOpened / SessionClosed as one atomic unit. */
-export function runSession(
-  vault: VaultAccess,
-  actor: ActorId,
-  purpose: string,
-  drafts: (session: string) => AnyDraft[],
-): { session: string; events: AnyEvent[] } {
+export function runSession(vault: VaultAccess, actor: ActorId, purpose: string, drafts: (session: string) => AnyDraft[]): { session: string; events: AnyEvent[] } {
   const session = newId();
-  const events = vault.append([
-    openSession(actor, session, purpose),
-    ...drafts(session),
-    { actor, session, type: "SessionClosed", body: {} },
-  ]);
+  const events = vault.append([openSession(actor, session, purpose), ...drafts(session), { actor, session, type: "SessionClosed", body: {} }]);
   return { session, events };
 }
 

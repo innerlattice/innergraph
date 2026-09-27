@@ -53,7 +53,15 @@ export function TimeBar(props: { positions: string[]; index: number | undefined;
     <div className="relative z-10 space-y-1 bg-white px-5 shadow-raised py-2 text-sm">
       <div className="flex items-center gap-3">
         <span className="w-40 shrink-0 text-stone-500">{index === undefined ? "Now, live" : formatHlc(positions[index])}</span>
-        <input aria-label="Time travel" type="range" className="flex-1 accent-stone-700" min={0} max={Math.max(last, 0)} value={index ?? last} onChange={(e) => onChange(Number(e.target.value) === last ? undefined : Number(e.target.value))} />
+        <input
+          aria-label="Time travel"
+          type="range"
+          className="flex-1 accent-stone-700"
+          min={0}
+          max={Math.max(last, 0)}
+          value={index ?? last}
+          onChange={(e) => onChange(Number(e.target.value) === last ? undefined : Number(e.target.value))}
+        />
         <Button disabled={index === undefined} onClick={() => onChange(undefined)}>
           Now
         </Button>

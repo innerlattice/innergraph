@@ -27,7 +27,10 @@ export function resolveAgainst(state: ProjectionState, result: Interpretation): 
 }
 
 function sentences(text: string): string[] {
-  return text.split(/(?<=[.!?])\s+|\n+/).map((s) => s.trim()).filter((s) => s.length > 3);
+  return text
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 3);
 }
 
 /**
@@ -39,7 +42,13 @@ export function contextFor(vault: VaultAccess, state: ProjectionState, text: str
   const pick = (n: GraphNode) => ({ id: n.id, type: n.type, label: n.label });
   if (nodes.length <= CONTEXT_LIMIT) return nodes.map(pick);
   const docs = graphDocs(vault, state).filter((d) => d.kind === "node");
-  const related = new Set(sentences(text).flatMap((s) => lexicalRanking(s, docs).slice(0, PER_SENTENCE).map((r) => docs[r.index].id)));
+  const related = new Set(
+    sentences(text).flatMap((s) =>
+      lexicalRanking(s, docs)
+        .slice(0, PER_SENTENCE)
+        .map((r) => docs[r.index].id),
+    ),
+  );
   const cited = nodes.filter((n) => n.evidence.some((e) => e.entry === entry)).map((n) => n.id);
   return nodes.filter((n) => related.has(n.id) || cited.includes(n.id)).map(pick);
 }

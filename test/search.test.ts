@@ -7,7 +7,21 @@ import { initVault } from "../src/vault.js";
 import { ENTRY_1, INTERPRETATION_1, KEY, SCHEMA_FILE, steppingClock, tempDir } from "./helpers.js";
 
 /** Tiny concept space: synonyms share a dimension, so meaning beats spelling. */
-const CONCEPTS: Record<string, number> = { freeze: 0, froze: 0, freezing: 0, paralysed: 0, stuck: 0, shame: 1, ashamed: 1, embarrassed: 1, rest: 2, resting: 2, sleep: 2, father: 3, dad: 3 };
+const CONCEPTS: Record<string, number> = {
+  freeze: 0,
+  froze: 0,
+  freezing: 0,
+  paralysed: 0,
+  stuck: 0,
+  shame: 1,
+  ashamed: 1,
+  embarrassed: 1,
+  rest: 2,
+  resting: 2,
+  sleep: 2,
+  father: 3,
+  dad: 3,
+};
 
 class ConceptEmbedder implements Embedder {
   readonly name = "concepts";
@@ -43,7 +57,10 @@ async function seeded(embedder: Embedder | null, reranker: Reranker | null) {
 describe("fusion and similarity", () => {
   it("fuses rankings by reciprocal rank and compares vectors", () => {
     const fused = fuse([
-      [{ index: 0, score: 9 }, { index: 1, score: 1 }],
+      [
+        { index: 0, score: 9 },
+        { index: 1, score: 1 },
+      ],
       [{ index: 1, score: 0.9 }],
     ]);
     expect(fused.map((r) => r.index)).toEqual([1, 0]);
@@ -52,7 +69,10 @@ describe("fusion and similarity", () => {
   });
 
   it("returns lexical-only hits when no vectors or reranker are given", async () => {
-    const docs: RecallDoc[] = [{ id: "a", kind: "node", text: "shame spiral" }, { id: "b", kind: "node", text: "garden" }];
+    const docs: RecallDoc[] = [
+      { id: "a", kind: "node", text: "shame spiral" },
+      { id: "b", kind: "node", text: "garden" },
+    ];
     const hits = await hybridSearch({ query: "shame", docs }, undefined, 5);
     expect(hits).toEqual([{ id: "a", kind: "node", score: expect.any(Number), stages: { lexical: 1, dense: undefined } }]);
   });
@@ -105,9 +125,22 @@ describe("graph search", () => {
 
 describe("LLM reranker", () => {
   it("prompts with numbered candidates and normalises scores", async () => {
-    const docs: RecallDoc[] = [{ id: "a", kind: "node", text: "one\n\ntwo" }, { id: "b", kind: "edge", text: "three" }];
+    const docs: RecallDoc[] = [
+      { id: "a", kind: "node", text: "one\n\ntwo" },
+      { id: "b", kind: "edge", text: "three" },
+    ];
     expect(rerankPrompt("q", docs)).toContain("[0] (node) one two");
-    expect(parseScores({ scores: [{ index: 1, score: 15 }, { index: 7, score: 3 }] }, 2)).toEqual([0, 1]);
+    expect(
+      parseScores(
+        {
+          scores: [
+            { index: 1, score: 15 },
+            { index: 7, score: 3 },
+          ],
+        },
+        2,
+      ),
+    ).toEqual([0, 1]);
     expect(parseScores("junk", 2)).toEqual([0, 0]);
     const reranker = new LlmReranker(new ScriptedGateway([{ scores: [{ index: 0, score: 5 }] }]));
     expect(reranker.name).toBe("llm:scripted");
@@ -131,7 +164,10 @@ describe("query instructions", async () => {
     expect(queryInstructionFor("qwen3-embedding:0.6b")).toContain("Instruct:");
     expect(queryInstructionFor("embeddinggemma")).toBe("");
     const bodies: string[] = [];
-    const embedder = new OllamaEmbedder({ model: "qwen3-embedding:0.6b", fetchImpl: (async (_u: string, init: RequestInit) => (bodies.push(String(init.body)), new Response(JSON.stringify({ embeddings: [[1]] })))) as typeof fetch });
+    const embedder = new OllamaEmbedder({
+      model: "qwen3-embedding:0.6b",
+      fetchImpl: (async (_u: string, init: RequestInit) => (bodies.push(String(init.body)), new Response(JSON.stringify({ embeddings: [[1]] })))) as typeof fetch,
+    });
     expect(await embedder.embedQuery("hello")).toEqual([1]);
     expect(JSON.parse(bodies[0]).input[0]).toMatch(/^Instruct: .*\nQuery: hello$/s);
   });

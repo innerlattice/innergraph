@@ -54,7 +54,11 @@ const assertion = {
 export function withoutNulls(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(withoutNulls);
   if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== null).map(([k, v]) => [k, withoutNulls(v)]));
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, v]) => v !== null)
+      .map(([k, v]) => [k, withoutNulls(v)]),
+  );
 }
 
 export function toolSpecs(vault: Vault, actor: ActorId): ToolSpec[] {
@@ -76,19 +80,63 @@ function specsFor(vault: Vault, actor: ActorId): ToolSpec[] {
       input: { query: z.string(), limit: z.number().int().min(1).max(50).nullish() },
       run: (a) => explore.searchGraph(text(a, "query"), (a.limit as number | undefined) ?? 10),
     },
-    { name: "search_evidence", tier: "read", description: "Case-insensitive search over Entry text; returns spans and the Nodes/Edges citing them.", input: { query: z.string() }, run: (a) => explore.searchEvidence(text(a, "query")) },
-    { name: "trace_roots", tier: "read", description: "Follow derivational Edges upstream from a Node and rank candidate roots by downstream support.", input: { id: z.string() }, run: (a) => explore.traceRoots(text(a, "id")) },
-    { name: "find_loops", tier: "read", description: "Feedback loops over causal Edges: polarity, each step with sign, confidence and quotes, outside brakes/accelerators, what the loop drives, and its least certain link. Offer implications as questions, not verdicts.", input: {}, run: () => explore.loopDetails() },
-    { name: "find_related", tier: "read", description: "Related past Entries and Nodes for a text or Node id.", input: { text: z.string().nullish(), nodeId: z.string().nullish() }, run: (a) => explore.findRelated(a) },
+    {
+      name: "search_evidence",
+      tier: "read",
+      description: "Case-insensitive search over Entry text; returns spans and the Nodes/Edges citing them.",
+      input: { query: z.string() },
+      run: (a) => explore.searchEvidence(text(a, "query")),
+    },
+    {
+      name: "trace_roots",
+      tier: "read",
+      description: "Follow derivational Edges upstream from a Node and rank candidate roots by downstream support.",
+      input: { id: z.string() },
+      run: (a) => explore.traceRoots(text(a, "id")),
+    },
+    {
+      name: "find_loops",
+      tier: "read",
+      description:
+        "Feedback loops over causal Edges: polarity, each step with sign, confidence and quotes, outside brakes/accelerators, what the loop drives, and its least certain link. Offer implications as questions, not verdicts.",
+      input: {},
+      run: () => explore.loopDetails(),
+    },
+    {
+      name: "find_related",
+      tier: "read",
+      description: "Related past Entries and Nodes for a text or Node id.",
+      input: { text: z.string().nullish(), nodeId: z.string().nullish() },
+      run: (a) => explore.findRelated(a),
+    },
     { name: "graph_at", tier: "read", description: "The Graph as it was at a time (ISO date) or HLC position.", input: { t: z.string() }, run: (a) => map.graphAt(text(a, "t")) },
-    { name: "get_entry", tier: "read", description: "An Entry's full text and which Nodes/Edges cite which passages.", input: { id: z.string() }, run: (a) => explore.entry(text(a, "id")) },
+    {
+      name: "get_entry",
+      tier: "read",
+      description: "An Entry's full text and which Nodes/Edges cite which passages.",
+      input: { id: z.string() },
+      run: (a) => explore.entry(text(a, "id")),
+    },
     { name: "list_entries", tier: "read", description: "The latest version of every Entry, newest first.", input: {}, run: () => explore.entries() },
-    { name: "get_selection", tier: "read", description: "The Nodes and Edges the user currently has selected in the graph view. Use when the user says 'these', 'the selected ones' or similar.", input: {}, run: () => explore.selection() },
-    { name: "recent_changes", tier: "read", description: "What changed recently, grouped by Session (newest first): what was added, renamed, removed, merged. Use a Session id with undo_session.", input: { limit: z.number().int().min(1).max(100).nullish() }, run: (a) => explore.changes((a.limit as number | undefined) ?? 20) },
+    {
+      name: "get_selection",
+      tier: "read",
+      description: "The Nodes and Edges the user currently has selected in the graph view. Use when the user says 'these', 'the selected ones' or similar.",
+      input: {},
+      run: () => explore.selection(),
+    },
+    {
+      name: "recent_changes",
+      tier: "read",
+      description: "What changed recently, grouped by Session (newest first): what was added, renamed, removed, merged. Use a Session id with undo_session.",
+      input: { limit: z.number().int().min(1).max(100).nullish() },
+      run: (a) => explore.changes((a.limit as number | undefined) ?? 20),
+    },
     {
       name: "add_entry",
       tier: "write",
-      description: "Add a raw Entry (journal, transcript, reflection). By default the local model decomposes it; pass interpret=false to decompose it yourself with `add_to_graph`.",
+      description:
+        "Add a raw Entry (journal, transcript, reflection). By default the local model decomposes it; pass interpret=false to decompose it yourself with `add_to_graph`.",
       input: { content: z.string(), title: z.string().nullish(), format: z.enum(["text", "markdown", "chat-json"]).nullish(), interpret: z.boolean().nullish() },
       run: (a) => ingest.addEntry(a as never, { actor, interpret: a.interpret !== false }),
     },
@@ -103,7 +151,8 @@ function specsFor(vault: Vault, actor: ActorId): ToolSpec[] {
     {
       name: "revise_entry",
       tier: "write",
-      description: "Replace an Entry's text with an edited version (e.g. a typo fix). Evidence moves to the same passages in the new text. With interpret=false, returns the cited items (label, attributes, old quotes, moved) so you can fix them yourself with `amend` and add new material with `add_to_graph`.",
+      description:
+        "Replace an Entry's text with an edited version (e.g. a typo fix). Evidence moves to the same passages in the new text. With interpret=false, returns the cited items (label, attributes, old quotes, moved) so you can fix them yourself with `amend` and add new material with `add_to_graph`.",
       input: { entry: z.string(), content: z.string(), interpret: z.boolean().nullish() },
       run: (a) => ingest.reviseEntry(text(a, "entry"), text(a, "content"), { actor, interpret: a.interpret !== false }),
     },
@@ -133,7 +182,12 @@ function specsFor(vault: Vault, actor: ActorId): ToolSpec[] {
       tier: "write",
       description: "Split a Node that holds several things into parts; its evidence and Edges are shared out between them.",
       input: { id: z.string(), parts: z.array(z.string()).min(2).describe("A label for each part") },
-      run: (a) => map.split(text(a, "id"), (a.parts as string[]).map((label) => ({ label })), actor),
+      run: (a) =>
+        map.split(
+          text(a, "id"),
+          (a.parts as string[]).map((label) => ({ label })),
+          actor,
+        ),
     },
     {
       name: "find_duplicates",
@@ -183,4 +237,3 @@ function specsFor(vault: Vault, actor: ActorId): ToolSpec[] {
 export function allowedTools(specs: ToolSpec[], tier: Tier): ToolSpec[] {
   return specs.filter((spec) => tier === "write" || spec.tier === "read");
 }
-

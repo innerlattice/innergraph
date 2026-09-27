@@ -90,7 +90,10 @@ function itemsOf(name: string, out: Record<string, unknown>, labels: Record<stri
 function notesOf(out: Record<string, unknown>): string[] {
   const merged = (out.merged as unknown[] | undefined)?.length ?? 0;
   const dropped = (out.dropped as unknown[] | undefined)?.length ?? 0;
-  return [merged ? `${plural(merged, "thing")} already on your map, so reused` : "", dropped ? `${plural(dropped, "quote")} didn't match your words and ${dropped === 1 ? "was" : "were"} left out` : ""].filter(Boolean);
+  return [
+    merged ? `${plural(merged, "thing")} already on your map, so reused` : "",
+    dropped ? `${plural(dropped, "quote")} didn't match your words and ${dropped === 1 ? "was" : "were"} left out` : "",
+  ].filter(Boolean);
 }
 
 /** A tool error, short enough for a card: malformed calls are the model's slip, not the person's. */
@@ -107,7 +110,16 @@ export function describeTool(part: ToolPart, labels: Record<string, string> = {}
   const phase = phaseOf(part);
   const words = WORDS[name];
   const out = (phase === "done" && part.output && typeof part.output === "object" ? part.output : {}) as Record<string, unknown>;
-  const base = { name, phase, quiet: !words, items: itemsOf(name, out, labels), notes: notesOf(out), session: out.session as string | undefined, entry: out.entry as string | undefined, error: friendlyError(part.errorText) };
+  const base = {
+    name,
+    phase,
+    quiet: !words,
+    items: itemsOf(name, out, labels),
+    notes: notesOf(out),
+    session: out.session as string | undefined,
+    entry: out.entry as string | undefined,
+    error: friendlyError(part.errorText),
+  };
   if (!words) return { ...base, title: LOOKUPS[name] ?? "Looked something up" };
   const title = phase === "done" ? words[1](out) : phase === "error" ? `Couldn't finish: ${words[0].toLowerCase()}` : `${words[0]}…`;
   return { ...base, title };
@@ -127,7 +139,7 @@ interface Quoted {
   label?: string;
 }
 
-const listOf = <T,>(value: unknown): T[] => (Array.isArray(value) ? value.filter((v) => v && typeof v === "object") : []);
+const listOf = <T>(value: unknown): T[] => (Array.isArray(value) ? value.filter((v) => v && typeof v === "object") : []);
 
 /** Streaming input is partial JSON: any field may be missing or half-written. */
 function quotedIn(part: ToolPart): Quoted[] {
@@ -142,7 +154,8 @@ export function recordedEntry(replies: ChatMessage[]): string | undefined {
   return (saved?.output as { entry?: string } | undefined)?.entry;
 }
 
-const cites = (part: ToolPart, entry: string) => toolName(part) === "add_to_graph" && part.state !== "output-error" && (part.input as { entry?: string } | undefined)?.entry === entry;
+const cites = (part: ToolPart, entry: string) =>
+  toolName(part) === "add_to_graph" && part.state !== "output-error" && (part.input as { entry?: string } | undefined)?.entry === entry;
 
 /** Where later add_to_graph calls citing `entry` quote `text` (that message's words): one Mark per found passage. */
 export function marksFor(text: string, entry: string | undefined, later: ChatMessage[]): Mark[] {
@@ -157,7 +170,10 @@ function marksOf(text: string, item: Quoted): Mark[] {
   const quotes = (Array.isArray(item.quotes) ? item.quotes : []).filter((q) => typeof q === "string" && q.length > 0);
   const ids = item.id ? [item.id] : [];
   const labels = item.label ? [item.label] : [];
-  return quotes.map((q) => ({ q, start: text.indexOf(q) })).filter((m) => m.start >= 0).map((m) => ({ start: m.start, end: m.start + m.q.length, ids, labels }));
+  return quotes
+    .map((q) => ({ q, start: text.indexOf(q) }))
+    .filter((m) => m.start >= 0)
+    .map((m) => ({ start: m.start, end: m.start + m.q.length, ids, labels }));
 }
 
 export interface MarkedRun {

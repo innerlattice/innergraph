@@ -99,7 +99,10 @@ describe("resolution on every write path", () => {
   });
 
   it("lands a merely similar node, noting what it may duplicate", () => {
-    const result = t.vault.ingest.propose("agent:b", entry, { nodes: [{ ref: "x", type: "process_node", label: "Shame spiral", confidence: 0.9, quotes: ["Resting helped"] }], edges: [] });
+    const result = t.vault.ingest.propose("agent:b", entry, {
+      nodes: [{ ref: "x", type: "process_node", label: "Shame spiral", confidence: 0.9, quotes: ["Resting helped"] }],
+      edges: [],
+    });
     const asserted = t.vault.explore.timeline(5).find((e) => e.session === result.session && e.type === "NodeAsserted");
     expect(asserted?.body).toHaveProperty("similarTo");
     expect(counts().nodes).toBe(3);
@@ -135,13 +138,17 @@ describe("context retrieval for large graphs", async () => {
     const vault = new VaultAccess(openDatabase(`${tempDir()}/v.db`, KEY));
     const entry = vault.putBlob(new TextEncoder().encode("shame spiral"), "text/plain");
     const node = (id: string, label: string, evidence: { entry: string; start: number; end: number }[] = []) => ({
-      actor: "user", session: "s", type: "NodeAsserted" as const,
+      actor: "user",
+      session: "s",
+      type: "NodeAsserted" as const,
       body: { id, type: "process_node", label, attributes: {}, confidence: 1, evidence },
     });
     vault.append([node("cited", "Cited elsewhere", [{ entry, start: 0, end: 5 }]), node("shame", "Shame spiral")]);
     expect(contextFor(vault, vault.state(), "anything")).toHaveLength(2);
     vault.append(Array.from({ length: CONTEXT_LIMIT }, (_, i) => node(`n${i}`, `Unrelated topic ${i}`)));
-    const ids = contextFor(vault, vault.state(), "Tonight the shame spiral again.", entry).map((c) => c.id).sort();
+    const ids = contextFor(vault, vault.state(), "Tonight the shame spiral again.", entry)
+      .map((c) => c.id)
+      .sort();
     expect(ids).toEqual(["cited", "shame"]);
   });
 });

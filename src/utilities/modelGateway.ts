@@ -88,7 +88,8 @@ export interface Embedder {
 }
 
 /** Qwen3-Embedding is trained with an instruction on the query side only. */
-const QUERY_INSTRUCTION = "Instruct: Given what a person is describing, retrieve the items in their graph (things, beliefs, patterns and the relations between them) that it refers to\nQuery: ";
+const QUERY_INSTRUCTION =
+  "Instruct: Given what a person is describing, retrieve the items in their graph (things, beliefs, patterns and the relations between them) that it refers to\nQuery: ";
 
 export function queryInstructionFor(model: string): string {
   return model.startsWith("qwen3-embedding") ? QUERY_INSTRUCTION : "";

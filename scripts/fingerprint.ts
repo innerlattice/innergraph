@@ -25,7 +25,16 @@ const TARGETS = {
 };
 
 async function bundle(target: keyof typeof TARGETS): Promise<string> {
-  const result = await build({ ...TARGETS[target], absWorkingDir: ROOT, bundle: true, format: "esm", write: false, logLevel: "error", legalComments: "none", define: { "import.meta.env.DEV": "false" } });
+  const result = await build({
+    ...TARGETS[target],
+    absWorkingDir: ROOT,
+    bundle: true,
+    format: "esm",
+    write: false,
+    logLevel: "error",
+    legalComments: "none",
+    define: { "import.meta.env.DEV": "false" },
+  });
   return result.outputFiles.map((f) => f.text).join("\n");
 }
 
@@ -38,7 +47,15 @@ function isBinding(symbol: ts.Symbol | undefined, file: ts.SourceFile): symbol i
 }
 
 function isScope(node: ts.Node): boolean {
-  return ts.isSourceFile(node) || ts.isFunctionLike(node) || ts.isClassLike(node) || ts.isBlock(node) || ts.isIterationStatement(node, false) || ts.isCatchClause(node) || ts.isCaseBlock(node);
+  return (
+    ts.isSourceFile(node) ||
+    ts.isFunctionLike(node) ||
+    ts.isClassLike(node) ||
+    ts.isBlock(node) ||
+    ts.isIterationStatement(node, false) ||
+    ts.isCatchClause(node) ||
+    ts.isCaseBlock(node)
+  );
 }
 
 /** esbuild marks where each source module starts ("// src/core/budget.ts"). */
@@ -81,7 +98,8 @@ export function normalise(code: string): string {
   const visit = (node: ts.Node) => {
     if (ts.isIdentifier(node)) {
       // `{ key }` names a key as well as a binding: keep the key, as `key: $n`.
-      const shorthand = ts.isShorthandPropertyAssignment(node.parent) || (ts.isBindingElement(node.parent) && !node.parent.propertyName && ts.isObjectBindingPattern(node.parent.parent));
+      const shorthand =
+        ts.isShorthandPropertyAssignment(node.parent) || (ts.isBindingElement(node.parent) && !node.parent.propertyName && ts.isObjectBindingPattern(node.parent.parent));
       const symbol = ts.isShorthandPropertyAssignment(node.parent) ? checker.getShorthandAssignmentValueSymbol(node.parent) : checker.getSymbolAtLocation(node);
       if (isBinding(symbol, file)) {
         const name = names.get(symbol) ?? nameOf(symbol);

@@ -35,7 +35,11 @@ export function LogView() {
               <td className="py-2 text-stone-700">{describeEvent(e, data.data?.labels ?? {})}</td>
               <td className="py-2 pl-4 text-right">
                 {undoable(e) ? (
-                  <button type="button" className="text-xs text-stone-400 opacity-0 hover:text-stone-800 hover:underline focus:opacity-100 group-hover:opacity-100" onClick={() => undo(e.id)}>
+                  <button
+                    type="button"
+                    className="text-xs text-stone-400 opacity-0 hover:text-stone-800 hover:underline focus:opacity-100 group-hover:opacity-100"
+                    onClick={() => undo(e.id)}
+                  >
                     Undo
                   </button>
                 ) : null}

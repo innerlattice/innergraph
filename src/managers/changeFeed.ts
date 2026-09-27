@@ -78,5 +78,8 @@ export function changeFeed(events: readonly AnyEvent[], state: ProjectionState, 
     group.rows.push(...rows);
     sessions.set(e.session, group);
   }
-  return [...sessions.values()].filter((s) => s.rows.length > 0).reverse().slice(0, limit);
+  return [...sessions.values()]
+    .filter((s) => s.rows.length > 0)
+    .reverse()
+    .slice(0, limit);
 }

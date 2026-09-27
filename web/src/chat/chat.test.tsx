@@ -19,7 +19,15 @@ vi.mock("../components/GraphCanvas", () => ({ GraphCanvas: () => <div data-testi
 const TEXT = "Today I froze in the meeting. The shame made it worse.";
 const user = (text = TEXT, id = "u1"): ChatMessage => ({ id, role: "user", parts: [{ type: "text", text }] });
 const tool = (name: string, state: string, extra: object = {}) => ({ type: `tool-${name}`, toolCallId: `${name}-${state}`, state, ...extra });
-const added = { session: "s9", items: [{ id: "n7", kind: "node", label: "Freezing", evidence: [], quotes: ["I froze in the meeting"] }, { id: "n8", kind: "node", label: "Shame", evidence: [], quotes: ["The shame", "not in the text"] }], dropped: ["x"], merged: [{ id: "a", into: "n8", reason: "same" }] };
+const added = {
+  session: "s9",
+  items: [
+    { id: "n7", kind: "node", label: "Freezing", evidence: [], quotes: ["I froze in the meeting"] },
+    { id: "n8", kind: "node", label: "Shame", evidence: [], quotes: ["The shame", "not in the text"] },
+  ],
+  dropped: ["x"],
+  merged: [{ id: "a", into: "n8", reason: "same" }],
+};
 const reply = (parts: unknown[], metadata?: object): ChatMessage => ({ id: "a1", role: "assistant", parts: parts as ChatMessage["parts"], metadata });
 const SETTINGS: PublicChatSettings = { provider: "local", model: "gemma", baseUrl: "http://127.0.0.1:11434/v1", contextWindow: 32_000, hasKey: false, hosted: false };
 
@@ -53,12 +61,29 @@ let routes: Record<string, () => Response>;
 beforeEach(() => {
   routes = {
     "GET /api/chat/settings": () => json(SETTINGS),
-    "GET /api/chats": () => json([{ id: "old", title: "Earlier", createdAt: "2026-09-20T00:00:00Z", updatedAt: new Date().toISOString(), contextTokens: 10, budget: { contextTokens: 10, contextWindow: 32_000, level: "ok" } }]),
-    "GET /api/chats/old": () => json({ chat: { id: "old", title: "Earlier", messages: [user("Earlier words", "u0")] }, budget: { contextTokens: 10, contextWindow: 32_000, level: "ok" } }),
+    "GET /api/chats": () =>
+      json([
+        {
+          id: "old",
+          title: "Earlier",
+          createdAt: "2026-09-20T00:00:00Z",
+          updatedAt: new Date().toISOString(),
+          contextTokens: 10,
+          budget: { contextTokens: 10, contextWindow: 32_000, level: "ok" },
+        },
+      ]),
+    "GET /api/chats/old": () =>
+      json({ chat: { id: "old", title: "Earlier", messages: [user("Earlier words", "u0")] }, budget: { contextTokens: 10, contextWindow: 32_000, level: "ok" } }),
     "POST /api/chat": () => sse(TURN),
     "GET /api/selection": () => json({ ids: ["n7"], at: "1", items: [{ id: "n7", kind: "node", type: "part", label: "Freezing", status: "active", confirmed: false }] }),
     "PUT /api/selection": () => json({ ids: [], at: "2", items: [] }),
-    "GET /api/view": () => json({ nodes: { n7: { id: "n7", type: "part", label: "Freezing", status: "active", confirmed: false, attributes: {}, evidence: [], staleEvidence: 0 } }, edges: {}, counts: { active: 1, removed: 0 }, position: "p" }),
+    "GET /api/view": () =>
+      json({
+        nodes: { n7: { id: "n7", type: "part", label: "Freezing", status: "active", confirmed: false, attributes: {}, evidence: [], staleEvidence: 0 } },
+        edges: {},
+        counts: { active: 1, removed: 0 },
+        position: "p",
+      }),
     "POST /api/undo-session": () => json({ session: "u", summary: { retired: 1, restored: 0, changed: 0 } }),
   };
   calls = fakeServer((call) => routes[`${call.method} ${call.path}`]?.());
@@ -246,7 +271,14 @@ describe("the composer", () => {
 describe("rails and settings", () => {
   it("list, open, rename and delete conversations", () => {
     const handlers = { onOpen: vi.fn(), onNew: vi.fn(), onRename: vi.fn(), onDelete: vi.fn(), onSettings: vi.fn(), chatOpen: true, onToggleChat: vi.fn() };
-    const chat = { id: "c", title: "Monday", createdAt: "", updatedAt: new Date().toISOString(), contextTokens: 0, budget: { contextTokens: 0, contextWindow: 1, level: "full" as const } };
+    const chat = {
+      id: "c",
+      title: "Monday",
+      createdAt: "",
+      updatedAt: new Date().toISOString(),
+      contextTokens: 0,
+      budget: { contextTokens: 0, contextWindow: 1, level: "full" as const },
+    };
     const { rerender } = render(<ChatRail chats={[]} {...handlers} />);
     expect(screen.getByText("Nothing here yet.")).toBeTruthy();
     rerender(<ChatRail chats={[chat]} active="c" {...handlers} />);
@@ -304,7 +336,10 @@ describe("rails and settings", () => {
 
   it("connect a ChatGPT plan with a code, then pick its model and reasoning", { timeout: 15_000 }, async () => {
     linkPoll.ms = 10;
-    const states = [{ state: "pending", userCode: "ABCD-1234", url: "https://auth.openai.com/codex/device" }, { state: "connected", plan: "pro", email: "me@example.com" }];
+    const states = [
+      { state: "pending", userCode: "ABCD-1234", url: "https://auth.openai.com/codex/device" },
+      { state: "connected", plan: "pro", email: "me@example.com" },
+    ];
     routes["GET /api/chat/chatgpt"] = () => json({ state: "disconnected" });
     routes["POST /api/chat/chatgpt"] = () => json(states[0]);
     routes["PUT /api/chat/settings"] = () => json({ ...SETTINGS, provider: "chatgpt" });
@@ -313,7 +348,12 @@ describe("rails and settings", () => {
     fireEvent.click(screen.getByText("ChatGPT plan"));
     fireEvent.click(await screen.findByText("Connect ChatGPT"));
     expect(await screen.findByText("ABCD-1234")).toBeTruthy();
-    expect(screen.getByText(/Open OpenAI/).closest("a")?.getAttribute("href")).toBe("https://auth.openai.com/codex/device");
+    expect(
+      screen
+        .getByText(/Open OpenAI/)
+        .closest("a")
+        ?.getAttribute("href"),
+    ).toBe("https://auth.openai.com/codex/device");
     fireEvent.click(screen.getByLabelText("Copy code"));
     routes["GET /api/chat/chatgpt"] = () => json(states[1]);
     expect(await screen.findByText(/Connected on the pro plan/, {}, { timeout: 5000 })).toBeTruthy();
@@ -340,7 +380,15 @@ describe("rails and settings", () => {
   });
 });
 
-const actions = () => ({ onSelect: vi.fn(), onOpenEntry: vi.fn(), onNewChat: vi.fn(), onOpenSettings: vi.fn(), onTurnEnd: vi.fn(), onDeselect: vi.fn(), onClearSelection: vi.fn() });
+const actions = () => ({
+  onSelect: vi.fn(),
+  onOpenEntry: vi.fn(),
+  onNewChat: vi.fn(),
+  onOpenSettings: vi.fn(),
+  onTurnEnd: vi.fn(),
+  onDeselect: vi.fn(),
+  onClearSelection: vi.fn(),
+});
 
 describe("a conversation", () => {
   it("greets, sends a turn, shows its cards and highlights, and warns as it fills", async () => {

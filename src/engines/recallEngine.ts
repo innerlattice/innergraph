@@ -176,8 +176,9 @@ export async function hybridSearch(input: SearchInput, reranker: Reranker | unde
 }
 
 async function rerankHits(input: SearchInput, hits: (Ranked & { stages: SearchHit["stages"] })[], reranker: Reranker) {
-  const scores = await reranker.rerank(input.query, hits.map((h) => input.docs[h.index]));
-  return hits
-    .map((h, i) => ({ ...h, score: scores[i] ?? 0, stages: { ...h.stages, rerank: scores[i] ?? 0 } }))
-    .sort((a, b) => b.score - a.score);
+  const scores = await reranker.rerank(
+    input.query,
+    hits.map((h) => input.docs[h.index]),
+  );
+  return hits.map((h, i) => ({ ...h, score: scores[i] ?? 0, stages: { ...h.stages, rerank: scores[i] ?? 0 } })).sort((a, b) => b.score - a.score);
 }

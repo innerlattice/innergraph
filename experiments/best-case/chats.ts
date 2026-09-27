@@ -19,8 +19,16 @@ export const splitGateway: ModelGateway = {
   hosted: false,
   async generateJson({ user }) {
     const parts = [...user.matchAll(/\((\d+)\) ([^,\n]+)/g)].map((m) => m[2].trim().slice(0, 5).toLowerCase());
-    const owner = (line: string) => Math.max(0, parts.findIndex((stem) => line.toLowerCase().includes(stem)));
-    const section = (name: string) => (user.split(`${name}:\n`)[1] ?? "").split(/\n[A-Z]\w+:\n|\nReturn/)[0].split("\n").filter((l) => l.startsWith("["));
+    const owner = (line: string) =>
+      Math.max(
+        0,
+        parts.findIndex((stem) => line.toLowerCase().includes(stem)),
+      );
+    const section = (name: string) =>
+      (user.split(`${name}:\n`)[1] ?? "")
+        .split(/\n[A-Z]\w+:\n|\nReturn/)[0]
+        .split("\n")
+        .filter((l) => l.startsWith("["));
     const assign = (lines: string[], i: number) => lines.flatMap((l, k) => (owner(l) === i ? [k] : []));
     return { parts: parts.map((_, i) => ({ evidence: assign(section("Evidence"), i), edges: assign(section("Edges"), i) })) };
   },
@@ -100,7 +108,9 @@ const journaling: [string, Script][] = [
           { from: "doom", to: "tired", type: "reinforces", sign: "+", confidence: 0.75, quotes: ["doomscrolled until 2am", "woke up exhausted"] },
         ],
       });
-      turn.say("I've saved that as “Up until 2am”. The Scroller was already on your map, so I linked it to a new habit, Doomscrolling, which feeds how exhausted and ashamed you felt this morning. Does that fit?");
+      turn.say(
+        "I've saved that as “Up until 2am”. The Scroller was already on your map, so I linked it to a new habit, Doomscrolling, which feeds how exhausted and ashamed you felt this morning. Does that fit?",
+      );
     },
   ],
 ];
@@ -117,7 +127,9 @@ const tidying: [string, Script][] = [
       await turn.call("merge_nodes", { ids: [keep, doom], label: "Keep scrolling" });
       await turn.call("find_duplicates", {});
       await turn.call("merge_duplicates", {});
-      turn.say("Done: they're one node now, “Keep scrolling”, with the links and passages of both. That left The Scroller linked to it twice, so I folded those two links together too.");
+      turn.say(
+        "Done: they're one node now, “Keep scrolling”, with the links and passages of both. That left The Scroller linked to it twice, so I folded those two links together too.",
+      );
     },
   ],
   [
@@ -169,7 +181,9 @@ const exploring: [string, Script][] = [
     async (turn) => {
       const id = await find(turn, "people get annoyed when I ask", "If I ask, people get annoyed");
       await turn.call("trace_roots", { id });
-      turn.say("It traces back to being laughed at over your homework at seven: from that you took “needing help makes me a burden”, and the expectation grew out of that belief. Does that sound right to you?");
+      turn.say(
+        "It traces back to being laughed at over your homework at seven: from that you took “needing help makes me a burden”, and the expectation grew out of that belief. Does that sound right to you?",
+      );
     },
   ],
 ];

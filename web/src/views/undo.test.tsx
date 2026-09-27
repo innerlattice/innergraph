@@ -9,7 +9,9 @@ import { RevertControl, TimeBar, describeRevert } from "./TimeBar";
 
 const HLC = "001758800000000.000000.d";
 const base = { attributes: {}, confidence: 0.8, evidence: [], assertedBy: "agent:c", assertedAt: HLC, updatedAt: HLC, confirmed: false, staleEvidence: 0 };
-const change = (id: string, body: object, type = "StatusChanged") => ({ event: { id, hlc: HLC, device: "d", actor: "model:g", session: "s", parents: [], type, body } as AnyEvent });
+const change = (id: string, body: object, type = "StatusChanged") => ({
+  event: { id, hlc: HLC, device: "d", actor: "model:g", session: "s", parents: [], type, body } as AnyEvent,
+});
 const edgeView = {
   edge: { ...base, id: "e1", type: "reinforces", from: "a", to: "b", sign: 1 as number | undefined, status: "removed", staleEvidence: 2 },
   fromLabel: "A",
@@ -21,11 +23,18 @@ let calls: Call[];
 beforeEach(() => {
   calls = fakeServer((call) => {
     if (call.method === "POST") {
-      return call.path.includes("/undo") && (call.body as { eventId?: string }).eventId === "bad" ? failure("cannot") : { session: "s", summary: { retired: 1, restored: 0, changed: 2 } };
+      return call.path.includes("/undo") && (call.body as { eventId?: string }).eventId === "bad"
+        ? failure("cannot")
+        : { session: "s", summary: { retired: 1, restored: 0, changed: 2 } };
     }
     if (call.path.startsWith("/api/edges")) return edgeView;
     if (call.path.startsWith("/api/revert/preview")) return { retired: 1, restored: 2, changed: 0 };
-    if (call.path.startsWith("/api/timeline")) return [change("x1", { target: "a", status: "accepted" }).event, { ...change("bad", { target: "a", status: "superseded" }).event }, { id: "w", hlc: HLC, type: "SessionOpened", actor: "user", body: { purpose: "x" } }];
+    if (call.path.startsWith("/api/timeline"))
+      return [
+        change("x1", { target: "a", status: "accepted" }).event,
+        { ...change("bad", { target: "a", status: "superseded" }).event },
+        { id: "w", hlc: HLC, type: "SessionOpened", actor: "user", body: { purpose: "x" } },
+      ];
     return { nodes: {}, edges: {} };
   });
 });

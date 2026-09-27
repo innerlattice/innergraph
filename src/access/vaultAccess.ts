@@ -53,16 +53,18 @@ export class VaultAccess {
   append(drafts: AnyDraft[]): AnyEvent[] {
     drafts.forEach(checkDraft);
     // IMMEDIATE takes the write lock first, so another process cannot append in between.
-    return this.db.transaction(() => {
-      this.refresh();
-      const events: AnyEvent[] = [];
-      for (const draft of drafts) events.push(this.seal(draft, events.at(-1)?.id ?? this.log.at(-1)?.id));
-      for (const e of events) this.insert(e);
-      for (const e of events) applyEvent(this.head, e);
-      this.writeDerived(this.head);
-      this.log.push(...events);
-      return events;
-    }).immediate();
+    return this.db
+      .transaction(() => {
+        this.refresh();
+        const events: AnyEvent[] = [];
+        for (const draft of drafts) events.push(this.seal(draft, events.at(-1)?.id ?? this.log.at(-1)?.id));
+        for (const e of events) this.insert(e);
+        for (const e of events) applyEvent(this.head, e);
+        this.writeDerived(this.head);
+        this.log.push(...events);
+        return events;
+      })
+      .immediate();
   }
 
   events(upTo?: string): AnyEvent[] {
@@ -190,5 +192,4 @@ export class VaultAccess {
       for (const ev of e.evidence) evidence.run(e.id, ev.entry, ev.start, ev.end);
     }
   }
-
 }

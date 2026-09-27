@@ -114,4 +114,3 @@ export function initVault(options: VaultOptions & { schemaFile: string }): Vault
   vault.map.changeSchema(schema, {}, USER);
   return vault;
 }
-

@@ -1,7 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/clients/http.js";
 import { ChatGptLink, type SettingsStore } from "../src/managers/chatgptLink.js";
-import { ChatGptAuthError, PLAN_MODELS, chatgptModel, chatgptOptions, claims, planFetch, pollDeviceCode, prepareBody, refreshTokens, requestDeviceCode, tokensFrom } from "../src/utilities/chatgpt.js";
+import {
+  ChatGptAuthError,
+  PLAN_MODELS,
+  chatgptModel,
+  chatgptOptions,
+  claims,
+  planFetch,
+  pollDeviceCode,
+  prepareBody,
+  refreshTokens,
+  requestDeviceCode,
+  tokensFrom,
+} from "../src/utilities/chatgpt.js";
 import { ChatModelError, chatModel } from "../src/utilities/chatModel.js";
 import { type TestVault, makeVault } from "./helpers.js";
 
@@ -25,14 +37,17 @@ function fakeOpenAI(routes: Record<string, (() => Response)[]>) {
   }) as typeof fetch;
   return { http, calls };
 }
-const json = (body: unknown, status = 200) => () => new Response(JSON.stringify(body), { status });
+const json =
+  (body: unknown, status = 200) =>
+  () =>
+    new Response(JSON.stringify(body), { status });
 
 let t: TestVault;
 let store: SettingsStore;
 beforeEach(() => {
   t = makeVault();
   const settings = new Map<string, unknown>();
-  store = { readSetting: <T,>(key: string) => settings.get(key) as T | undefined, writeSetting: (key: string, value: unknown) => void settings.set(key, value) };
+  store = { readSetting: <T>(key: string) => settings.get(key) as T | undefined, writeSetting: (key: string, value: unknown) => void settings.set(key, value) };
 });
 afterEach(() => t.cleanup());
 
@@ -154,7 +169,11 @@ describe("the ChatGPT link", () => {
     const app = createApp(t.vault);
     expect((await (await app.request("/api/chat/chatgpt")).json()).state).toBe("connected");
     expect((await (await app.request("/api/chat/chatgpt", { method: "DELETE" })).json()).state).toBe("disconnected");
-    const res = await app.request("/api/chat", { method: "POST", body: JSON.stringify({ id: "c", message: { id: "u", role: "user", parts: [{ type: "text", text: "hi" }] } }), headers: { "content-type": "application/json" } });
+    const res = await app.request("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ id: "c", message: { id: "u", role: "user", parts: [{ type: "text", text: "hi" }] } }),
+      headers: { "content-type": "application/json" },
+    });
     expect(res.status).toBe(400);
   });
 });

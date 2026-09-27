@@ -248,7 +248,12 @@ function print(summary: Record<string, number>, functions: FunctionMetric[], per
   console.table(worst.map((f) => ({ fn: `${f.file}:${f.line} ${f.name}`, cc: f.cc, cov: f.coverage.toFixed(2), crap: f.crap.toFixed(2) })));
   console.log("Lowest MI files:");
   const scored = perFile.filter((f) => f.mi !== null) as { file: string; functions: number; mi: number }[];
-  console.table(scored.sort((a, b) => a.mi - b.mi).slice(0, 10).map((f) => ({ file: f.file, fns: f.functions, mi: f.mi.toFixed(1) })));
+  console.table(
+    scored
+      .sort((a, b) => a.mi - b.mi)
+      .slice(0, 10)
+      .map((f) => ({ file: f.file, fns: f.functions, mi: f.mi.toFixed(1) })),
+  );
   const skipped = perFile.filter((f) => f.mi === null).map((f) => f.file);
   if (skipped.length > 0) console.log(`Declaration-only files (no MI): ${skipped.join(", ")}`);
   console.log(Object.fromEntries(Object.entries(summary).map(([k, v]) => [k, Number(v.toFixed(2))])));

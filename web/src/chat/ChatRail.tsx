@@ -29,7 +29,12 @@ export function ago(iso: string, now = Date.now()): string {
 
 function RailButton(props: { icon: ReactNode; label: string; onClick: () => void }) {
   return (
-    <button type="button" onClick={props.onClick} aria-label={props.label} className="flex h-9 w-full items-center gap-3 rounded-xl px-2.5 text-sm text-stone-600 transition hover:bg-stone-200/70 hover:text-stone-900">
+    <button
+      type="button"
+      onClick={props.onClick}
+      aria-label={props.label}
+      className="flex h-9 w-full items-center gap-3 rounded-xl px-2.5 text-sm text-stone-600 transition hover:bg-stone-200/70 hover:text-stone-900"
+    >
       <span className="shrink-0">{props.icon}</span>
       <span className="truncate opacity-0 transition-opacity group-hover/rail:opacity-100 group-has-[:focus-visible]/rail:opacity-100">{props.label}</span>
     </button>
@@ -54,14 +59,25 @@ function ChatRow(props: { chat: ChatListItem; active: boolean } & Pick<ChatRailP
   }
   return (
     <div className={`group/row flex items-center rounded-lg transition ${props.active ? "bg-white shadow-raised" : "hover:bg-stone-200/60"}`}>
-      <button type="button" onClick={() => props.onOpen(chat.id)} onDoubleClick={() => setEditing(true)} title="Double-click to rename" className="min-w-0 flex-1 px-2.5 py-1.5 text-left">
+      <button
+        type="button"
+        onClick={() => props.onOpen(chat.id)}
+        onDoubleClick={() => setEditing(true)}
+        title="Double-click to rename"
+        className="min-w-0 flex-1 px-2.5 py-1.5 text-left"
+      >
         <span className="block truncate text-sm text-stone-700">{chat.title}</span>
         <span className="block text-caption text-stone-400">
           {ago(chat.updatedAt)}
           {chat.budget.level === "full" ? " (full)" : ""}
         </span>
       </button>
-      <button type="button" aria-label={`Delete ${chat.title}`} onClick={() => props.onDelete(chat.id)} className="mr-1 rounded-md p-1.5 text-stone-400 opacity-0 transition group-hover/row:opacity-100 hover:bg-stone-200 hover:text-rose-600">
+      <button
+        type="button"
+        aria-label={`Delete ${chat.title}`}
+        onClick={() => props.onDelete(chat.id)}
+        className="mr-1 rounded-md p-1.5 text-stone-400 opacity-0 transition group-hover/row:opacity-100 hover:bg-stone-200 hover:text-rose-600"
+      >
         <Trash2 size={ICON.sm} />
       </button>
     </div>

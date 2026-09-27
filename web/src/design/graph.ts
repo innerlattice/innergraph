@@ -133,10 +133,20 @@ const nodeRules: StylesheetJson = [
   { selector: "node.style-name", style: { "font-weight": 600 } },
   {
     selector: "node.style-statement",
-    style: { "text-valign": "center", "text-margin-y": 0, "text-max-width": `${BOX_TEXT_WIDTH}px`, "font-family": 'ui-serif, "New York", "Iowan Old Style", Georgia, serif', "font-size": 11.5, "text-outline-width": 0 },
+    style: {
+      "text-valign": "center",
+      "text-margin-y": 0,
+      "text-max-width": `${BOX_TEXT_WIDTH}px`,
+      "font-family": 'ui-serif, "New York", "Iowan Old Style", Georgia, serif',
+      "font-size": 11.5,
+      "text-outline-width": 0,
+    },
   },
   // Removed (shown on request): faded, with a dashed ring. Confirmed is the norm, so it looks like nothing.
-  { selector: "node.removed", style: { "background-image-opacity": 0.35, color: MUTED, "outline-width": 1, "outline-style": "dashed", "outline-color": MUTED, "outline-offset": 3, "outline-opacity": 0.8 } },
+  {
+    selector: "node.removed",
+    style: { "background-image-opacity": 0.35, color: MUTED, "outline-width": 1, "outline-style": "dashed", "outline-color": MUTED, "outline-offset": 3, "outline-opacity": 0.8 },
+  },
   { selector: "node.appeared", style: { "underlay-color": COLOR.sage, "underlay-opacity": 0.3, "underlay-padding": 8, "underlay-shape": "ellipse" } },
   { selector: "node:selected", style: { "underlay-color": COLOR.deep, "underlay-opacity": 0.16, "underlay-padding": 8, "underlay-shape": "ellipse" } },
   { selector: "node.style-statement:selected", style: { "underlay-shape": "round-rectangle" } },

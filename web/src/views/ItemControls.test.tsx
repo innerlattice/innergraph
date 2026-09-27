@@ -35,7 +35,12 @@ describe("item actions", () => {
     expect(kindsFor([{ status: "active", confirmed: false }])).toEqual(["confirm", "remove"]);
     expect(kindsFor([{ status: "active", confirmed: true }])).toEqual(["remove"]);
     expect(kindsFor([{ status: "removed", confirmed: false }])).toEqual(["restore"]);
-    expect(kindsFor([{ status: "removed", confirmed: false }, { status: "active", confirmed: true }])).toEqual(["remove"]);
+    expect(
+      kindsFor([
+        { status: "removed", confirmed: false },
+        { status: "active", confirmed: true },
+      ]),
+    ).toEqual(["remove"]);
     expect(kindsFor([])).toEqual(["remove"]);
   });
 
@@ -75,7 +80,16 @@ describe("what changed", () => {
   it("lists sessions with their rows, focuses items, undoes a session and merges duplicates", async () => {
     const onFocus = vi.fn();
     const onChanged = vi.fn();
-    render(<ChangesPanel version="1" duplicates={[{ kind: "node", ids: ["n1", "n4"], reason: "same" }]} labels={{ n1: "The Hider" }} onFocus={onFocus} onChanged={onChanged} onClose={vi.fn()} />);
+    render(
+      <ChangesPanel
+        version="1"
+        duplicates={[{ kind: "node", ids: ["n1", "n4"], reason: "same" }]}
+        labels={{ n1: "The Hider" }}
+        onFocus={onFocus}
+        onChanged={onChanged}
+        onClose={vi.fn()}
+      />,
+    );
     expect(await screen.findByText("New entry")).toBeTruthy();
     expect(screen.getByText("mystery")).toBeTruthy();
     expect(screen.getByText("Renamed to The Controller")).toBeTruthy();
@@ -105,7 +119,9 @@ describe("status bar", () => {
     const onChanges = vi.fn();
     const onTidy = vi.fn();
     const onShowRemoved = vi.fn();
-    const { rerender } = render(<StatusBar removed={2} showRemoved={false} onShowRemoved={onShowRemoved} changesOpen={false} onChanges={onChanges} duplicates={2} onTidy={onTidy} />);
+    const { rerender } = render(
+      <StatusBar removed={2} showRemoved={false} onShowRemoved={onShowRemoved} changesOpen={false} onChanges={onChanges} duplicates={2} onTidy={onTidy} />,
+    );
     fireEvent.click(screen.getByText("Tidy up"));
     expect(onTidy).toHaveBeenCalled();
     fireEvent.click(screen.getByText("What changed"));

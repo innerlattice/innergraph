@@ -70,7 +70,11 @@ describe("HTTP client", () => {
     expect((await call(app, "/api/search/graph?q=shame&limit=5")).json.hits.map((h: { label: string }) => h.label)).toContain("Shame");
     expect((await call(app, "/api/search/graph")).json.stages).toEqual(["lexical"]);
 
-    const put = await app.request("/api/selection", { method: "PUT", body: JSON.stringify({ ids: [shame.id, "gone", shame.id] }), headers: { "content-type": "application/json" } });
+    const put = await app.request("/api/selection", {
+      method: "PUT",
+      body: JSON.stringify({ ids: [shame.id, "gone", shame.id] }),
+      headers: { "content-type": "application/json" },
+    });
     expect((await put.json()).ids).toEqual([shame.id, "gone"]);
     expect((await call(app, "/api/selection")).json.items.map((i: { label: string }) => i.label)).toEqual(["Shame"]);
     const edgeId = Object.keys(graph.edges)[0];
@@ -174,7 +178,12 @@ describe("MCP client", () => {
     tool("restore")?.run({ id: first });
     expect(vault.explore.graph().nodes[first]).toBeDefined();
     tool("merge_nodes")?.run({ ids: [first, second], label: "Both" });
-    t.gateway.generateJson = async () => ({ parts: [{ evidence: [], edges: [] }, { evidence: [], edges: [] }] });
+    t.gateway.generateJson = async () => ({
+      parts: [
+        { evidence: [], edges: [] },
+        { evidence: [], edges: [] },
+      ],
+    });
     await tool("split_node")?.run({ id: third, parts: ["A", "B"] });
     const undoable = vault.explore.timeline(5).find((e) => e.type === "NodesSplit")?.id;
     expect(() => tool("undo")?.run({ eventId: undoable })).not.toThrow();

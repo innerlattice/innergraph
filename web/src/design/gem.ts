@@ -38,7 +38,13 @@ function mix(hex: string, toward: string, amount: number): string {
   const parse = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const a = parse(hex);
   const b = parse(toward);
-  return `#${a.map((v, i) => Math.round(v + (b[i] - v) * amount).toString(16).padStart(2, "0")).join("")}`;
+  return `#${a
+    .map((v, i) =>
+      Math.round(v + (b[i] - v) * amount)
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`;
 }
 
 /** `amount` > 0 towards white, < 0 towards black. */

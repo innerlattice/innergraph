@@ -16,7 +16,11 @@ function useItemFace(id: string, label: string | undefined) {
   if (node) return { lead: <TypeMark type={node.type} />, text: node.label, body: <>{node.label}</> };
   const edge = view?.edges[id];
   const name = (n: string) => view?.nodes[n]?.label ?? n;
-  if (edge) return { text: `${name(edge.from)} ${linkWord(schema, edge.type, edge.sign)} ${name(edge.to)}`, body: <EdgeLabel from={name(edge.from)} type={edge.type} sign={edge.sign} to={name(edge.to)} /> };
+  if (edge)
+    return {
+      text: `${name(edge.from)} ${linkWord(schema, edge.type, edge.sign)} ${name(edge.to)}`,
+      body: <EdgeLabel from={name(edge.from)} type={edge.type} sign={edge.sign} to={name(edge.to)} />,
+    };
   return { text: label ?? id, body: <ItemLabel label={label ?? id} /> };
 }
 

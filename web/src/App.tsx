@@ -19,7 +19,7 @@ import { MapView } from "./views/MapView";
 
 export type ViewName = PaneName;
 
-export type Navigate = (view: ViewName, focus?: string) => void
+export type Navigate = (view: ViewName, focus?: string) => void;
 
 const EMPTY: Selection = { ids: [], at: "", items: [] };
 
@@ -106,40 +106,50 @@ export function App() {
   };
   return (
     <ItemsProvider value={items}>
-    <div className="flex h-screen bg-paper text-stone-800">
-      <ChatRail chats={chats.list} active={chats.active} onOpen={openChat} onNew={newChat} onRename={chats.rename} onDelete={chats.remove} onSettings={() => setSettingsOpen(true)} chatOpen={chatOpen} onToggleChat={toggleChat} />
-      <main aria-label="Conversation" className={chatOpen ? "min-w-panel flex-1" : "hidden"}>
-        <ChatView
-          id={chats.active}
-          selection={selection.items}
-          settings={settings.data}
-          labels={labels}
-          onSelect={showOnMap}
-          onOpenEntry={(entry) => navigate("entries", entry)}
-          onNewChat={chats.fresh}
-          onOpenSettings={() => setSettingsOpen(true)}
-          onTurnEnd={chats.reload}
-          onDeselect={(id) => select(selection.ids.filter((i) => i !== id))}
-          onClearSelection={() => select([])}
+      <div className="flex h-screen bg-paper text-stone-800">
+        <ChatRail
+          chats={chats.list}
+          active={chats.active}
+          onOpen={openChat}
+          onNew={newChat}
+          onRename={chats.rename}
+          onDelete={chats.remove}
+          onSettings={() => setSettingsOpen(true)}
+          chatOpen={chatOpen}
+          onToggleChat={toggleChat}
         />
-      </main>
-      {pane ? (
-        <ViewPane chatOpen={chatOpen} share={width.share} onResize={width.set}>
-          <CurrentView view={pane} focus={focus} selection={selection} onSelect={select} navigate={navigate} />
-        </ViewPane>
-      ) : null}
-      <ViewRail active={pane} onToggle={togglePane} />
-      {settingsOpen && settings.data ? (
-        <SettingsDialog
-          settings={settings.data}
-          onClose={() => setSettingsOpen(false)}
-          onSaved={() => {
-            settings.reload();
-            setSettingsOpen(false);
-          }}
-        />
-      ) : null}
-    </div>
+        <main aria-label="Conversation" className={chatOpen ? "min-w-panel flex-1" : "hidden"}>
+          <ChatView
+            id={chats.active}
+            selection={selection.items}
+            settings={settings.data}
+            labels={labels}
+            onSelect={showOnMap}
+            onOpenEntry={(entry) => navigate("entries", entry)}
+            onNewChat={chats.fresh}
+            onOpenSettings={() => setSettingsOpen(true)}
+            onTurnEnd={chats.reload}
+            onDeselect={(id) => select(selection.ids.filter((i) => i !== id))}
+            onClearSelection={() => select([])}
+          />
+        </main>
+        {pane ? (
+          <ViewPane chatOpen={chatOpen} share={width.share} onResize={width.set}>
+            <CurrentView view={pane} focus={focus} selection={selection} onSelect={select} navigate={navigate} />
+          </ViewPane>
+        ) : null}
+        <ViewRail active={pane} onToggle={togglePane} />
+        {settingsOpen && settings.data ? (
+          <SettingsDialog
+            settings={settings.data}
+            onClose={() => setSettingsOpen(false)}
+            onSaved={() => {
+              settings.reload();
+              setSettingsOpen(false);
+            }}
+          />
+        ) : null}
+      </div>
     </ItemsProvider>
   );
 }

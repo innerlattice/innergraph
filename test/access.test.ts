@@ -5,16 +5,7 @@ import { openDatabase } from "../src/access/database.js";
 import { normalise } from "../src/access/ingestAccess.js";
 import { InvariantError, checkDraft } from "../src/access/invariants.js";
 import { applyEvent, emptyState, fold, mergeEvidence, patchAttributes } from "../src/access/projection.js";
-import {
-  SchemaAccess,
-  SchemaError,
-  checkEdge,
-  checkNode,
-  derivationalNodeTypes,
-  loadSchemaFile,
-  parseSchema,
-  rolesOf,
-} from "../src/access/schemaAccess.js";
+import { SchemaAccess, SchemaError, checkEdge, checkNode, derivationalNodeTypes, loadSchemaFile, parseSchema, rolesOf } from "../src/access/schemaAccess.js";
 import { VaultAccess } from "../src/access/vaultAccess.js";
 import type { AnyEvent } from "../src/core/types.js";
 import { KEY, SCHEMA_FILE, steppingClock, tempDir } from "./helpers.js";

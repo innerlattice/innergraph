@@ -27,17 +27,7 @@ interface AttributeDef {
 /** How a Node's label reads: a short name, a first-person statement, or an episode title. */
 export type LabelStyle = "name" | "statement" | "title";
 
-export const NODE_SHAPES = [
-  "ellipse",
-  "round-rectangle",
-  "round-diamond",
-  "round-hexagon",
-  "round-octagon",
-  "round-triangle",
-  "round-tag",
-  "rhomboid",
-  "barrel",
-] as const;
+export const NODE_SHAPES = ["ellipse", "round-rectangle", "round-diamond", "round-hexagon", "round-octagon", "round-triangle", "round-tag", "rhomboid", "barrel"] as const;
 
 /** Presentation hints. Data, not theory: Clients read them without knowing type names. */
 interface NodeDisplay {
@@ -164,14 +154,7 @@ interface EventDraft<T extends EventType = EventType> {
 export type AnyEvent = { [K in EventType]: VaultEvent<K> }[EventType];
 export type AnyDraft = { [K in EventType]: EventDraft<K> }[EventType];
 
-export const GRAPH_EVENT_TYPES: readonly EventType[] = [
-  "NodeAsserted",
-  "EdgeAsserted",
-  "AttributesChanged",
-  "StatusChanged",
-  "NodesSplit",
-  "NodesMerged",
-];
+export const GRAPH_EVENT_TYPES: readonly EventType[] = ["NodeAsserted", "EdgeAsserted", "AttributesChanged", "StatusChanged", "NodesSplit", "NodesMerged"];
 
 // ---- Projection -------------------------------------------------------------
 

@@ -25,9 +25,7 @@ export function createMcpServer(vault: Vault, options: McpOptions): McpServer {
   const server = new McpServer({ name: "inner-graph", version: "0.1.0" });
   const actor = `agent:${options.agent}`;
   for (const spec of allowedTools(toolSpecs(vault, actor), options.tier)) {
-    server.registerTool(spec.name, { description: spec.description, inputSchema: spec.input }, (args: Record<string, unknown>) =>
-      respond(() => spec.run(args)),
-    );
+    server.registerTool(spec.name, { description: spec.description, inputSchema: spec.input }, (args: Record<string, unknown>) => respond(() => spec.run(args)));
   }
   return server;
 }

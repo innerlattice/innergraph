@@ -56,7 +56,11 @@ function KeyBody(props: { schema: Schema | null }) {
         {looksIn(props.schema).map((look) => (
           <Row key={look.name} mark={<EdgeGlyph look={look} />}>
             {look.label}
-            {look.mark ? <span className="ml-1 font-bold" style={{ color: look.color }}>{look.mark}</span> : null}
+            {look.mark ? (
+              <span className="ml-1 font-bold" style={{ color: look.color }}>
+                {look.mark}
+              </span>
+            ) : null}
           </Row>
         ))}
       </Group>
@@ -69,7 +73,9 @@ function KeyBody(props: { schema: Schema | null }) {
       </Group>
       <Group title="Moving around">
         {GESTURES.map((g) => (
-          <li key={g} className="leading-5 text-stone-500">{g}</li>
+          <li key={g} className="leading-5 text-stone-500">
+            {g}
+          </li>
         ))}
       </Group>
     </div>

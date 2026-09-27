@@ -66,7 +66,10 @@ async function main(): Promise<void> {
   });
   const client = new Client({ name: "best-case-experiment", version: "1" });
   await client.connect(transport);
-  for (const file of readdirSync(HERE).filter((f) => f.endsWith(".json")).sort()) await decompose(client, file);
+  for (const file of readdirSync(HERE)
+    .filter((f) => f.endsWith(".json"))
+    .sort())
+    await decompose(client, file);
   const loops = (await call(client, "find_loops")) as { nodes: string[]; polarity: string }[];
   const labels = await labelsNow(client);
   for (const loop of loops) console.log(`${loop.polarity} loop: ${loop.nodes.map((id) => labels[id]?.label).join(" → ")}`);

@@ -66,20 +66,35 @@ function SidePanel(props: PanelProps) {
   const content = panelFor(props);
   if (!content) return null;
   return (
-    <aside className="absolute top-3 right-3 bottom-3 z-20 w-panel max-w-inset animate-rise overflow-auto rounded-2xl bg-white/95 shadow-floating backdrop-blur">
-      {content}
-    </aside>
+    <aside className="absolute top-3 right-3 bottom-3 z-20 w-panel max-w-inset animate-rise overflow-auto rounded-2xl bg-white/95 shadow-floating backdrop-blur">{content}</aside>
   );
 }
 
 function panelFor(props: PanelProps) {
   if (props.mode === "changes") {
-    return <ChangesPanel version={props.version} duplicates={props.duplicates} labels={props.labels} onFocus={props.onSelect} onChanged={() => props.onDone({ kind: "confirm", ids: [] })} onClose={props.onCloseChanges} />;
+    return (
+      <ChangesPanel
+        version={props.version}
+        duplicates={props.duplicates}
+        labels={props.labels}
+        onFocus={props.onSelect}
+        onChanged={() => props.onDone({ kind: "confirm", ids: [] })}
+        onClose={props.onCloseChanges}
+      />
+    );
   }
   const { selection } = props;
   if (selection.length === 0) return null;
   const only = selection.length === 1 ? selection[0] : "";
-  const common = { schema: props.schema, labels: props.labels, readOnly: props.readOnly, version: props.version, onDone: props.onDone, navigate: props.navigate, onSelect: (id: string) => props.onSelect([id]) };
+  const common = {
+    schema: props.schema,
+    labels: props.labels,
+    readOnly: props.readOnly,
+    version: props.version,
+    onDone: props.onDone,
+    navigate: props.navigate,
+    onSelect: (id: string) => props.onSelect([id]),
+  };
   if (props.view?.nodes[only]) return <NodePanel id={only} {...common} statuses={props.filter} onHighlight={props.onHighlight} />;
   if (props.view?.edges[only]) return <EdgePanel id={only} {...common} />;
   return <SelectionPanel ids={selection} version={props.version} onClear={() => props.onSelect([])} onFocus={(id) => props.onSelect([id])} onDone={props.onDone} />;
@@ -132,11 +147,23 @@ export function MapView(props: MapViewProps) {
   return (
     <div className="flex h-full flex-col">
       <TimeBar positions={positions.data ?? []} index={index} onChange={setIndex} onReverted={refresh} />
-      <StatusBar removed={view?.counts.removed} showRemoved={showRemoved} onShowRemoved={setShowRemoved} changesOpen={mode === "changes"} onChanges={() => setMode(mode === "changes" ? "items" : "changes")} duplicates={duplicates?.length ?? 0} onTidy={() => setTidied(tidied + 1)} />
+      <StatusBar
+        removed={view?.counts.removed}
+        showRemoved={showRemoved}
+        onShowRemoved={setShowRemoved}
+        changesOpen={mode === "changes"}
+        onChanges={() => setMode(mode === "changes" ? "items" : "changes")}
+        duplicates={duplicates?.length ?? 0}
+        onTidy={() => setTidied(tidied + 1)}
+      />
       <ErrorNote error={error} />
       <div className="relative min-h-0 flex-1">
         <div className="absolute inset-0">
-          {empty ? <div className="absolute inset-x-0 top-0 z-10 p-8"><Empty>Nothing on the map here yet. Add an entry to begin.</Empty></div> : null}
+          {empty ? (
+            <div className="absolute inset-x-0 top-0 z-10 p-8">
+              <Empty>Nothing on the map here yet. Add an entry to begin.</Empty>
+            </div>
+          ) : null}
           <GraphCanvas elements={elements} selection={selection} highlight={highlight} onSelectionChange={changeSelection} tidied={tidied} />
           <GraphKey schema={schema} />
           <UndoBar done={done} onUndo={undoRemove} onClose={() => setDone(undefined)} />

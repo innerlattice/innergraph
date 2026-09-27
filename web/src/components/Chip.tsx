@@ -43,7 +43,13 @@ export interface ChipProps {
 export function Chip(props: ChipProps) {
   const { tone = "neutral" } = props;
   const body = (
-    <button type="button" title={props.title} disabled={props.struck || !props.onClick} onClick={props.onClick} className={`inline-flex min-w-0 items-center gap-1.5 text-left ${props.struck ? "line-through" : ""}`}>
+    <button
+      type="button"
+      title={props.title}
+      disabled={props.struck || !props.onClick}
+      onClick={props.onClick}
+      className={`inline-flex min-w-0 items-center gap-1.5 text-left ${props.struck ? "line-through" : ""}`}
+    >
       {props.lead}
       <span className="min-w-0 truncate">{props.children}</span>
     </button>
@@ -58,7 +64,12 @@ export function Chip(props: ChipProps) {
   return (
     <span className={`${BASE} ${TONES[tone]} py-0 pr-1 pl-2.5`} data-tone={tone}>
       {body}
-      <button type="button" aria-label={props.removeLabel ?? "Remove"} onClick={props.onRemove} className="shrink-0 rounded-full p-0.5 opacity-70 hover:bg-black/5 hover:opacity-100">
+      <button
+        type="button"
+        aria-label={props.removeLabel ?? "Remove"}
+        onClick={props.onRemove}
+        className="shrink-0 rounded-full p-0.5 opacity-70 hover:bg-black/5 hover:opacity-100"
+      >
         <X size={ICON.xs} />
       </button>
     </span>

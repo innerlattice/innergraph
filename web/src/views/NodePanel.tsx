@@ -158,7 +158,11 @@ function EditableTitle(props: { value: string; readOnly: boolean; onSave: (value
   };
   if (!editing || props.readOnly) {
     return (
-      <h3 className="font-serif text-xl text-stone-800" title={props.readOnly ? undefined : "Double-click to rename"} onDoubleClick={() => (setDraft(props.value), setEditing(true))}>
+      <h3
+        className="font-serif text-xl text-stone-800"
+        title={props.readOnly ? undefined : "Double-click to rename"}
+        onDoubleClick={() => (setDraft(props.value), setEditing(true))}
+      >
         {props.value}
       </h3>
     );
@@ -208,9 +212,15 @@ export function NodePanel(props: NodePanelProps) {
   const [error, setError] = useState<string>();
   const run: Run = (work) => {
     setError(undefined);
-    work().then(() => (view.reload(), onDone({ kind: "confirm", ids: [] }))).catch((e: Error) => setError(e.message));
+    work()
+      .then(() => (view.reload(), onDone({ kind: "confirm", ids: [] })))
+      .catch((e: Error) => setError(e.message));
   };
-  const traceRoots = () => api.roots(id).then((t) => (setTrace(t), onHighlight([...t.upstream, id]))).catch((e: Error) => setError(e.message));
+  const traceRoots = () =>
+    api
+      .roots(id)
+      .then((t) => (setTrace(t), onHighlight([...t.upstream, id])))
+      .catch((e: Error) => setError(e.message));
 
   if (!view.data) return <ErrorNote error={view.error} />;
   const { node } = view.data;

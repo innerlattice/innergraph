@@ -3,14 +3,7 @@ import { loadSchemaFile } from "../src/access/schemaAccess.js";
 import type { Graph, GraphEdge, GraphNode } from "../src/core/types.js";
 import { AnalysisEngine, activeGraph } from "../src/engines/analysisEngine.js";
 import { locate, quoteToEvidence } from "../src/engines/evidenceLocator.js";
-import {
-  InterpretationEngine,
-  buildPrompt,
-  describeSchema,
-  normaliseAssignment,
-  parseInterpretation,
-  usableLabel,
-} from "../src/engines/interpretationEngine.js";
+import { InterpretationEngine, buildPrompt, describeSchema, normaliseAssignment, parseInterpretation, usableLabel } from "../src/engines/interpretationEngine.js";
 import { RecallEngine, cosine, tokenize } from "../src/engines/recallEngine.js";
 import { ScriptedGateway } from "../src/utilities/modelGateway.js";
 import { INTERPRETATION_1, SCHEMA_FILE } from "./helpers.js";
@@ -19,7 +12,20 @@ const schema = loadSchemaFile(SCHEMA_FILE);
 const roles = { d: "derivational", c: "causal", i: "identity" } as const;
 
 function gNode(id: string, extra: Partial<GraphNode> = {}): GraphNode {
-  return { id, type: "t", label: id, attributes: {}, confidence: 0.5, status: "hypothesis", evidence: [], derivedFrom: [], assertedBy: "user", assertedAt: "", updatedAt: "", ...extra };
+  return {
+    id,
+    type: "t",
+    label: id,
+    attributes: {},
+    confidence: 0.5,
+    status: "hypothesis",
+    evidence: [],
+    derivedFrom: [],
+    assertedBy: "user",
+    assertedAt: "",
+    updatedAt: "",
+    ...extra,
+  };
 }
 
 function gEdge(id: string, from: string, to: string, type: string, extra: Partial<GraphEdge> = {}): GraphEdge {
@@ -43,7 +49,11 @@ describe("evidence locator", () => {
 });
 
 describe("InterpretationEngine", () => {
-  const entry = { id: "h", title: "T", text: "I froze. Freezing makes me ashamed. my father laughed at me when I cried. I learned that needing things makes people turn away. When I rest properly the shame gets quieter. the shame makes me freeze even more" };
+  const entry = {
+    id: "h",
+    title: "T",
+    text: "I froze. Freezing makes me ashamed. my father laughed at me when I cried. I learned that needing things makes people turn away. When I rest properly the shame gets quieter. the shame makes me freeze even more",
+  };
   const input = { entry, schema, context: [{ id: "old", type: "belief", label: "Old belief" }] };
 
   it("describes the Schema and builds a prompt with context", () => {
@@ -70,7 +80,10 @@ describe("InterpretationEngine", () => {
         { ref: "x", existing_id: "old", type: "belief", label: "ignored", confidence: 2, quotes: ["I froze"], attributes: { depth: "leaf", bogus: 1 } },
         { ref: "y", existing_id: "old", type: "part", label: "wrong", confidence: 0.5, quotes: ["I froze"] },
       ],
-      edges: [{ from: "old", to: "nowhere", type: "scaffolds", confidence: 0.5, quotes: ["I froze"] }, { from: "x", to: "old", type: "scaffolds", confidence: 0.5, quotes: ["absent"] }],
+      edges: [
+        { from: "old", to: "nowhere", type: "scaffolds", confidence: 0.5, quotes: ["I froze"] },
+        { from: "x", to: "old", type: "scaffolds", confidence: 0.5, quotes: ["absent"] },
+      ],
     };
     const result = parseInterpretation(raw, input);
     expect(result.nodes).toEqual([{ id: "old", type: "belief", label: "Old belief", attributes: { depth: "leaf" }, confidence: 1, evidence: [expect.any(Object)] }]);
@@ -96,18 +109,35 @@ describe("InterpretationEngine", () => {
   });
 
   it("interprets via the gateway and assigns split parts", async () => {
-    const gateway = new ScriptedGateway([INTERPRETATION_1, { parts: [{ evidence: [1], edges: [] }, { evidence: [0, 5], edges: [0] }] }]);
+    const gateway = new ScriptedGateway([
+      INTERPRETATION_1,
+      {
+        parts: [
+          { evidence: [1], edges: [] },
+          { evidence: [0, 5], edges: [0] },
+        ],
+      },
+    ]);
     const engine = new InterpretationEngine(gateway);
     expect(engine.modelName).toBe("scripted");
     expect((await engine.interpret(input)).nodes).toHaveLength(5);
     expect(engine.check(INTERPRETATION_1, input).edges).toHaveLength(4);
     const parts = await engine.assignSplit({ label: "n", parts: ["a", "b"], evidence: ["e0", "e1"], edges: ["x"] });
-    expect(parts).toEqual([{ evidence: [1], edges: [] }, { evidence: [0], edges: [0] }]);
-    expect(await engine.assignSplit({ label: "n", parts: ["a", "b"], evidence: ["e0"], edges: [] })).toEqual([{ evidence: [0], edges: [] }, { evidence: [], edges: [] }]);
+    expect(parts).toEqual([
+      { evidence: [1], edges: [] },
+      { evidence: [0], edges: [0] },
+    ]);
+    expect(await engine.assignSplit({ label: "n", parts: ["a", "b"], evidence: ["e0"], edges: [] })).toEqual([
+      { evidence: [0], edges: [] },
+      { evidence: [], edges: [] },
+    ]);
   });
 
   it("normalises split assignments so every index lands once", () => {
-    expect(normaliseAssignment(2, null, { evidence: 2, edges: 1 })).toEqual([{ evidence: [0, 1], edges: [0] }, { evidence: [], edges: [] }]);
+    expect(normaliseAssignment(2, null, { evidence: 2, edges: 1 })).toEqual([
+      { evidence: [0, 1], edges: [0] },
+      { evidence: [], edges: [] },
+    ]);
   });
 });
 
@@ -115,13 +145,10 @@ describe("AnalysisEngine", () => {
   const engine = new AnalysisEngine();
 
   it("traces roots ranked by downstream support", () => {
-    const graph = graphOf(["r1", "r2", "mid", "leaf", "other"], [
-      gEdge("1", "r1", "mid", "d"),
-      gEdge("2", "mid", "leaf", "d"),
-      gEdge("3", "r2", "leaf", "d"),
-      gEdge("4", "r1", "other", "d"),
-      gEdge("5", "leaf", "r2", "c"),
-    ]);
+    const graph = graphOf(
+      ["r1", "r2", "mid", "leaf", "other"],
+      [gEdge("1", "r1", "mid", "d"), gEdge("2", "mid", "leaf", "d"), gEdge("3", "r2", "leaf", "d"), gEdge("4", "r1", "other", "d"), gEdge("5", "leaf", "r2", "c")],
+    );
     const trace = engine.traceRoots(graph, roles, "leaf");
     expect(trace.upstream.sort()).toEqual(["mid", "r1", "r2"]);
     expect(trace.roots).toEqual([
@@ -141,12 +168,15 @@ describe("AnalysisEngine", () => {
   });
 
   it("describes loops with their inputs, outputs and weakest link", () => {
-    const graph = graphOf(["a", "b", "brake", "out"], [
-      gEdge("1", "a", "b", "c", { sign: 1, confidence: 0.9 }),
-      gEdge("2", "b", "a", "c", { sign: 1, confidence: 0.4 }),
-      gEdge("3", "brake", "b", "c", { sign: -1 }),
-      gEdge("4", "a", "out", "c"),
-    ]);
+    const graph = graphOf(
+      ["a", "b", "brake", "out"],
+      [
+        gEdge("1", "a", "b", "c", { sign: 1, confidence: 0.9 }),
+        gEdge("2", "b", "a", "c", { sign: 1, confidence: 0.4 }),
+        gEdge("3", "brake", "b", "c", { sign: -1 }),
+        gEdge("4", "a", "out", "c"),
+      ],
+    );
     const [loop] = engine.loopDetails(graph, roles);
     expect(loop.steps.map((s) => s.edge)).toEqual(["1", "2"]);
     expect(loop.inputs).toEqual([{ edge: "3", type: "c", from: "brake", to: "b", sign: -1, confidence: 0.5 }]);

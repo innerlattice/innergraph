@@ -33,10 +33,17 @@ function Greeting(props: { onPick: (text: string) => void }) {
     <div className="flex flex-1 flex-col items-center justify-center px-6 pb-16 text-center">
       <span className="mb-6 h-3 w-3 animate-breathe rounded-full bg-clay-300" />
       <h1 className="font-serif text-3xl text-stone-800">What's on your mind?</h1>
-      <p className="mt-3 max-w-md text-sm leading-relaxed text-stone-500">Write freely: a journal entry, a moment from today, a feeling you can't quite name. I'll help you see how it connects.</p>
+      <p className="mt-3 max-w-md text-sm leading-relaxed text-stone-500">
+        Write freely: a journal entry, a moment from today, a feeling you can't quite name. I'll help you see how it connects.
+      </p>
       <div className="mt-8 flex max-w-lg flex-col gap-2">
         {SUGGESTIONS.map((s) => (
-          <button key={s} type="button" onClick={() => props.onPick(s)} className="rounded-2xl bg-white/70 shadow-raised px-4 py-2.5 text-left font-serif text-sm text-stone-600 transition hover:border-clay-200 hover:bg-white">
+          <button
+            key={s}
+            type="button"
+            onClick={() => props.onPick(s)}
+            className="rounded-2xl bg-white/70 shadow-raised px-4 py-2.5 text-left font-serif text-sm text-stone-600 transition hover:border-clay-200 hover:bg-white"
+          >
             {s}
           </button>
         ))}
@@ -70,7 +77,11 @@ function transportFor() {
 
 function useBudget(messages: ChatMessage[], stored: ChatBudget, error: Error | undefined) {
   const tokens = latestTokens(messages, stored.contextTokens);
-  const window = messages.map((m) => m.metadata?.contextWindow).filter(Boolean).at(-1) ?? stored.contextWindow;
+  const window =
+    messages
+      .map((m) => m.metadata?.contextWindow)
+      .filter(Boolean)
+      .at(-1) ?? stored.contextWindow;
   return { share: tokens / window, level: isFullError(error) ? "full" : budgetLevel(tokens, window) };
 }
 

@@ -32,9 +32,18 @@ export function StatusBar(props: StatusBarProps) {
       >
         <History size={ICON.md} aria-hidden="true" />
         What changed
-        {props.duplicates > 0 ? <span className="ml-1.5 rounded-full bg-clay-100 px-1.5 text-xs text-clay-700">{props.duplicates} duplicate{props.duplicates === 1 ? "" : "s"}</span> : null}
+        {props.duplicates > 0 ? (
+          <span className="ml-1.5 rounded-full bg-clay-100 px-1.5 text-xs text-clay-700">
+            {props.duplicates} duplicate{props.duplicates === 1 ? "" : "s"}
+          </span>
+        ) : null}
       </button>
-      <button type="button" onClick={props.onTidy} title="Lay the map out afresh so nothing overlaps" className="ml-auto inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs text-stone-500 transition hover:bg-stone-200/70 hover:text-stone-800">
+      <button
+        type="button"
+        onClick={props.onTidy}
+        title="Lay the map out afresh so nothing overlaps"
+        className="ml-auto inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs text-stone-500 transition hover:bg-stone-200/70 hover:text-stone-800"
+      >
         <Sparkles size={ICON.sm} aria-hidden="true" />
         Tidy up
       </button>

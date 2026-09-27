@@ -4,7 +4,8 @@ import { ENTRY_1, INTERPRETATION_1, type TestVault, makeVault } from "./helpers.
 
 let t: TestVault;
 const graph = () => t.vault.explore.graph({ includeSuperseded: true });
-const byLabel = (label: string) => Object.values(graph().nodes).find((n) => n.label === label && n.status !== "superseded") ?? Object.values(graph().nodes).find((n) => n.label === label);
+const byLabel = (label: string) =>
+  Object.values(graph().nodes).find((n) => n.label === label && n.status !== "superseded") ?? Object.values(graph().nodes).find((n) => n.label === label);
 const edgeBetween = (a: string, b: string) => Object.values(graph().edges).find((e) => e.from === byLabel(a)?.id && e.to === byLabel(b)?.id);
 const lastEvent = () => t.vault.explore.timeline(1)[0];
 
@@ -44,7 +45,12 @@ describe("undo", () => {
     const attached = (id: string) => Object.values(t.vault.explore.graph().edges).filter((e) => e.from === id || e.to === id);
     const before = attached(shame).map((e) => `${e.from}|${e.type}|${e.to}`);
     expect(before.length).toBeGreaterThan(0);
-    t.gateway.generateJson = async () => ({ parts: [{ evidence: [0], edges: [0, 1, 2] }, { evidence: [], edges: [] }] });
+    t.gateway.generateJson = async () => ({
+      parts: [
+        { evidence: [0], edges: [0, 1, 2] },
+        { evidence: [], edges: [] },
+      ],
+    });
     await t.vault.map.split(shame, [{ label: "A" }, { label: "B" }]);
     const split = t.vault.explore.timeline(5).find((e) => e.type === "NodesSplit")?.id as string;
     const result = t.vault.map.undo(split);
@@ -66,7 +72,10 @@ describe("revert", () => {
     t.vault.map.confirm([shame]);
     t.vault.map.changeAttributes(shame, { label: "Changed" });
     const entry = t.vault.explore.entries()[0].id;
-    t.vault.ingest.propose("agent:x", entry, { nodes: [{ ref: "m", type: "core_memory", label: "Manager meeting", confidence: 1, quotes: ["my manager asked a question"] }], edges: [] });
+    t.vault.ingest.propose("agent:x", entry, {
+      nodes: [{ ref: "m", type: "core_memory", label: "Manager meeting", confidence: 1, quotes: ["my manager asked a question"] }],
+      edges: [],
+    });
     expect(t.vault.map.revertPreview(position)).toEqual({ retired: 1, restored: 1, changed: 1 });
     t.vault.map.revert(position, "agent:claude");
     expect(graph().nodes[shame]).toMatchObject({ label: "Shame", status: "hypothesis" });

@@ -118,12 +118,9 @@ function describeLabel(def: Schema["nodeTypes"][string]): string {
 }
 
 export function describeSchema(schema: Schema): string {
-  const nodes = Object.entries(schema.nodeTypes).map(
-    ([name, def]) => `- ${name}${describeAttributes(def.attributes)}: ${def.description ?? ""}${describeLabel(def)}`,
-  );
+  const nodes = Object.entries(schema.nodeTypes).map(([name, def]) => `- ${name}${describeAttributes(def.attributes)}: ${def.description ?? ""}${describeLabel(def)}`);
   const edges = Object.entries(schema.edgeTypes).map(
-    ([name, def]) =>
-      `- ${name} (${describeEnd(def.from)} -> ${describeEnd(def.to)})${def.role ? ` [${def.role}]` : ""}: ${def.description ?? ""}`,
+    ([name, def]) => `- ${name} (${describeEnd(def.from)} -> ${describeEnd(def.to)})${def.role ? ` [${def.role}]` : ""}: ${def.description ?? ""}`,
   );
   return `Schema "${schema.name}" v${schema.version}\nNode types:\n${nodes.join("\n")}\nEdge types:\n${edges.join("\n")}`;
 }
@@ -295,9 +292,7 @@ export class InterpretationEngine {
     const user = `Node "${input.label}" is being split into: ${input.parts.map((p, i) => `(${i}) ${p}`).join(", ")}.
 Assign each evidence passage and each edge to the part it belongs to.
 Evidence:\n${numbered(input.evidence)}\nEdges:\n${numbered(input.edges)}\nReturn {"parts":[{"evidence":[...],"edges":[...]}, ...]} with one object per part, in order.`;
-    const raw = await this.gateway
-      .generateJson({ system: "You reassign evidence during a graph refactor. Respond with JSON only.", user, schema: {} })
-      .catch(() => null);
+    const raw = await this.gateway.generateJson({ system: "You reassign evidence during a graph refactor. Respond with JSON only.", user, schema: {} }).catch(() => null);
     return normaliseAssignment(input.parts.length, raw, { evidence: input.evidence.length, edges: input.edges.length });
   }
 }
@@ -335,7 +330,10 @@ const rawRevision = z.object({
 const REVISION_SCHEMA = {
   type: "object",
   properties: {
-    updates: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: ["string", "null"] }, attributes: { type: ["object", "null"] } }, required: ["id"] } },
+    updates: {
+      type: "array",
+      items: { type: "object", properties: { id: { type: "string" }, label: { type: ["string", "null"] }, attributes: { type: ["object", "null"] } }, required: ["id"] },
+    },
     retract: { type: "array", items: { type: "object", properties: { id: { type: "string" }, reason: { type: "string" } }, required: ["id"] } },
     nodes: OUTPUT_SCHEMA.properties.nodes,
     edges: OUTPUT_SCHEMA.properties.edges,
@@ -353,7 +351,10 @@ Respond with JSON only.`;
 
 export function buildRevisionPrompt(input: RevisionInput): { system: string; user: string } {
   const items = input.cited
-    .map((c) => `- id=${c.id} ${c.kind} type=${c.type} label="${c.label}" attributes=${JSON.stringify(c.attributes)}${c.moved ? "" : " (its passage changed)"}\n  cited: ${c.quotes.map((q) => `"${q}"`).join(" | ")}`)
+    .map(
+      (c) =>
+        `- id=${c.id} ${c.kind} type=${c.type} label="${c.label}" attributes=${JSON.stringify(c.attributes)}${c.moved ? "" : " (its passage changed)"}\n  cited: ${c.quotes.map((q) => `"${q}"`).join(" | ")}`,
+    )
     .join("\n");
   const user = `${describeSchema(input.schema)}\n\nOLD version:\n"""\n${input.oldText}\n"""\n\nNEW version:\n"""\n${input.entry.text}\n"""\n\nItems citing this entry:\n${items || "(none)"}`;
   return { system: `${REVISION_PROMPT}\n\n${SYSTEM_PROMPT}`, user };

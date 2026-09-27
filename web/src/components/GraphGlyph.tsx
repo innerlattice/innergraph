@@ -19,7 +19,17 @@ function glyphSize(look: NodeLook, size: number): { w: number; h: number } {
 export function NodeGlyph(props: { look: NodeLook; size?: number }) {
   const { w, h } = glyphSize(props.look, props.size ?? ICON.md);
   const g = nodeGem(props.look, { w, h });
-  return <img src={g.uri} alt="" aria-hidden="true" width={g.width} height={g.height} className="shrink-0" style={{ marginBlock: -(g.height - h) / 2, marginInline: -(g.width - w) / 2 }} />;
+  return (
+    <img
+      src={g.uri}
+      alt=""
+      aria-hidden="true"
+      width={g.width}
+      height={g.height}
+      className="shrink-0"
+      style={{ marginBlock: -(g.height - h) / 2, marginInline: -(g.width - w) / 2 }}
+    />
+  );
 }
 
 const DASH = { solid: undefined, double: undefined, dashed: "5 3", dotted: "0.1 3.4" };

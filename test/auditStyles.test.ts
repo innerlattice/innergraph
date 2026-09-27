@@ -33,7 +33,7 @@ describe("the style audit", () => {
   });
 
   it("allows arbitrary values without numbers and lengths computed at runtime", () => {
-    expect(rulesIn("<p className=\"has-[:focus-visible]:w-72 transition-[width,box-shadow] shadow-halo bg-highlight\" style={{ height: `${h}px` }} />")).toEqual([]);
+    expect(rulesIn('<p className="has-[:focus-visible]:w-72 transition-[width,box-shadow] shadow-halo bg-highlight" style={{ height: `${h}px` }} />')).toEqual([]);
   });
 
   it("passes on the app", () => {

@@ -73,7 +73,13 @@ describe("graph algorithms", () => {
   });
 
   it("groups connected components", () => {
-    expect(components([{ id: "1", from: "x", to: "y" }, { id: "2", from: "z", to: "y" }, { id: "3", from: "p", to: "q" }])).toEqual([
+    expect(
+      components([
+        { id: "1", from: "x", to: "y" },
+        { id: "2", from: "z", to: "y" },
+        { id: "3", from: "p", to: "q" },
+      ]),
+    ).toEqual([
       ["x", "y", "z"],
       ["p", "q"],
     ]);

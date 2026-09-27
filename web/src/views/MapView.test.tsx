@@ -15,7 +15,9 @@ vi.mock("../components/GraphCanvas", () => ({
           node:{String(e.data.id)}
         </button>
       ))}
-      <button type="button" onClick={() => props.onSelectionChange([])}>background</button>
+      <button type="button" onClick={() => props.onSelectionChange([])}>
+        background
+      </button>
       <p>highlight:{(props.highlight ?? []).join(",")}</p>
     </div>
   ),
@@ -23,19 +25,43 @@ vi.mock("../components/GraphCanvas", () => ({
 
 const HLC1 = "001758800000000.000000.d";
 const HLC2 = "001758800001000.000000.d";
-const node = { attributes: {}, confidence: 0.5, evidence: [], assertedBy: "user", assertedAt: HLC1, updatedAt: HLC1, derivedFrom: [], type: "t", status: "active", confirmed: false, staleEvidence: 0 };
+const node = {
+  attributes: {},
+  confidence: 0.5,
+  evidence: [],
+  assertedBy: "user",
+  assertedAt: HLC1,
+  updatedAt: HLC1,
+  derivedFrom: [],
+  type: "t",
+  status: "active",
+  confirmed: false,
+  staleEvidence: 0,
+};
 const nodes = { n1: { ...node, id: "n1", label: "One" }, n2: { ...node, id: "n2", label: "Two" }, p9: { ...node, id: "p9", label: "Ghost" } };
 const now = { nodes, edges: {}, counts: { active: 3, removed: 1 }, position: HLC2 };
 const past = { ...now, nodes: {}, counts: { active: 0, removed: 0 }, position: HLC1 };
 const routes: Record<string, unknown> = {
   "/api/positions": [HLC1, HLC2],
-  "/api/schema": { name: "s", version: 1, edgeTypes: {}, nodeTypes: { t: { attributes: {}, display: { shape: "round-rectangle", color: "#111111" } }, u: { attributes: {}, display: { shape: "barrel" } }, v: { attributes: {} } } },
+  "/api/schema": {
+    name: "s",
+    version: 1,
+    edgeTypes: {},
+    nodeTypes: { t: { attributes: {}, display: { shape: "round-rectangle", color: "#111111" } }, u: { attributes: {}, display: { shape: "barrel" } }, v: { attributes: {} } },
+  },
   "/api/view": now,
   "/api/duplicates": [],
   "/api/nodes/n1": { node: nodes.n1, evidence: [], outgoing: [], incoming: [], derivedFrom: [], derivedInto: [] },
   "/api/nodes/p9": { node: nodes.p9, evidence: [], outgoing: [], incoming: [], derivedFrom: [], derivedInto: [] },
   "/api/changes": [{ session: "s1", actor: "model:g", purpose: "ingest", at: HLC2, rows: [{ id: "p9", kind: "node", label: "Ghost", action: "added" }] }],
-  "/api/selection": { ids: ["n1", "n2"], at: "", items: [{ id: "n1", kind: "node", type: "t", label: "One", status: "active", confirmed: true }, { id: "n2", kind: "node", type: "t", label: "Two", status: "active", confirmed: false }] },
+  "/api/selection": {
+    ids: ["n1", "n2"],
+    at: "",
+    items: [
+      { id: "n1", kind: "node", type: "t", label: "One", status: "active", confirmed: true },
+      { id: "n2", kind: "node", type: "t", label: "Two", status: "active", confirmed: false },
+    ],
+  },
   "/api/nodes/n1/roots": { node: "n1", upstream: ["n0"], roots: [{ id: "n0", support: 1, path: ["n0", "n1"] }] },
 };
 const respond = (call: Call) => (/[?&]t=/.test(call.url) ? past : (routes[call.path] ?? { ok: true }));

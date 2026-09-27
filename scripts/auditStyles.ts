@@ -23,7 +23,34 @@ export interface Finding {
   text: string;
 }
 
-const TAILWIND_PALETTE = ["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose", "slate", "gray", "zinc", "neutral", "stone", "mauve", "olive", "mist", "taupe"];
+const TAILWIND_PALETTE = [
+  "red",
+  "orange",
+  "amber",
+  "yellow",
+  "lime",
+  "green",
+  "emerald",
+  "teal",
+  "cyan",
+  "sky",
+  "blue",
+  "indigo",
+  "violet",
+  "purple",
+  "fuchsia",
+  "pink",
+  "rose",
+  "slate",
+  "gray",
+  "zinc",
+  "neutral",
+  "stone",
+  "mauve",
+  "olive",
+  "mist",
+  "taupe",
+];
 const COLOR_UTILITY = "(?:bg|text|border|border-[trblxy]|ring|ring-offset|outline|decoration|fill|stroke|from|via|to|accent|caret|divide|placeholder|shadow|inset-shadow)";
 
 /** The colour families and shadow names the theme defines. */

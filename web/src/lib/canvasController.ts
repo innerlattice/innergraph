@@ -45,10 +45,17 @@ function unclutter(cy: Core, movable: ReadonlySet<string>): void {
 /** Places remembered nodes, then lays out only the new ones: each starts beside what it links to,
  *  settles with the rest pinned, and is nudged clear of anything it overlaps. */
 function place(cy: Core, positions: Positions): void {
-  const { known, unknown } = partition(cy.nodes().map((n) => n.id()), positions);
+  const { known, unknown } = partition(
+    cy.nodes().map((n) => n.id()),
+    positions,
+  );
   for (const id of known) cy.getElementById(id).position(positions.get(id) as { x: number; y: number });
   if (unknown.length > 0) {
-    const neighbours = (id: string) => cy.getElementById(id).neighborhood("node").map((n) => n.id());
+    const neighbours = (id: string) =>
+      cy
+        .getElementById(id)
+        .neighborhood("node")
+        .map((n) => n.id());
     for (const [id, start] of seed(unknown, neighbours, new Map(known.map((id) => [id, positions.get(id) as { x: number; y: number }])))) cy.getElementById(id).position(start);
     settle(cy, known, positions);
     unclutter(cy, new Set(unknown));
@@ -79,7 +86,9 @@ export function render(cy: Core, elements: ElementDefinition[], positions: Posit
 export function applySelection(cy: Core | undefined, ids: string[]): void {
   if (!cy) return;
   const wanted = new Set(ids);
-  cy.elements(":selected").filter((el) => !wanted.has(el.id())).unselect();
+  cy.elements(":selected")
+    .filter((el) => !wanted.has(el.id()))
+    .unselect();
   for (const id of ids) cy.getElementById(id).select();
 }
 
@@ -111,7 +120,9 @@ export function applyHighlight(cy: Core | undefined, highlight: string[]): void 
   cy.elements().removeClass("highlight");
   const ids = new Set(highlight);
   for (const id of highlight) cy.getElementById(id).addClass("highlight");
-  cy.edges().filter((e) => ids.has(e.source().id()) && ids.has(e.target().id())).addClass("highlight");
+  cy.edges()
+    .filter((e) => ids.has(e.source().id()) && ids.has(e.target().id()))
+    .addClass("highlight");
 }
 
 type KeyLike = { code: string; key: string; target: EventTarget | null };

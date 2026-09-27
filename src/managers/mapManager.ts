@@ -78,11 +78,7 @@ export class MapManager {
     return { ...this.commit(actor, "confirm", drafts), confirmed };
   }
 
-  changeAttributes(
-    target: string,
-    change: { patch?: Attributes; label?: string; confidence?: number },
-    actor: ActorId = USER,
-  ): ChangeResult {
+  changeAttributes(target: string, change: { patch?: Attributes; label?: string; confidence?: number }, actor: ActorId = USER): ChangeResult {
     this.item(target);
     const body = { target, patch: change.patch ?? {}, label: change.label, confidence: change.confidence };
     return this.commit(actor, "edit", [{ type: "AttributesChanged", body }]);
@@ -151,7 +147,14 @@ export class MapManager {
       results.push(this.merge(group.ids, { label }, actor));
     }
     const edges = groups.filter((g) => g.kind === "edge");
-    if (edges.length > 0) results.push(this.commit(actor, "deduplicate", edges.flatMap((g) => this.edgeCleanup(g))));
+    if (edges.length > 0)
+      results.push(
+        this.commit(
+          actor,
+          "deduplicate",
+          edges.flatMap((g) => this.edgeCleanup(g)),
+        ),
+      );
     return results;
   }
 
@@ -206,7 +209,10 @@ export class MapManager {
   /** Brings back a removed Node/Edge. */
   restore(id: string, actor: ActorId = USER): UndoResult {
     const item = this.item(id);
-    const retiring = this.deps.vault.events().filter((e) => e.type === "StatusChanged" && e.body.target === id && e.body.status === "superseded").at(-1);
+    const retiring = this.deps.vault
+      .events()
+      .filter((e) => e.type === "StatusChanged" && e.body.target === id && e.body.status === "superseded")
+      .at(-1);
     if (item.status !== "superseded" || !retiring) throw new Error(`${id} is not removed`);
     return this.undo(retiring.id, actor);
   }
@@ -239,9 +245,7 @@ export class MapManager {
     purpose: string,
     changes: { type: "StatusChanged" | "AttributesChanged" | "NodesSplit" | "NodesMerged" | "SchemaChanged" | "EdgeAsserted"; body: unknown }[],
   ): ChangeResult {
-    const { session } = runSession(this.deps.vault, actor, purpose, (s) =>
-      changes.map((c) => ({ actor, session: s, type: c.type, body: c.body }) as never),
-    );
+    const { session } = runSession(this.deps.vault, actor, purpose, (s) => changes.map((c) => ({ actor, session: s, type: c.type, body: c.body }) as never));
     return { session };
   }
 }

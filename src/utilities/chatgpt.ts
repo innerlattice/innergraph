@@ -91,7 +91,13 @@ export async function pollDeviceCode(code: DeviceCode, http: Fetch = fetch): Pro
   if (res.status === 403 || res.status === 404) return undefined;
   if (!res.ok) throw await failure(res, "Signing in");
   const grant = (await res.json()) as { authorization_code: string; code_verifier: string };
-  const form = new URLSearchParams({ grant_type: "authorization_code", code: grant.authorization_code, redirect_uri: REDIRECT, client_id: CLIENT_ID, code_verifier: grant.code_verifier });
+  const form = new URLSearchParams({
+    grant_type: "authorization_code",
+    code: grant.authorization_code,
+    redirect_uri: REDIRECT,
+    client_id: CLIENT_ID,
+    code_verifier: grant.code_verifier,
+  });
   const token = await http(`${ISSUER}/oauth/token`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: form });
   if (!token.ok) throw await failure(token, "Finishing sign-in");
   return tokensFrom((await token.json()) as TokenResponse);
@@ -129,7 +135,16 @@ export function chatgptModel(model: string, tokens: () => Promise<ChatGptTokens>
 
 /** Per-turn options: instructions go as `instructions`, reasoning stays client-side (encrypted). */
 export function chatgptOptions(instructions: string, effort: string) {
-  return { openai: { instructions, store: false, include: ["reasoning.encrypted_content" as const], reasoningEffort: effort, reasoningSummary: "auto", systemMessageMode: "remove" as const } };
+  return {
+    openai: {
+      instructions,
+      store: false,
+      include: ["reasoning.encrypted_content" as const],
+      reasoningEffort: effort,
+      reasoningSummary: "auto",
+      systemMessageMode: "remove" as const,
+    },
+  };
 }
 
 export { PLAN_MODELS } from "./planModels.js";

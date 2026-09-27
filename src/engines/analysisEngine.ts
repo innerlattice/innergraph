@@ -63,9 +63,7 @@ const isLive = (item: { status: string }) => item.status !== "superseded";
 /** The Graph without superseded Nodes, and without Edges touching them. */
 export function activeGraph(graph: Graph): Graph {
   const nodes = Object.fromEntries(Object.entries(graph.nodes).filter(([, n]) => isLive(n)));
-  const edges = Object.fromEntries(
-    Object.entries(graph.edges).filter(([, e]) => isLive(e) && nodes[e.from] && nodes[e.to]),
-  );
+  const edges = Object.fromEntries(Object.entries(graph.edges).filter(([, e]) => isLive(e) && nodes[e.from] && nodes[e.to]));
   return { nodes, edges };
 }
 

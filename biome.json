@@ -6,18 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": [
-      "src/**",
-      "web/src/**",
-      "web/*.ts",
-      "test/**",
-      "scripts/**",
-      "experiments/**",
-      "*.ts",
-      "*.json",
-      "!**/*.db",
-      "!package-lock.json"
-    ]
+    "includes": ["src/**", "web/src/**", "web/*.ts", "test/**", "scripts/**", "experiments/**", "*.ts", "*.json", "!**/*.db", "!package-lock.json"]
   },
   "formatter": {
     "indentStyle": "space",
@@ -61,11 +50,7 @@
   },
   "overrides": [
     {
-      "includes": [
-        "test/**",
-        "**/*.test.ts",
-        "**/*.test.tsx"
-      ],
+      "includes": ["test/**", "**/*.test.ts", "**/*.test.tsx"],
       "linter": {
         "rules": {
           "suspicious": {
@@ -78,9 +63,7 @@
       }
     },
     {
-      "includes": [
-        "experiments/**/*.json"
-      ],
+      "includes": ["experiments/**/*.json"],
       "formatter": {
         "enabled": false
       }

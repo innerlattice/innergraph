@@ -104,9 +104,7 @@ export class SchemaAccess {
   constructor(private readonly db: Db) {}
 
   current(): Schema | null {
-    const row = this.db
-      .prepare("SELECT body FROM events WHERE type = 'SchemaChanged' ORDER BY hlc DESC LIMIT 1")
-      .get() as { body: Buffer } | undefined;
+    const row = this.db.prepare("SELECT body FROM events WHERE type = 'SchemaChanged' ORDER BY hlc DESC LIMIT 1").get() as { body: Buffer } | undefined;
     return row ? (JSON.parse(row.body.toString("utf8")).schema as Schema) : null;
   }
 

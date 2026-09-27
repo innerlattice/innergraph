@@ -10,7 +10,9 @@ import type { Embedder } from "../utilities/modelGateway.js";
 const BATCH = 32;
 
 function values(attributes: Record<string, unknown>): string {
-  return Object.values(attributes).filter((v) => typeof v === "string" && v).join("; ");
+  return Object.values(attributes)
+    .filter((v) => typeof v === "string" && v)
+    .join("; ");
 }
 
 function edgeDoc(vault: VaultAccess, e: ViewEdge, view: GraphView): string {

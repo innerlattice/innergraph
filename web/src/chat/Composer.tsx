@@ -19,7 +19,15 @@ export function SelectionChips(props: { items: SelectionItem[]; onRemove: (id: s
     <div className="mb-2 flex max-h-40 flex-wrap items-center gap-1.5 overflow-y-auto px-1 text-xs">
       <span className="text-stone-400">About</span>
       {props.items.slice(0, props.items.length - hidden).map((item) => (
-        <ItemChip key={item.id} id={item.id} label={item.label} tone="context" onClick={() => props.onSelect([item.id])} onRemove={() => props.onRemove(item.id)} removeLabel={`Unselect ${item.label}`} />
+        <ItemChip
+          key={item.id}
+          id={item.id}
+          label={item.label}
+          tone="context"
+          onClick={() => props.onSelect([item.id])}
+          onRemove={() => props.onRemove(item.id)}
+          removeLabel={`Unselect ${item.label}`}
+        />
       ))}
       {hidden > 0 ? (
         <button type="button" className="rounded-full px-1.5 text-sage-700 hover:underline" onClick={() => setOpen(true)}>
@@ -65,7 +73,18 @@ export function ContextMeter(props: { share: number }) {
     <svg width="18" height="18" viewBox="0 0 18 18" role="img" aria-label={`${Math.round(props.share * 100)}% of this conversation's room used`}>
       <title>{`${Math.round(props.share * 100)}% of this conversation's room used`}</title>
       <circle cx="9" cy="9" r={r} fill="none" strokeWidth="2" className="stroke-stone-200" />
-      <circle cx="9" cy="9" r={r} fill="none" strokeWidth="2" className={tone} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(props.share, 1))} transform="rotate(-90 9 9)" strokeLinecap="round" />
+      <circle
+        cx="9"
+        cy="9"
+        r={r}
+        fill="none"
+        strokeWidth="2"
+        className={tone}
+        strokeDasharray={c}
+        strokeDashoffset={c * (1 - Math.min(props.share, 1))}
+        transform="rotate(-90 9 9)"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -123,7 +142,13 @@ export function Composer(props: ComposerProps) {
             <Square size={ICON.md} />
           </button>
         ) : (
-          <button type="button" aria-label="Send" disabled={!text.trim()} onClick={send} className="rounded-full bg-clay-500 p-2 text-white transition hover:bg-clay-600 disabled:bg-stone-200 disabled:text-stone-400">
+          <button
+            type="button"
+            aria-label="Send"
+            disabled={!text.trim()}
+            onClick={send}
+            className="rounded-full bg-clay-500 p-2 text-white transition hover:bg-clay-600 disabled:bg-stone-200 disabled:text-stone-400"
+          >
             <ArrowUp size={ICON.lg} />
           </button>
         )}

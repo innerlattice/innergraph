@@ -104,9 +104,7 @@ function toCited(vault: VaultAccess, item: GraphNode | GraphEdge, graph: Project
 export function citedItems(vault: VaultAccess, state: ProjectionState, entry: string, remap: SpanMove[] = []): CitedItem[] {
   const moved = new Set(remap.map((m) => spanKey(m.from)));
   const items = [...Object.values(state.graph.nodes), ...Object.values(state.graph.edges)];
-  return items
-    .filter((i) => i.status !== "superseded" && i.evidence.some((e) => e.entry === entry))
-    .map((i) => toCited(vault, i, state.graph, entry, moved));
+  return items.filter((i) => i.status !== "superseded" && i.evidence.some((e) => e.entry === entry)).map((i) => toCited(vault, i, state.graph, entry, moved));
 }
 
 export function citedSpans(state: ProjectionState, entry: string): Evidence[] {

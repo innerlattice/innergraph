@@ -64,9 +64,7 @@ function summarise(drafts: Draft[], before: Map<string, Item>): RevertPlan["summ
 export function planRevert(before: ProjectionState, now: ProjectionState, position: string, only?: Set<string>): RevertPlan {
   const reason = `reverted to ${position}`;
   const past = items(before.graph);
-  const drafts = [...items(now.graph).values()]
-    .filter((item) => !only || only.has(item.id))
-    .flatMap((item) => rollbackItem(past.get(item.id), item, reason));
+  const drafts = [...items(now.graph).values()].filter((item) => !only || only.has(item.id)).flatMap((item) => rollbackItem(past.get(item.id), item, reason));
   return { drafts, summary: summarise(drafts, past) };
 }
 

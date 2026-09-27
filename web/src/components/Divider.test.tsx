@@ -29,7 +29,12 @@ it("resizes by dragging, arrow keys and double-click, and remembers the width", 
   fireEvent.keyDown(handle, { key: "ArrowRight" });
   fireEvent.keyDown(handle, { key: "Enter" });
   fireEvent.doubleClick(handle);
-  expect(onChange.mock.calls.map((c) => Number(c[0].toFixed(2)))).toEqual([Number(((window.innerWidth - 48 - 400) / (window.innerWidth - 104)).toFixed(2)), 0.53, 0.47, DEFAULT_WIDTH]);
+  expect(onChange.mock.calls.map((c) => Number(c[0].toFixed(2)))).toEqual([
+    Number(((window.innerWidth - 48 - 400) / (window.innerWidth - 104)).toFixed(2)),
+    0.53,
+    0.47,
+    DEFAULT_WIDTH,
+  ]);
 
   const { result } = renderHook(() => usePaneWidth());
   expect(result.current.share).toBe(DEFAULT_WIDTH);

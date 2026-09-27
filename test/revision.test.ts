@@ -41,7 +41,11 @@ describe("revising an entry", () => {
 
   it("lets the model fix a typo in a label, retract and add items", async () => {
     t.gateway.generateJson = async () => ({
-      updates: [{ id: ids.freeze, label: "Freezing in the meeting" }, { id: ids.shame, label: "Shame" }, { id: "unknown", label: "x" }],
+      updates: [
+        { id: ids.freeze, label: "Freezing in the meeting" },
+        { id: ids.shame, label: "Shame" },
+        { id: "unknown", label: "x" },
+      ],
       retract: [{ id: "unknown" }],
       nodes: [{ ref: "r", type: "process_node", label: "Rest", confidence: 0.6, quotes: ["Resting helped"] }],
       edges: [],
@@ -49,7 +53,9 @@ describe("revising an entry", () => {
     const result = t.vault.ingest.reviseEntry(entry, NEW);
     await t.vault.queue.idle();
     expect(t.vault.ingest.job(result.session)?.state).toBe("done");
-    const labels = Object.values(t.vault.explore.graph().nodes).map((n) => n.label).sort();
+    const labels = Object.values(t.vault.explore.graph().nodes)
+      .map((n) => n.label)
+      .sort();
     expect(labels).toEqual(["Freezing in the meeting", "Rest", "Shame"]);
   });
 

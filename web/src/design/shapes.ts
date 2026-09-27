@@ -19,11 +19,22 @@ function ngon(sides: number): Point[] {
 
 /** Corners on the unit square, clockwise from the top. */
 const UNIT: Record<string, Point[]> = {
-  "round-diamond": [[0, -1], [1, 0], [0, 1], [-1, 0]],
+  "round-diamond": [
+    [0, -1],
+    [1, 0],
+    [0, 1],
+    [-1, 0],
+  ],
   "round-hexagon": ngon(6),
   "round-octagon": ngon(8),
   "round-triangle": ngon(3),
-  "round-tag": [[-1, -1], [0.3, -1], [1, 0], [0.3, 1], [-1, 1]],
+  "round-tag": [
+    [-1, -1],
+    [0.3, -1],
+    [1, 0],
+    [0.3, 1],
+    [-1, 1],
+  ],
 };
 
 /** Height over width that keeps a shape regular: a hexagon or triangle squeezed into a square looks tall. */
@@ -40,7 +51,16 @@ export const RHOMBOID_LEAN = 0.3;
 function chamfered(w: number, h: number, cx: number, cy: number): Point[] {
   const x = w / 2;
   const y = h / 2;
-  return [[-x + cx, -y], [x - cx, -y], [x, -y + cy], [x, y - cy], [x - cx, y], [-x + cx, y], [-x, y - cy], [-x, -y + cy]];
+  return [
+    [-x + cx, -y],
+    [x - cx, -y],
+    [x, -y + cy],
+    [x, y - cy],
+    [x - cx, y],
+    [-x + cx, y],
+    [-x, y - cy],
+    [-x, -y + cy],
+  ];
 }
 
 /** The stone's corners at w × h, centred on 0,0, clockwise from the top left. */
@@ -49,7 +69,12 @@ export function cornersOf(shape: string, w: number, h: number): Point[] {
   if (shape === "barrel") return chamfered(w, h, Math.min(w * 0.12, h * 0.5), h * 0.3);
   if (shape === "rhomboid") {
     const lean = (h * RHOMBOID_LEAN) / 2;
-    return [[-w / 2 + 2 * lean, -h / 2], [w / 2, -h / 2], [w / 2 - 2 * lean, h / 2], [-w / 2, h / 2]];
+    return [
+      [-w / 2 + 2 * lean, -h / 2],
+      [w / 2, -h / 2],
+      [w / 2 - 2 * lean, h / 2],
+      [-w / 2, h / 2],
+    ];
   }
   const unit = UNIT[shape];
   if (unit) return unit.map(([x, y]) => [(x * w) / 2, (y * h) / 2]);

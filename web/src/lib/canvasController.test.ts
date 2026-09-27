@@ -78,15 +78,20 @@ describe("keyboard", () => {
 describe("layout", () => {
   const sized = (id: string) => ({ data: { id }, style: { width: 60, height: 40 } });
   const overlapping = (cy: cytoscape.Core) =>
-    cy.nodes().some((p) => cy.nodes().some((q) => {
-      if (p === q) return false;
-      const [a, b] = [p.boundingBox({}), q.boundingBox({})];
-      return a.x1 < b.x2 && b.x1 < a.x2 && a.y1 < b.y2 && b.y1 < a.y2;
-    }));
+    cy.nodes().some((p) =>
+      cy.nodes().some((q) => {
+        if (p === q) return false;
+        const [a, b] = [p.boundingBox({}), q.boundingBox({})];
+        return a.x1 < b.x2 && b.x1 < a.x2 && a.y1 < b.y2 && b.y1 < a.y2;
+      }),
+    );
 
   it("places new nodes clear of the ones already there, without moving those", () => {
     const cy = cytoscape({ headless: true });
-    const positions: Positions = new Map([["a", { x: 0, y: 0 }], ["b", { x: 70, y: 0 }]]);
+    const positions: Positions = new Map([
+      ["a", { x: 0, y: 0 }],
+      ["b", { x: 70, y: 0 }],
+    ]);
     render(cy, [sized("a"), sized("b"), sized("c"), sized("d"), edge("ac", "a", "c"), edge("bd", "b", "d")], positions, new Set(["a", "b"]));
     expect(cy.getElementById("a").position()).toEqual({ x: 0, y: 0 });
     expect(overlapping(cy)).toBe(false);

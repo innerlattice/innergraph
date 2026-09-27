@@ -43,7 +43,11 @@ describe("duplicates", () => {
   it("merges them, keeping the oldest edge with all the evidence", () => {
     t.vault.map.mergeDuplicates();
     const graph = t.vault.explore.graph();
-    expect(Object.values(graph.nodes).map((n) => n.label).sort()).toEqual(["Making video", "Walk"]);
+    expect(
+      Object.values(graph.nodes)
+        .map((n) => n.label)
+        .sort(),
+    ).toEqual(["Making video", "Walk"]);
     const edges = Object.values(graph.edges);
     expect(edges).toHaveLength(1);
     expect(edges[0].evidence).toHaveLength(2);

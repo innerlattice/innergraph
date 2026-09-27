@@ -42,7 +42,10 @@ describe("format helpers", () => {
   });
 
   it("splits text into cited and uncited segments", () => {
-    const segments = citedRuns("abcdef", [{ target: "x", start: 1, end: 3 }, { target: "y", start: 2, end: 4 }]);
+    const segments = citedRuns("abcdef", [
+      { target: "x", start: 1, end: 3 },
+      { target: "y", start: 2, end: 4 },
+    ]);
     expect(segments).toEqual([
       { text: "a", cited: [] },
       { text: "b", cited: ["x"] },
@@ -138,7 +141,13 @@ describe("layout cache", () => {
     savePositions(new Map([["a", { x: 1, y: 2 }]]), storage);
     expect(loadPositions(storage).get("a")).toEqual({ x: 1, y: 2 });
     expect(loadPositions({ getItem: () => "{bad" }).size).toBe(0);
-    expect(() => savePositions(new Map(), { setItem: () => { throw new Error("quota"); } })).not.toThrow();
+    expect(() =>
+      savePositions(new Map(), {
+        setItem: () => {
+          throw new Error("quota");
+        },
+      }),
+    ).not.toThrow();
   });
 
   it("separates known from new nodes and reports what appeared", () => {

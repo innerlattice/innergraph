@@ -30,7 +30,10 @@ function ProviderPicker(props: { value: ChatProvider; onChange: (p: ChatProvider
   return (
     <fieldset className="grid grid-cols-3 gap-2">
       {PROVIDERS.map((p) => (
-        <label key={p.id} className={`rounded-xl px-3 py-2 text-sm transition ${props.value === p.id ? "bg-clay-50 text-stone-800 shadow-raised ring-1 ring-clay-300" : "bg-stone-100/70 text-stone-500 hover:bg-stone-100"}`}>
+        <label
+          key={p.id}
+          className={`rounded-xl px-3 py-2 text-sm transition ${props.value === p.id ? "bg-clay-50 text-stone-800 shadow-raised ring-1 ring-clay-300" : "bg-stone-100/70 text-stone-500 hover:bg-stone-100"}`}
+        >
           <input type="radio" name="provider" className="sr-only" checked={props.value === p.id} onChange={() => props.onChange(p.id)} />
           {p.name}
           <span className="block text-xs text-stone-400">{p.note}</span>
@@ -119,7 +122,11 @@ function LinkState(props: { status?: LinkStatus; onConnect: () => void; onDiscon
   if (status?.state === "pending") return <Pending status={status} onCancel={props.onDisconnect} />;
   if (!status) return null;
   return (
-    <button type="button" onClick={props.onConnect} className="w-full rounded-xl bg-white px-3 py-2 text-sm text-stone-700 shadow-raised transition hover:bg-clay-50 hover:shadow-floating">
+    <button
+      type="button"
+      onClick={props.onConnect}
+      className="w-full rounded-xl bg-white px-3 py-2 text-sm text-stone-700 shadow-raised transition hover:bg-clay-50 hover:shadow-floating"
+    >
       Connect ChatGPT
     </button>
   );
@@ -203,7 +210,14 @@ export function SettingsDialog(props: { settings: PublicChatSettings; onSaved: (
     const value = (name: string) => (form.get(name) as string | null)?.trim() || undefined;
     const budget = Number(value("contextWindow"));
     api
-      .saveChatSettings({ provider, model: value("model"), effort: value("effort"), apiKey: value("apiKey"), baseUrl: value("baseUrl"), contextWindow: budget > 0 ? budget : undefined })
+      .saveChatSettings({
+        provider,
+        model: value("model"),
+        effort: value("effort"),
+        apiKey: value("apiKey"),
+        baseUrl: value("baseUrl"),
+        contextWindow: budget > 0 ? budget : undefined,
+      })
       .then(props.onSaved)
       .catch((err: Error) => setError(err.message));
   };
@@ -219,7 +233,15 @@ export function SettingsDialog(props: { settings: PublicChatSettings; onSaved: (
         <ProviderPicker value={provider} onChange={setProvider} />
         <ProviderFields provider={provider} settings={props.settings} switched={switched} />
         <Field label="Conversation length (tokens)" hint="A conversation warns at 70% of this and ends at 90%.">
-          <input key={`budget-${provider}`} name="contextWindow" type="number" min={1000} step={1000} defaultValue={switched ? "" : props.settings.contextWindow} className={INPUT} />
+          <input
+            key={`budget-${provider}`}
+            name="contextWindow"
+            type="number"
+            min={1000}
+            step={1000}
+            defaultValue={switched ? "" : props.settings.contextWindow}
+            className={INPUT}
+          />
         </Field>
         {error ? <p className="text-sm text-rose-700">{error}</p> : null}
         <div className="flex justify-end gap-2 pt-2">
