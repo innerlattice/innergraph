@@ -53,7 +53,7 @@ it("closes on a click outside it", () => {
   render(<GraphKey schema={schema} />);
   fireEvent.click(screen.getByRole("button", { name: "Key" }));
   fireEvent.pointerDown(screen.getByText("Links"));
-  expect(screen.getByText("Hide key")).toBeTruthy();
+  expect(screen.getByLabelText("Key").getAttribute("aria-expanded")).toBe("true");
   fireEvent.pointerDown(document.body);
-  expect(screen.getByText("Key")).toBeTruthy();
+  expect(screen.getByLabelText("Key").getAttribute("aria-expanded")).toBe("false");
 });

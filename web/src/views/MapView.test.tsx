@@ -87,7 +87,7 @@ it("selects nodes, traces roots, and travels back in time", async () => {
   expect(await screen.findByText("One", { selector: "h3" })).toBeTruthy();
   fireEvent.click(screen.getByText("Where it starts"));
   expect(await screen.findByText("highlight:n0,n1")).toBeTruthy();
-  fireEvent.click(screen.getByText("Looks right"));
+  fireEvent.click(screen.getByLabelText("Looks right"));
   fireEvent.click(screen.getByText("background"));
   expect(screen.queryByText("One", { selector: "h3" })).toBeNull();
 
@@ -120,7 +120,7 @@ it("shows a selection panel for several items and clears it", async () => {
 
 it("lists node types from the Schema in the legend", async () => {
   render(<Harness />);
-  fireEvent.click(await screen.findByText("Key"));
+  fireEvent.click(await screen.findByLabelText("Key"));
   expect(screen.getByText("t")).toBeTruthy();
   expect(screen.getByText("u")).toBeTruthy();
 });
@@ -128,7 +128,7 @@ it("lists node types from the Schema in the legend", async () => {
 it("opens history from the status bar and shows removed items on request", async () => {
   const calls = fakeServer(respond);
   render(<Harness />);
-  fireEvent.click(await screen.findByText("History"));
+  fireEvent.click(await screen.findByLabelText("History"));
   expect(await screen.findByText("New entry")).toBeTruthy();
   fireEvent.click(screen.getByText("Ghost"));
   expect(await screen.findByText("Ghost", { selector: "h3" })).toBeTruthy();

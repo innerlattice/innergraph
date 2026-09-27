@@ -47,14 +47,14 @@ describe("item actions", () => {
   it("run actions, count selections and report errors", async () => {
     const onDone = vi.fn();
     render(<ItemActions ids={["a", "b"]} items={[{ status: "active", confirmed: false }]} onDone={onDone} count />);
-    fireEvent.click(screen.getByText("Looks right 2"));
+    fireEvent.click(screen.getByLabelText("Looks right (2)"));
     await waitFor(() => expect(onDone).toHaveBeenCalledWith({ kind: "confirm", ids: ["a", "b"] }));
     expect(sent(calls)[0]).toEqual({ url: "/api/confirm", body: { ids: ["a", "b"] } });
-    fireEvent.click(screen.getByText("Remove 2"));
+    fireEvent.click(screen.getByLabelText("Remove (2)"));
     expect(await screen.findByText("nope")).toBeTruthy();
     cleanup();
     render(<ItemActions ids={["a"]} items={[{ status: "removed", confirmed: false }]} onDone={onDone} />);
-    fireEvent.click(screen.getByText("Restore"));
+    fireEvent.click(screen.getByLabelText("Restore"));
     await waitFor(() => expect(onDone).toHaveBeenCalledWith({ kind: "restore", ids: ["a"] }));
   });
 });
@@ -135,13 +135,16 @@ describe("status bar", () => {
     );
     fireEvent.click(screen.getByText("Tidy up"));
     expect(onTidy).toHaveBeenCalled();
-    fireEvent.click(screen.getByText("History"));
+    fireEvent.click(screen.getByLabelText("History"));
+    expect(screen.getByLabelText("History").getAttribute("aria-pressed")).toBe("false");
     expect(onChanges).toHaveBeenCalled();
-    expect(screen.getByText("2 duplicates")).toBeTruthy();
+    expect(screen.getByText("2")).toBeTruthy();
     fireEvent.click(screen.getByLabelText("Show removed (2)"));
     expect(onShowRemoved).toHaveBeenCalledWith(true);
     rerender(<StatusBar showRemoved changesOpen onShowRemoved={onShowRemoved} onChanges={onChanges} duplicates={1} query="x" onQuery={onQuery} found={0} onTidy={onTidy} />);
-    expect(screen.getByText("1 duplicate")).toBeTruthy();
+    expect(screen.getByLabelText("History").getAttribute("aria-pressed")).toBe("true");
+    fireEvent.mouseEnter(screen.getByLabelText("History"));
+    expect(screen.getByRole("tooltip").textContent).toContain("1 duplicate to merge");
     expect(screen.getByLabelText("Show removed (0)")).toBeTruthy();
     expect(screen.getByText("Nothing found")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Find on the map"), { target: { value: "sham" } });

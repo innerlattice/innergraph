@@ -1,8 +1,10 @@
 // Actions on Nodes/Edges shared by the item panels and the selection: confirm, remove, restore.
 // Nothing waits for approval: every change lands at once and can be undone.
+import { Check, type LucideIcon, RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { type ViewStatus, api } from "../api";
-import { Button, ErrorNote } from "../components/ui";
+import { IconButton } from "../components/IconButton";
+import { ErrorNote } from "../components/ui";
 
 export type ActionKind = "confirm" | "remove" | "restore";
 
@@ -18,6 +20,7 @@ const ACTIONS: Record<ActionKind, (ids: string[]) => Promise<unknown>> = {
 };
 
 const LABELS: Record<ActionKind, string> = { confirm: "Looks right", remove: "Remove", restore: "Restore" };
+const ICONS: Record<ActionKind, LucideIcon> = { confirm: Check, remove: Trash2, restore: RotateCcw };
 const HINTS: Record<ActionKind, string> = {
   confirm: "Mark as confirmed by you",
   remove: "Take it off the map (you can undo)",
@@ -42,15 +45,20 @@ export function ItemActions(props: { ids: string[]; items: ItemState[]; onDone: 
     ACTIONS[kind](props.ids)
       .then(() => (setError(undefined), props.onDone({ kind, ids: props.ids })))
       .catch((e: Error) => setError(e.message));
-  const suffix = props.count ? ` ${props.ids.length}` : "";
+  const many = props.count ? props.ids.length : undefined;
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
         {kindsFor(props.items).map((kind) => (
-          <Button key={kind} title={HINTS[kind]} tone={kind === "remove" ? "quiet" : "primary"} onClick={() => run(kind)}>
-            {LABELS[kind]}
-            {suffix}
-          </Button>
+          <IconButton
+            key={kind}
+            label={many ? `${LABELS[kind]} (${many})` : LABELS[kind]}
+            hint={HINTS[kind]}
+            icon={ICONS[kind]}
+            tone={kind === "remove" ? "quiet" : "primary"}
+            badge={many}
+            onClick={() => run(kind)}
+          />
         ))}
       </div>
       <ErrorNote error={error} />

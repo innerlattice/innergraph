@@ -1,8 +1,10 @@
+import { Map as MapIcon } from "lucide-react";
+import { IconButton } from "../components/IconButton";
 import { ItemChip } from "../components/ItemChip";
 import { LinkMark } from "../components/ItemMarks";
 import type { Navigate } from "../App";
 import { type LoopStepView, type LoopView, api } from "../api";
-import { Button, Card, Empty, ErrorNote, Page } from "../components/ui";
+import { Card, Empty, ErrorNote, Page } from "../components/ui";
 import { pct } from "../lib/format";
 import { implications, loopFocus } from "../lib/loops";
 import { useAsync } from "../lib/useAsync";
@@ -57,7 +59,7 @@ export function LoopCard(props: { loop: LoopView; onOpen: (focus: string) => voi
             {loop.linkedLoops > 0 ? `, overlapping ${loop.linkedLoops} other loop${loop.linkedLoops === 1 ? "" : "s"}` : ""}
           </p>
         </div>
-        <Button onClick={() => props.onOpen(loopFocus(loop))}>Show on map</Button>
+        <IconButton label="Show on map" hint="Light up this loop on the map" icon={MapIcon} onClick={() => props.onOpen(loopFocus(loop))} />
       </header>
       <ul className="list-disc space-y-1 pl-5 text-sm text-stone-600">
         {implications(loop).map((line) => (

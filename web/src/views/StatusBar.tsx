@@ -1,4 +1,5 @@
 import { History, Search, Sparkles } from "lucide-react";
+import { IconButton } from "../components/IconButton";
 import { ICON } from "../design/tokens";
 
 // One quiet bar over the map: its history, a search, and whether removed items are shown.
@@ -18,30 +19,18 @@ export interface StatusBarProps {
   onTidy: () => void;
 }
 
-// A toggle that looks like the buttons it sits among: raised while closed, pressed in while open.
-const CHANGES = {
-  closed: "bg-white text-stone-700 shadow-raised hover:shadow-floating hover:bg-clay-50",
-  open: "bg-stone-200/60 text-stone-800 shadow-inset",
-};
-
 export function StatusBar(props: StatusBarProps) {
   const removed = props.removed ?? 0;
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-stone-50 px-5 shadow-raised py-1.5 text-sm">
-      <button
-        type="button"
-        aria-pressed={props.changesOpen}
+      <IconButton
+        label="History"
+        hint={props.duplicates > 0 ? `${props.duplicates} duplicate${props.duplicates === 1 ? "" : "s"} to merge` : "What changed, and undo"}
+        icon={History}
+        pressed={props.changesOpen}
+        badge={props.duplicates}
         onClick={props.onChanges}
-        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 transition ${props.changesOpen ? CHANGES.open : CHANGES.closed}`}
-      >
-        <History size={ICON.md} aria-hidden="true" />
-        History
-        {props.duplicates > 0 ? (
-          <span className="ml-1.5 rounded-full bg-clay-100 px-1.5 text-xs text-clay-700">
-            {props.duplicates} duplicate{props.duplicates === 1 ? "" : "s"}
-          </span>
-        ) : null}
-      </button>
+      />
       <label className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-stone-500 shadow-inset focus-within:text-stone-800">
         <Search size={ICON.sm} aria-hidden="true" />
         <input

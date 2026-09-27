@@ -183,7 +183,7 @@ describe("LoopsView and LogView", () => {
     expect(screen.getByText(/least certain link is B → A \(40%\)/)).toBeTruthy();
     expect(screen.getByText("What this loop drives")).toBeTruthy();
     expect(screen.getByText(/overlapping 1 other loop$/)).toBeTruthy();
-    fireEvent.click(screen.getByText("Show on map"));
+    fireEvent.click(screen.getByLabelText("Show on map"));
     expect(navigate).toHaveBeenCalledWith("map", "a,b,ab,ba");
   });
 
@@ -276,13 +276,13 @@ describe("EntriesView", () => {
       return routes[call.path] ?? { id: "s9", state: "running" };
     });
     render(<EntriesView focus="h" navigate={vi.fn()} />);
-    fireEvent.click(await screen.findByText("Edit"));
+    fireEvent.click(await screen.findByLabelText("Edit"));
     fireEvent.change(screen.getByLabelText("Entry text"), { target: { value: "I learned that needing things is fine." } });
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByText("Save revision"));
     expect(await screen.findByText(/1 cited passage carried over; 1 item cite text that changed/)).toBeTruthy();
     expect(sent(calls)[0]).toEqual({ url: "/api/entries/h/revise", body: { content: "I learned that needing things is fine.", interpret: false } });
-    fireEvent.click(screen.getByText("Edit"));
+    fireEvent.click(screen.getByLabelText("Edit"));
     fireEvent.click(screen.getByText("Cancel"));
   });
 
@@ -314,7 +314,7 @@ describe("NodePanel", () => {
     const incoming = screen.getByText("abduces").closest("button") as HTMLElement;
     expect([incoming.textContent, incoming.innerHTML.includes("line-through")]).toEqual(["Dinner tableabduces", true]);
     expect(screen.getByText("Came from")).toBeTruthy();
-    fireEvent.click(screen.getByText("Looks right"));
+    fireEvent.click(screen.getByLabelText("Looks right"));
     fireEvent.click(screen.getByText("Where it starts"));
     expect(await screen.findByText("Leads on to 1 thing")).toBeTruthy();
     fireEvent.click(screen.getByText("Related"));
@@ -335,11 +335,11 @@ describe("NodePanel", () => {
     routes["/api/nodes/n1"] = { ...nodeView, node: { ...graph.nodes.n1, status: "removed" }, outgoing: [], incoming: [], derivedFrom: [] };
     const { unmount } = render(<NodePanel {...props} readOnly />);
     expect(await screen.findByText("Not linked to anything yet.")).toBeTruthy();
-    expect(screen.queryByText("Restore")).toBeNull();
+    expect(screen.queryByLabelText("Restore")).toBeNull();
     unmount();
     render(<NodePanel {...props} />);
     expect(await screen.findByText(/Removed. Restore puts it back/)).toBeTruthy();
-    fireEvent.click(screen.getByText("Restore"));
+    fireEvent.click(screen.getByLabelText("Restore"));
     routes["/api/nodes/n1"] = nodeView;
   });
 

@@ -1,11 +1,13 @@
 // A small, collapsible key for the canvas: node types and edge looks from the graph design
 // system, what the states look like, and the gestures.
+import { Shapes } from "lucide-react";
 import { type ReactNode, useRef, useState } from "react";
 import type { Schema } from "../api";
 import { humanise } from "../../../src/core/edgeText";
 import { edgeLook, nodeLookOf } from "../design/graph";
 import { linkWord } from "./ItemMarks";
 import { EdgeGlyph, LABEL_FONT, NodeGlyph } from "./GraphGlyph";
+import { IconButton } from "./IconButton";
 import { TipBody, Tooltip } from "./Tooltip";
 import { useDismiss } from "../lib/useDismiss";
 
@@ -115,11 +117,13 @@ export function GraphKey(props: { schema: Schema | null }) {
   const panel = useRef<HTMLDivElement>(null);
   useDismiss(panel, () => setOpen(false), open);
   return (
-    <div ref={panel} className={`absolute bottom-3 left-3 z-10 ${open ? "w-64" : ""} max-w-inset rounded-xl bg-white/90 text-xs text-stone-600 shadow-floating backdrop-blur`}>
-      <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="w-full rounded-xl px-3 py-2 text-left font-medium hover:text-stone-900">
-        {open ? "Hide key" : "Key"}
-      </button>
-      {open ? <KeyBody schema={props.schema} /> : null}
+    <div ref={panel} className="absolute bottom-3 left-3 z-10 flex flex-col-reverse items-start gap-2">
+      <IconButton label="Key" hint="What the shapes and lines mean" icon={Shapes} pressed={open} aria-expanded={open} onClick={() => setOpen(!open)} />
+      {open ? (
+        <div className="w-64 max-w-inset rounded-xl bg-white/90 pt-2 text-xs text-stone-600 shadow-floating backdrop-blur">
+          <KeyBody schema={props.schema} />
+        </div>
+      ) : null}
     </div>
   );
 }

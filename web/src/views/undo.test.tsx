@@ -54,7 +54,7 @@ describe("edge panel", () => {
     expect(screen.getByText("reinforces")).toBeTruthy();
     fireEvent.click(screen.getByText("A"));
     expect(onSelect).toHaveBeenCalledWith("a");
-    fireEvent.click(screen.getByText("Restore"));
+    fireEvent.click(screen.getByLabelText("Restore"));
     await waitFor(() => expect(onDone).toHaveBeenCalledWith({ kind: "restore", ids: ["e1"] }));
     expect(sent(calls)[0]).toEqual({ url: "/api/restore", body: { id: "e1" } });
     fireEvent.click(screen.getByRole("button", { name: /Open “T”/ }));
@@ -65,7 +65,7 @@ describe("edge panel", () => {
     render(<EdgePanel id="e1" labels={{}} readOnly onDone={vi.fn()} onSelect={vi.fn()} navigate={vi.fn()} />);
     expect(await screen.findByText("decreases")).toBeTruthy();
     expect(screen.queryByText("confirmed")).toBeNull();
-    expect(screen.queryByText("Remove")).toBeNull();
+    expect(screen.queryByLabelText("Remove")).toBeNull();
     edgeView.edge = { ...edgeView.edge, sign: undefined };
   });
 });
