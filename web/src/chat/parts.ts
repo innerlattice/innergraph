@@ -81,7 +81,7 @@ function phaseOf(part: ToolPart): ToolCardInfo["phase"] {
 }
 
 function itemsOf(name: string, out: Record<string, unknown>, labels: Record<string, string>): CardItem[] {
-  if (name === "add_to_graph") return ((out.items as ProposeResult["items"] | undefined) ?? []).map((i) => ({ id: i.id, label: i.label }));
+  if (name === "add_to_graph") return ((out.items as ProposeResult["items"] | undefined) ?? []).map((i) => ({ id: i.id, label: labels[i.id] ?? i.label }));
   const ids = (out.changed ?? out.removed) as string[] | undefined;
   return (ids ?? []).map((id) => ({ id, label: labels[id] ?? "an item" }));
 }

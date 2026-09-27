@@ -80,6 +80,7 @@ describe("reading a conversation", () => {
     const done = describeTool(tool("add_to_graph", "output-available", { output: added }));
     expect(done).toMatchObject({ title: "Added 2 things to your map", session: "s9" });
     expect(done.items.map((i) => i.label)).toEqual(["Freezing", "Shame"]);
+    expect(describeTool(tool("add_to_graph", "output-available", { output: added }), { n8: "Me —feels→ Shame" }).items[1].label).toBe("Me —feels→ Shame");
     expect(done.notes).toEqual(["1 thing already on your map, so reused", "1 quote didn't match your words and was left out"]);
     expect(describeTool(tool("amend", "output-available", { output: { session: "s", changed: ["n1"], dropped: ["a", "b"] } }), { n1: "One" }).notes[0]).toContain("were left out");
     expect(describeTool(tool("remove", "output-available", { output: { session: "s", removed: ["n1", "n2"] } }), { n1: "One" }).items).toEqual([
