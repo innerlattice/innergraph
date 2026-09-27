@@ -33,6 +33,8 @@ export const NODE_SHAPES = ["ellipse", "round-rectangle", "round-diamond", "roun
 interface NodeDisplay {
   shape?: (typeof NODE_SHAPES)[number];
   color?: string;
+  /** Which family the type belongs to, so a key can list like with like. */
+  group?: string;
 }
 
 interface NodeTypeDef {
@@ -40,6 +42,8 @@ interface NodeTypeDef {
   label?: LabelStyle;
   /** Guidance for Actors writing labels of this type, e.g. "a short name like 'The Hider'". */
   labelHint?: string;
+  /** For Actors choosing between look-alike types: what makes this one this one. */
+  guidance?: string;
   display?: NodeDisplay;
   attributes: Record<string, AttributeDef>;
 }

@@ -25,6 +25,14 @@ undone.
 ## Decomposing new writing
 
 1. `get_schema` once per conversation: node types, edge types, their Roles and label styles.
+   Each node type's `guidance` says how to tell it from the types it is easily confused with;
+   check it whenever two types seem to fit. The usual confusions:
+   - A lasting truth ("I'm a burden") vs. how one kind of situation reads ("Being asked =
+     being found out") vs. what others will do ("If I ask, people get annoyed").
+   - Something the person does ("Keep scrolling") vs. a state that builds up in them
+     ("Rumination", "Shame") vs. a sensation somewhere in the body ("Tight chest").
+   - Their own inner sides (parts) vs. real people in their life.
+   - A formative memory from long ago vs. something that happened recently.
 2. `add_entry` with `interpret: false` to store their text. Keep the returned `entry` id.
 3. Before creating anything, `search_graph` for each part, belief or process you see, so you
    reuse existing nodes (pass `existing_id`) instead of duplicating them. `add_to_graph` also

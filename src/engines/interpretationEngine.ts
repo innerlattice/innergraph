@@ -97,6 +97,7 @@ Rules:
 - Confidence (0..1) is your certainty. Prefer fewer, well-supported assertions; everything you write is a hypothesis the person reviews.
 - Before creating a node, check "Existing nodes". If one names the same thing (even in different words), reuse it: set existing_id to its id, keep its type, and use its id as the edge endpoint. Only create a node for something genuinely new.
 - Give each new node a short unique ref; every edge endpoint must be a ref from your nodes list or an existing id.
+- Choose each node's type by its description and its "Telling it apart" note; when two types seem to fit, the note says which.
 - Write each label in the style its node type asks for (name, statement or title) and follow its hint. Never use the type name as a label.
 - One thing is one node. A part, belief or process stays the same node however often it appears or however its intensity changes; express "X makes Y stronger" as a causal edge between the existing nodes, never as a new node for the changed state.
 - Causal edges carry sign "+" (increases) or "-" (decreases).
@@ -118,7 +119,9 @@ function describeLabel(def: Schema["nodeTypes"][string]): string {
 }
 
 export function describeSchema(schema: Schema): string {
-  const nodes = Object.entries(schema.nodeTypes).map(([name, def]) => `- ${name}${describeAttributes(def.attributes)}: ${def.description ?? ""}${describeLabel(def)}`);
+  const nodes = Object.entries(schema.nodeTypes).map(
+    ([name, def]) => `- ${name}${describeAttributes(def.attributes)}: ${def.description ?? ""}${describeLabel(def)}${def.guidance ? ` Telling it apart: ${def.guidance}` : ""}`,
+  );
   const edges = Object.entries(schema.edgeTypes).map(
     ([name, def]) => `- ${name} (${describeEnd(def.from)} -> ${describeEnd(def.to)})${def.role ? ` [${def.role}]` : ""}: ${def.description ?? ""}`,
   );

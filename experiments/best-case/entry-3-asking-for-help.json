@@ -3,6 +3,8 @@
   "author": "claude-opus-5.5",
   "nodes": [
     { "ref": "homework", "type": "core_memory", "label": "Laughed at over homework (7)", "attributes": { "episodic": "asked dad for help with homework; he laughed and said I should already know it", "somatic_signature": "heat in the face", "age": "7" }, "confidence": 0.9, "quotes": ["When I was seven I asked my dad for help with my homework and he laughed and said I should already know it"] },
+    { "ref": "dad", "type": "person", "label": "Dad", "attributes": { "kind": "person" }, "confidence": 0.95, "quotes": ["my dad"] },
+    { "ref": "boss", "type": "person", "label": "My manager", "attributes": { "kind": "person" }, "confidence": 0.9, "quotes": ["my manager"] },
     { "ref": "heat", "type": "interoceptive", "label": "Heat in my face", "attributes": { "location": "face", "quality": "heat" }, "confidence": 0.85, "quotes": ["I still feel that as a heat in my face"] },
     { "ref": "burden", "type": "belief", "label": "Needing help makes me a burden", "attributes": { "depth": "core", "precision": 0.8 }, "confidence": 0.85, "quotes": ["needing help makes me a burden"] },
     { "ref": "annoyed", "type": "relational_prediction", "label": "If I ask, people get annoyed", "attributes": {}, "confidence": 0.8, "quotes": ["if I ask for something, people will be annoyed with me"] },
@@ -14,6 +16,8 @@
   ],
   "edges": [
     { "from": "homework", "to": "burden", "type": "abduces", "confidence": 0.7, "quotes": ["Somewhere back then I decided that needing help makes me a burden"] },
+    { "from": "homework", "to": "dad", "type": "involves", "confidence": 0.9, "quotes": ["I asked my dad for help with my homework and he laughed"] },
+    { "from": "manager", "to": "boss", "type": "involves", "confidence": 0.9, "quotes": ["my manager asked how the project was going"] },
     { "from": "homework", "to": "heat", "type": "stored_as", "confidence": 0.8, "quotes": ["I still feel that as a heat in my face"] },
     { "from": "burden", "to": "annoyed", "type": "scaffolds", "confidence": 0.7, "quotes": ["so now I expect that if I ask for something, people will be annoyed with me"] },
     { "from": "annoyed", "to": "found_out", "type": "constrains", "confidence": 0.6, "quotes": ["being asked felt like being found out"] },
