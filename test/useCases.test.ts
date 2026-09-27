@@ -90,7 +90,7 @@ describe("2. Recall", () => {
   it("finds material related to a Node", async () => {
     await ingestFirst();
     const related = t.vault.explore.findRelated({ nodeId: byLabel("Freezing").id });
-    expect(related.map((r) => r.title)).toContain("Shame (process_node)");
+    expect(related.map((r) => [r.title, r.nodeType])).toContainEqual(["Shame", "process_node"]);
   });
 });
 

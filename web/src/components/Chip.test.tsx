@@ -45,5 +45,5 @@ it("chips act, remove, carry their tone, and go inert when struck", () => {
   fireEvent.click(screen.getByLabelText("Remove"));
   expect([onClick.mock.calls.length, onRemove.mock.calls.length]).toEqual([1, 2]);
   expect(screen.getByText("B").closest("[data-tone]")?.getAttribute("data-tone")).toBe("context");
-  expect((screen.getByText("static") as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByText("static").closest("button") as HTMLButtonElement).disabled).toBe(true);
 });

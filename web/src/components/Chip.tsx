@@ -21,6 +21,8 @@ const BASE = "inline-flex min-w-0 max-w-full items-center gap-1 rounded-full tex
 
 export interface ChipProps {
   children: ReactNode;
+  /** A mark before the words, such as a node's gem; it stays put when the words truncate. */
+  lead?: ReactNode;
   tone?: ChipTone;
   onClick?: () => void;
   /** Adds a remove control; `removeLabel` names it for screen readers. */
@@ -34,8 +36,9 @@ export interface ChipProps {
 export function Chip(props: ChipProps) {
   const { tone = "neutral" } = props;
   const body = (
-    <button type="button" title={props.title} disabled={props.struck || !props.onClick} onClick={props.onClick} className={`min-w-0 truncate text-left ${props.struck ? "line-through" : ""}`}>
-      {props.children}
+    <button type="button" title={props.title} disabled={props.struck || !props.onClick} onClick={props.onClick} className={`inline-flex min-w-0 items-center gap-1.5 text-left ${props.struck ? "line-through" : ""}`}>
+      {props.lead}
+      <span className="min-w-0 truncate">{props.children}</span>
     </button>
   );
   if (!props.onRemove) {

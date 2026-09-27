@@ -4,7 +4,7 @@ import { ArrowUp, Square } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { WARN_AT } from "../../../src/core/budget";
 import type { BudgetLevel, SelectionItem } from "../api";
-import { Chip, ItemLabel } from "../components/Chip";
+import { ItemChip } from "../components/ItemChip";
 import { Button } from "../components/ui";
 
 /** Beyond this many, the chips fold into "+N more". */
@@ -18,9 +18,7 @@ export function SelectionChips(props: { items: SelectionItem[]; onRemove: (id: s
     <div className="mb-2 flex max-h-40 flex-wrap items-center gap-1.5 overflow-y-auto px-1 text-xs">
       <span className="text-stone-400">About</span>
       {props.items.slice(0, props.items.length - hidden).map((item) => (
-        <Chip key={item.id} tone="context" onClick={() => props.onSelect([item.id])} onRemove={() => props.onRemove(item.id)} removeLabel={`Unselect ${item.label}`}>
-          <ItemLabel label={item.label} />
-        </Chip>
+        <ItemChip key={item.id} id={item.id} label={item.label} tone="context" onClick={() => props.onSelect([item.id])} onRemove={() => props.onRemove(item.id)} removeLabel={`Unselect ${item.label}`} />
       ))}
       {hidden > 0 ? (
         <button type="button" className="rounded-full px-1.5 text-sage-700 hover:underline" onClick={() => setOpen(true)}>

@@ -9,6 +9,7 @@ import { SettingsDialog } from "./chat/SettingsDialog";
 import { Divider, usePaneWidth } from "./components/Divider";
 import { type PaneName, ViewRail } from "./components/ViewRail";
 import { labelsFrom } from "./lib/format";
+import { ItemsProvider } from "./lib/items";
 import { useAsync } from "./lib/useAsync";
 import { useLive } from "./lib/useLive";
 import { EntriesView } from "./views/EntriesView";
@@ -39,11 +40,14 @@ function useSelection() {
   return { selection, select };
 }
 
-/** Names for every item, kept live, so tool cards can say what they touched. */
-function useLabels() {
+/** Every item and how its kind looks, kept live, so chips and tool cards name what they touched. */
+function useMapItems() {
   const view = useAsync(() => api.view(["active", "removed"]));
+  const schema = useAsync(api.schema);
   useLive(view.reload);
-  return useMemo(() => (view.data ? labelsFrom(view.data) : {}), [view.data]);
+  const items = useMemo(() => ({ view: view.data, schema: schema.data ?? null }), [view.data, schema.data]);
+  const labels = useMemo(() => (view.data ? labelsFrom(view.data) : {}), [view.data]);
+  return { items, labels };
 }
 
 function useChats() {
@@ -88,7 +92,7 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settings = useAsync(api.chatSettings);
   const { selection, select } = useSelection();
-  const labels = useLabels();
+  const { items, labels } = useMapItems();
   const chats = useChats();
   const width = usePaneWidth();
   const { chatOpen, toggleChat, togglePane, openChat, newChat } = useSides(pane, setPane, chats);
@@ -103,6 +107,7 @@ export function App() {
     setPane("map");
   };
   return (
+    <ItemsProvider value={items}>
     <div className="flex h-screen bg-paper text-stone-800">
       <ChatRail chats={chats.list} active={chats.active} onOpen={openChat} onNew={newChat} onRename={chats.rename} onDelete={chats.remove} onSettings={() => setSettingsOpen(true)} chatOpen={chatOpen} onToggleChat={toggleChat} />
       <main aria-label="Conversation" className={chatOpen ? "min-w-[22rem] flex-1" : "hidden"}>
@@ -137,6 +142,7 @@ export function App() {
         />
       ) : null}
     </div>
+    </ItemsProvider>
   );
 }
 

@@ -1,5 +1,7 @@
 import { type ReactNode, useState } from "react";
-import { EdgeLabel } from "../components/Chip";
+import { ArrowRight } from "lucide-react";
+import { Chip, EdgeLabel } from "../components/Chip";
+import { ItemChip } from "../components/ItemChip";
 import type { Navigate } from "../App";
 import { type NodeView, type RelatedItem, type RootTrace, type Schema, type ViewStatus, api } from "../api";
 import { Button, ErrorNote, StatusPill, passageClass } from "../components/ui";
@@ -75,21 +77,49 @@ interface EdgeRow {
   text: ReactNode;
 }
 
+/** A titled row of chips. */
+function ChipGroup(props: { title: string; children: ReactNode }) {
+  return (
+    <div>
+      <p className="mb-1 text-xs text-stone-400">{props.title}</p>
+      <ul className="flex flex-wrap gap-1.5">{props.children}</ul>
+    </div>
+  );
+}
+
 function EdgeGroup(props: { title: string; rows: EdgeRow[]; onSelect?: (id: string) => void }) {
   if (props.rows.length === 0) return null;
   return (
-    <div>
-      <p className="mb-0.5 text-[11px] text-stone-400">{props.title}</p>
-      <ul className="space-y-1 text-sm text-stone-600">
-        {props.rows.map((r) => (
-          <li key={r.id}>
-            <button type="button" className={`text-left hover:underline ${r.status === "removed" ? "text-stone-400 line-through" : ""}`} onClick={() => props.onSelect?.(r.id)}>
-              {r.text}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ChipGroup title={props.title}>
+      {props.rows.map((r) => (
+        <li key={r.id} className="min-w-0 max-w-full">
+          <Chip onClick={() => props.onSelect?.(r.id)}>
+            <span className={r.status === "removed" ? "text-stone-400 line-through" : ""}>{r.text}</span>
+          </Chip>
+        </li>
+      ))}
+    </ChipGroup>
+  );
+}
+
+function Lineage(props: { view: NodeView; onSelect?: (id: string) => void }) {
+  const groups = [
+    { title: "Came from", nodes: props.view.derivedFrom },
+    { title: "Went into", nodes: props.view.derivedInto },
+  ].filter((g) => g.nodes.length > 0);
+  if (groups.length === 0) return null;
+  return (
+    <Section title="Lineage">
+      {groups.map((g) => (
+        <ChipGroup key={g.title} title={g.title}>
+          {g.nodes.map((n) => (
+            <li key={n.id} className="min-w-0 max-w-full">
+              <ItemChip id={n.id} label={n.label} onClick={() => props.onSelect?.(n.id)} />
+            </li>
+          ))}
+        </ChipGroup>
+      ))}
+    </Section>
   );
 }
 
@@ -145,14 +175,23 @@ function EditableTitle(props: { value: string; readOnly: boolean; onSave: (value
   );
 }
 
-function RootsList(props: { trace?: RootTrace; labels: Record<string, string> }) {
+/** Each root and the path from it to this node, as chips joined by arrows. */
+function RootsList(props: { trace?: RootTrace; labels: Record<string, string>; onSelect?: (id: string) => void }) {
   if (!props.trace) return null;
   if (props.trace.roots.length === 0) return <p className="text-sm text-stone-500">No upstream roots: this node is itself a root.</p>;
   return (
-    <ol className="space-y-1 text-sm text-stone-600">
+    <ol className="space-y-3">
       {props.trace.roots.map((r) => (
-        <li key={r.id}>
-          <span className="font-medium text-stone-800">{props.labels[r.id] ?? r.id}</span> supports {r.support} downstream, via {r.path.map((p) => props.labels[p] ?? p).join(" → ")}
+        <li key={r.id} className="space-y-1">
+          <p className="flex flex-wrap items-center gap-1">
+            {r.path.map((p, i) => (
+              <span key={p} className="inline-flex min-w-0 max-w-full items-center gap-1">
+                {i > 0 ? <ArrowRight size={12} className="shrink-0 text-stone-400" aria-hidden /> : null}
+                <ItemChip id={p} label={props.labels[p]} onClick={() => props.onSelect?.(p)} />
+              </span>
+            ))}
+          </p>
+          <p className="text-xs text-stone-400">Supports {r.support} downstream</p>
         </li>
       ))}
     </ol>
@@ -191,21 +230,14 @@ export function NodePanel(props: NodePanelProps) {
       <Section title="Edges">
         <EdgeList view={view.data} labels={labels} onSelect={props.onSelect} />
       </Section>
-      {view.data.derivedFrom.length + view.data.derivedInto.length > 0 ? (
-        <Section title="Lineage">
-          <ul className="space-y-1 text-sm text-stone-600">
-            {view.data.derivedFrom.map((n) => <li key={n.id}>From “{n.label}”</li>)}
-            {view.data.derivedInto.map((n) => <li key={n.id}>Into “{n.label}”</li>)}
-          </ul>
-        </Section>
-      ) : null}
+      <Lineage view={view.data} onSelect={props.onSelect} />
       <Section title="Explore">
         <div className="flex gap-2">
           <Button onClick={traceRoots}>Trace roots</Button>
           <Button onClick={() => api.relatedToNode(id).then(setRelated)}>Related</Button>
         </div>
-        <RootsList trace={trace} labels={labels} />
-        {related ? <Related items={related} /> : null}
+        <RootsList trace={trace} labels={labels} onSelect={props.onSelect} />
+        {related ? <Related items={related} onSelect={(n) => props.onSelect?.(n)} onOpenEntry={(entry) => navigate("entries", entry)} /> : null}
       </Section>
       <AddedBy actor={node.assertedBy} />
     </div>

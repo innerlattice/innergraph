@@ -120,10 +120,19 @@ describe("SupportedItems", () => {
 
 describe("Related and useJob", () => {
   it("shows related material straight away, or says there is none", () => {
-    render(<Related items={[]} />);
+    const onSelect = vi.fn();
+    const onOpenEntry = vi.fn();
+    render(<Related items={[]} onSelect={onSelect} onOpenEntry={onOpenEntry} />);
     expect(screen.getByText("Nothing from before looks related.")).toBeTruthy();
-    render(<Related items={[{ id: "h", kind: "entry", score: 0.4, terms: [], title: "Tuesday", snippet: "old words" }]} />);
+    const items = [
+      { id: "h", kind: "entry" as const, score: 0.4, terms: [], title: "Tuesday", snippet: "old words" },
+      { id: "n2", kind: "node" as const, score: 0.3, terms: [], title: "Dinner table", snippet: "dinner" },
+    ];
+    render(<Related items={items} onSelect={onSelect} onOpenEntry={onOpenEntry} />);
     expect(screen.getByText("old words")).toBeTruthy();
+    fireEvent.click(screen.getByText("Tuesday"));
+    fireEvent.click(screen.getByText("Dinner table"));
+    expect([onOpenEntry.mock.calls, onSelect.mock.calls]).toEqual([[["h"]], [["n2"]]]);
   });
 
   it("keeps polling running jobs and reports failures", async () => {
@@ -244,11 +253,11 @@ describe("NodePanel", () => {
     const outgoing = screen.getByText("scaffolds").closest("button") as HTMLElement;
     expect(outgoing.textContent).toBe("scaffoldsDinner table");
     const incoming = screen.getByText("abduces").closest("button") as HTMLElement;
-    expect([incoming.textContent, incoming.className.includes("line-through")]).toEqual(["Dinner tableabduces", true]);
-    expect(screen.getByText(/From “Dinner table”/)).toBeTruthy();
+    expect([incoming.textContent, incoming.innerHTML.includes("line-through")]).toEqual(["Dinner tableabduces", true]);
+    expect(screen.getByText("Came from")).toBeTruthy();
     fireEvent.click(screen.getByText("Looks right"));
     fireEvent.click(screen.getByText("Trace roots"));
-    expect(await screen.findByText(/supports 1 downstream/)).toBeTruthy();
+    expect(await screen.findByText("Supports 1 downstream")).toBeTruthy();
     fireEvent.click(screen.getByText("Related"));
     expect(await screen.findByText("needing")).toBeTruthy();
     fireEvent.doubleClick(screen.getByText("Needing is unsafe", { selector: "h3" }));

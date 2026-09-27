@@ -5,7 +5,7 @@
 import { Check, CircleAlert, Search, Sparkles, Undo2 } from "lucide-react";
 import { useState } from "react";
 import { api } from "../api";
-import { Chip, ItemLabel } from "../components/Chip";
+import { ItemChip } from "../components/ItemChip";
 import { type ToolCardInfo, type ToolPart, describeTool } from "./parts";
 
 export interface ToolCardProps {
@@ -37,9 +37,7 @@ function Chips(props: { info: ToolCardInfo; undone: boolean; onSelect: (ids: str
   return (
     <div className="mt-1.5 flex flex-wrap gap-1.5">
       {props.info.items.map((item) => (
-        <Chip key={item.id} struck={props.undone} onClick={() => props.onSelect([item.id])}>
-          <ItemLabel label={item.label} />
-        </Chip>
+        <ItemChip key={item.id} id={item.id} label={item.label} struck={props.undone} onClick={() => props.onSelect([item.id])} />
       ))}
     </div>
   );

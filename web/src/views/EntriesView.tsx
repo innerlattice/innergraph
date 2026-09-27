@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Chip, ItemLabel } from "../components/Chip";
+import { Chip } from "../components/Chip";
+import { ItemChip } from "../components/ItemChip";
 import type { Navigate } from "../App";
 import { type EntryView, type RevisionResult, api } from "../api";
 import { Button, Card, Empty, ErrorNote, Page, passageClass } from "../components/ui";
@@ -93,9 +94,7 @@ export function SupportedItems(props: { view: EntryView; onOpen: (ids: string) =
         Show all {items.length} on the map
       </Chip>
       {items.map(([id, label]) => (
-        <Chip key={id} onClick={() => props.onOpen(id)}>
-          <ItemLabel label={label} />
-        </Chip>
+        <ItemChip key={id} id={id} label={label} onClick={() => props.onOpen(id)} />
       ))}
     </div>
   );
