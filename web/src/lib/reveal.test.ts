@@ -1,5 +1,5 @@
 import cytoscape from "cytoscape";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { reveal, revealViewport } from "./reveal";
 
 const clear = { x1: 32, y1: 32, x2: 468, y2: 568 };
@@ -26,4 +26,12 @@ it("reports whether anything picked is on the map", () => {
   const cy = cytoscape({ headless: true, elements: [{ data: { id: "a" }, position: { x: 0, y: 0 } }] });
   expect(reveal(cy, ["gone"], 0)).toBe(false);
   expect(reveal(cy, ["a"], 400)).toBe(true);
+});
+
+it("lets a move under way finish when asked for the same place again", () => {
+  const cy = cytoscape({ headless: true, layout: { name: "preset", fit: false }, elements: [{ data: { id: "a" }, position: { x: 5000, y: 5000 } }] });
+  const animate = vi.spyOn(cy, "animate");
+  reveal(cy, ["a"], 0);
+  reveal(cy, ["a"], 0);
+  expect(animate).toHaveBeenCalledOnce();
 });

@@ -19,6 +19,13 @@ interface Viewport {
 const MARGIN = 32;
 /** Below this much clear width the panel covers nearly everything, so it is ignored. */
 const MIN_CLEAR = 160;
+const DURATION = 250;
+/** Where the map's current move is heading and when it gets there, kept in Cytoscape's scratch. */
+const HEADING = "_revealHeading";
+
+interface Heading extends Viewport {
+  until: number;
+}
 
 /** How far to shift `lo..hi` so it sits inside `min..max`: nothing if it already does. */
 function shift(lo: number, hi: number, min: number, max: number): number {
@@ -55,7 +62,14 @@ export function reveal(cy: Core, ids: string[], covered: number): boolean {
   const width = cy.width();
   const right = width - covered < MIN_CLEAR ? width : width - covered;
   const clear = { x1: MARGIN, y1: MARGIN, x2: right - MARGIN, y2: cy.height() - MARGIN };
-  const next = revealViewport(eles.boundingBox({}), { zoom: cy.zoom(), pan: cy.pan() }, clear, ids.length > 1);
-  if (next) cy.animate({ ...next, duration: 250, easing: "ease-in-out-cubic" });
+  // Measured from where a move under way will end, so asking again mid-move finds nothing to do.
+  const heading: Heading | undefined = cy.scratch(HEADING);
+  const from = heading && performance.now() < heading.until ? heading : { zoom: cy.zoom(), pan: cy.pan() };
+  const next = revealViewport(eles.boundingBox({}), from, clear, ids.length > 1);
+  if (!next) return true;
+  // One move at a time: a new one replaces any still under way rather than queueing after it.
+  cy.stop(true);
+  cy.scratch(HEADING, { ...next, until: performance.now() + DURATION });
+  cy.animate({ ...next }, { duration: DURATION, easing: "ease-in-out-cubic", queue: false });
   return true;
 }

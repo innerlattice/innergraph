@@ -34,7 +34,8 @@ function useReveal(
   cover?: RefObject<HTMLElement | null>,
 ): void {
   const revealed = useRef("");
-  const key = selection.join();
+  // The same items in another order (as the server echoes a selection back) are not a new selection.
+  const key = [...selection].sort().join();
   // biome-ignore lint/correctness/useExhaustiveDependencies: try again when the elements arrive, but only once per selection
   useEffect(() => {
     if (!cy || !container.current || key === revealed.current) return;
