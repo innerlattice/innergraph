@@ -24,7 +24,7 @@ export interface Navigate {
 
 const EMPTY: Selection = { ids: [], at: "", items: [] };
 
-export const newChatId = () => globalThis.crypto.randomUUID();
+const newChatId = () => globalThis.crypto.randomUUID();
 
 /** The shared map selection: set locally at once, then as the server resolves it. */
 function useSelection() {

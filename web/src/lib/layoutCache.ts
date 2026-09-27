@@ -1,7 +1,7 @@
 // Stable node positions. Nodes keep their position across re-renders, time travel and
 // reloads; only nodes never seen before are laid out. Per-viewer convenience only.
 
-export interface Point {
+interface Point {
   x: number;
   y: number;
 }

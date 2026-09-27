@@ -4,7 +4,7 @@ import { type Arc, components, elementaryCycles, reachable, shortestPath } from 
 
 export type Roles = Record<string, Role | undefined>;
 
-export interface RootCandidate {
+interface RootCandidate {
   id: string;
   /** Number of Nodes downstream of this root along derivational Edges. */
   support: number;
@@ -45,7 +45,7 @@ export interface LoopDetail extends Loop {
   linkedLoops: number;
 }
 
-export interface ItemDiff<T> {
+interface ItemDiff<T> {
   added: T[];
   removed: T[];
   changed: { before: T; after: T }[];
@@ -67,7 +67,7 @@ export function activeGraph(graph: Graph): Graph {
   return { nodes, edges };
 }
 
-export function arcs(graph: Graph, roles: Roles, role: Role): GraphEdge[] {
+function arcs(graph: Graph, roles: Roles, role: Role): GraphEdge[] {
   return Object.values(activeGraph(graph).edges).filter((e) => roles[e.type] === role);
 }
 

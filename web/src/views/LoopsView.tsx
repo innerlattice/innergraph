@@ -12,7 +12,7 @@ function Sign(props: { sign: 1 | -1 }) {
   );
 }
 
-export function StepRow(props: { step: LoopStepView }) {
+function StepRow(props: { step: LoopStepView }) {
   const { step } = props;
   return (
     <li className="space-y-1">

@@ -83,7 +83,7 @@ function migrateGraph(graph: Graph, nodeMap: Record<string, string>, edgeMap: Re
 
 // ---- graph events ----------------------------------------------------------------
 
-export function statusFor(actor: ActorId): Status {
+function statusFor(actor: ActorId): Status {
   return actor === USER ? "accepted" : "hypothesis";
 }
 
@@ -110,7 +110,7 @@ const graphHandlers: GraphHandlers = {
   NodesMerged: mergeNodes,
 };
 
-export function applyGraphEvent(graph: Graph, event: AnyEvent): void {
+function applyGraphEvent(graph: Graph, event: AnyEvent): void {
   graphHandlers[event.type]?.(graph, event as never);
 }
 

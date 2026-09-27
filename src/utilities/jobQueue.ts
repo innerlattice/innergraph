@@ -1,7 +1,7 @@
 // In-process work queue. Managers enqueue slow work (interpretation) instead of blocking
 // callers or calling each other.
 
-export type JobState = "queued" | "running" | "done" | "failed";
+type JobState = "queued" | "running" | "done" | "failed";
 
 export interface Job {
   id: string;

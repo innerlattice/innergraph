@@ -17,7 +17,7 @@ function live(n: GraphNode): boolean {
 }
 
 /** Everything a write could duplicate: every item on the map. */
-export function knownItems(state: ProjectionState): { nodes: KnownNode[]; edges: KnownEdge[] } {
+function knownItems(state: ProjectionState): { nodes: KnownNode[]; edges: KnownEdge[] } {
   const view = materialize(state, ACTIVE);
   return { nodes: Object.values(view.nodes), edges: Object.values(view.edges) };
 }

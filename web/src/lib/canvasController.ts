@@ -11,7 +11,7 @@ export function remember(cy: Core, positions: Positions): void {
 }
 
 /** Places remembered nodes, then lays out only the new ones around them (pinned). */
-export function place(cy: Core, positions: Positions): void {
+function place(cy: Core, positions: Positions): void {
   const { known, unknown } = partition(cy.nodes().map((n) => n.id()), positions);
   for (const id of known) cy.getElementById(id).position(positions.get(id) as { x: number; y: number });
   if (unknown.length > 0) {

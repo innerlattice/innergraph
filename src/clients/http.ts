@@ -40,7 +40,7 @@ function route(handler: Handler) {
 const body = (c: Context) => c.req.json();
 
 /** `?statuses=active,removed` → the View filter; unknown words are ignored. */
-export function statusesOf(c: Context): ViewStatus[] | undefined {
+function statusesOf(c: Context): ViewStatus[] | undefined {
   const raw = c.req.query("statuses");
   return raw ? raw.split(",").filter((s): s is ViewStatus => (VIEW_STATUSES as readonly string[]).includes(s)) : undefined;
 }
@@ -48,7 +48,7 @@ export function statusesOf(c: Context): ViewStatus[] | undefined {
 const STREAM_INTERVAL_MS = 400;
 
 /** Server-sent events: emits the Log position whenever any process appends, so views update live. */
-export function streamPositions(c: Context, vault: Vault, intervalMs = STREAM_INTERVAL_MS) {
+function streamPositions(c: Context, vault: Vault, intervalMs = STREAM_INTERVAL_MS) {
   return streamSSE(c, async (stream) => {
     let last = "";
     while (!stream.aborted) {

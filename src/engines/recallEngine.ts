@@ -138,7 +138,7 @@ export function denseCosine(a: number[], b: number[]): number {
   return denominator === 0 ? 0 : dot(a, b) / denominator;
 }
 
-export function denseRanking(queryVector: number[], docVectors: number[][]): Ranked[] {
+function denseRanking(queryVector: number[], docVectors: number[][]): Ranked[] {
   return rank(docVectors.map((v) => denseCosine(queryVector, v)));
 }
 

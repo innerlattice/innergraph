@@ -121,7 +121,7 @@ function LinkState(props: { status?: LinkStatus; onConnect: () => void; onDiscon
   );
 }
 
-export function ChatGptConnection() {
+function ChatGptConnection() {
   const { status, error, connect, disconnect } = useLink();
   return (
     <div className="space-y-2">

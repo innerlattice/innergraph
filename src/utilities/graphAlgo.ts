@@ -6,7 +6,7 @@ export interface Arc {
   to: string;
 }
 
-export function adjacency(arcs: Arc[], direction: "out" | "in" = "out"): Map<string, Arc[]> {
+function adjacency(arcs: Arc[], direction: "out" | "in" = "out"): Map<string, Arc[]> {
   const adj = new Map<string, Arc[]>();
   const key = direction === "out" ? "from" : "to";
   for (const arc of arcs) {
@@ -17,7 +17,7 @@ export function adjacency(arcs: Arc[], direction: "out" | "in" = "out"): Map<str
   return adj;
 }
 
-export function neighbour(arc: Arc, direction: "out" | "in"): string {
+function neighbour(arc: Arc, direction: "out" | "in"): string {
   return direction === "out" ? arc.to : arc.from;
 }
 

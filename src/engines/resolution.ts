@@ -28,7 +28,7 @@ export interface Resolved {
 /** Same thing: re-assert instead of creating. */
 export const SAME = 0.8;
 /** Possibly the same thing: create, but hold for review with the candidate named. */
-export const SIMILAR = 0.5;
+const SIMILAR = 0.5;
 const OVERLAP = 0.5;
 
 /** Dice coefficient over content words; 1 for identical labels. */

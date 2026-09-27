@@ -18,7 +18,7 @@ export interface Evidence {
 
 // ---- Schema -------------------------------------------------------------
 
-export interface AttributeDef {
+interface AttributeDef {
   type: "string" | "number" | "boolean" | "enum";
   values?: string[];
   description?: string;
@@ -40,12 +40,12 @@ export const NODE_SHAPES = [
 ] as const;
 
 /** Presentation hints. Data, not theory: Clients read them without knowing type names. */
-export interface NodeDisplay {
+interface NodeDisplay {
   shape?: (typeof NODE_SHAPES)[number];
   color?: string;
 }
 
-export interface NodeTypeDef {
+interface NodeTypeDef {
   description?: string;
   label?: LabelStyle;
   /** Guidance for Actors writing labels of this type, e.g. "a short name like 'The Hider'". */
@@ -153,7 +153,7 @@ export interface VaultEvent<T extends EventType = EventType> {
 }
 
 /** An Event before the Log assigns id, hlc, device and parents. */
-export interface EventDraft<T extends EventType = EventType> {
+interface EventDraft<T extends EventType = EventType> {
   id?: string;
   actor: ActorId;
   session: string;

@@ -3,7 +3,7 @@
 import type { VaultAccess } from "../access/vaultAccess.js";
 import { type ChatGptTokens, type DeviceCode, type Fetch, pollDeviceCode, refreshTokens, requestDeviceCode } from "../utilities/chatgpt.js";
 
-export type LinkState = "disconnected" | "pending" | "connected";
+type LinkState = "disconnected" | "pending" | "connected";
 
 export interface LinkStatus {
   state: LinkState;

@@ -9,7 +9,7 @@ import { ArrowRight, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { parseEdgeText } from "../../../src/core/edgeText";
 
-export type ChipTone = "neutral" | "context" | "accent";
+type ChipTone = "neutral" | "context" | "accent";
 
 const TONES: Record<ChipTone, string> = {
   neutral: "border-stone-200 bg-stone-50 text-stone-700 enabled:hover:border-clay-300 enabled:hover:bg-clay-50",

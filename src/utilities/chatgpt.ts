@@ -4,11 +4,11 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModel } from "ai";
 
-export const ISSUER = "https://auth.openai.com";
+const ISSUER = "https://auth.openai.com";
 /** Codex's public OAuth client id (a public identifier, not a secret). */
-export const CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
-export const DEVICE_PAGE = `${ISSUER}/codex/device`;
-export const PLAN_BACKEND = "https://chatgpt.com/backend-api/codex";
+const CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
+const DEVICE_PAGE = `${ISSUER}/codex/device`;
+const PLAN_BACKEND = "https://chatgpt.com/backend-api/codex";
 const REDIRECT = `${ISSUER}/deviceauth/callback`;
 
 export type Fetch = typeof fetch;
@@ -135,4 +135,4 @@ export function chatgptOptions(instructions: string, effort: string) {
   return { openai: { instructions, store: false, include: ["reasoning.encrypted_content" as const], reasoningEffort: effort, reasoningSummary: "auto", systemMessageMode: "remove" as const } };
 }
 
-export { PLAN_MODELS, type PlanModel } from "./planModels.js";
+export { PLAN_MODELS } from "./planModels.js";

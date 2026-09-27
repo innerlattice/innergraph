@@ -33,7 +33,7 @@ export interface ViewOptions {
   at?: string;
 }
 
-export interface GraphSearchHit extends SearchHit {
+interface GraphSearchHit extends SearchHit {
   label: string;
   type: string;
   status: string;
@@ -127,7 +127,7 @@ export interface Selection {
   items: SelectionItem[];
 }
 
-export function edgeLabel(view: { nodes: Record<string, { label: string }> }, edge: { from: string; to: string; type: string }): string {
+function edgeLabel(view: { nodes: Record<string, { label: string }> }, edge: { from: string; to: string; type: string }): string {
   return edgeText(view.nodes[edge.from]?.label ?? edge.from, edge.type, view.nodes[edge.to]?.label ?? edge.to);
 }
 

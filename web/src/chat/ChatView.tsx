@@ -8,7 +8,7 @@ import { BudgetNotice, Composer, FullNotice, SelectionChips } from "./Composer";
 import { AssistantMessage, MessageBoundary, Thinking, UserMessage } from "./Message";
 import { errorText, isFullError, isSilent, latestTokens, levelOf, repliesTo } from "./parts";
 
-export interface ChatActions {
+interface ChatActions {
   onSelect: (ids: string[]) => void;
   onOpenEntry: (entry: string) => void;
   onNewChat: () => void;

@@ -16,12 +16,12 @@ import type { ChatMessage, ChatMetadata } from "../../src/clients/chat";
 import type { SelectionItem } from "../../src/managers/exploreManager";
 import type { LinkStatus } from "../../src/managers/chatgptLink";
 
-export type { ChangeAction, ChangeRow, DuplicateGroup, EdgeView, GraphView, LoopStepView, LoopView, SessionChanges, UndoResult, ViewEdge, ViewNode, ViewStatus };
-export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, GraphEdge, GraphNode, IngestResult, Job, Loop, NodeView, RelatedItem, RevisionResult, RootTrace, Schema, Selection, Status };
+export type { ChangeAction, DuplicateGroup, EdgeView, GraphView, LoopStepView, LoopView, SessionChanges, UndoResult, ViewEdge, ViewNode, ViewStatus };
+export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, IngestResult, Job, NodeView, RelatedItem, RevisionResult, RootTrace, Schema, Selection };
 
-export { PLAN_MODELS, type PlanModel } from "../../src/utilities/planModels";
+export { PLAN_MODELS } from "../../src/utilities/planModels";
 export type { LinkStatus };
-export type { AmendResult, BudgetLevel, ChatBudget, ChatMessage, ChatMetadata, ChatProvider, ChatSummary, ProposeResult, PublicChatSettings, SelectionItem, WrittenItem };
+export type { BudgetLevel, ChatBudget, ChatMessage, ChatProvider, ProposeResult, PublicChatSettings, SelectionItem };
 
 export interface ChatListItem extends ChatSummary {
   budget: ChatBudget;

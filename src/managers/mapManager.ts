@@ -52,8 +52,6 @@ function withAttachedEdges(ids: Set<string>, graphs: Graph[]): Set<string> {
   return new Set([...ids, ...edges.map((e) => e.id)]);
 }
 
-export { toPosition };
-
 function describeEdge(edge: GraphEdge, graph: Graph): string {
   const from = graph.nodes[edge.from]?.label ?? edge.from;
   const to = graph.nodes[edge.to]?.label ?? edge.to;

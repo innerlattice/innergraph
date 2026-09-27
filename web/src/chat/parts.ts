@@ -11,7 +11,7 @@ export interface ToolPart {
   errorText?: string;
 }
 
-export interface CardItem {
+interface CardItem {
   id: string;
   label: string;
 }
@@ -29,7 +29,7 @@ export interface ToolCardInfo {
   error?: string;
 }
 
-export function toolName(part: { type: string }): string {
+function toolName(part: { type: string }): string {
   return part.type.replace(/^tool-/, "");
 }
 
@@ -37,7 +37,7 @@ export function isToolPart(part: { type: string }): part is ToolPart {
   return part.type.startsWith("tool-");
 }
 
-export function toolParts(messages: ChatMessage[]): ToolPart[] {
+function toolParts(messages: ChatMessage[]): ToolPart[] {
   return messages.flatMap((m) => (m.parts as { type: string }[]).filter(isToolPart));
 }
 

@@ -13,7 +13,7 @@ export type ViewStatus = "active" | "removed";
 export const VIEW_STATUSES: readonly ViewStatus[] = ["active", "removed"];
 export const ACTIVE: readonly ViewStatus[] = ["active"];
 
-export interface ViewMeta {
+interface ViewMeta {
   status: ViewStatus;
   /** The person confirmed it (or wrote it themselves). */
   confirmed: boolean;
@@ -65,7 +65,7 @@ function withMeta<T extends GraphNode | GraphEdge>(item: T, state: ProjectionSta
 }
 
 /** Every item that could be materialized. Replaced items are left out. */
-export function candidates(state: ProjectionState): (GraphNode | GraphEdge)[] {
+function candidates(state: ProjectionState): (GraphNode | GraphEdge)[] {
   const replaced = replacedIds(state);
   const { nodes, edges } = state.graph;
   return [...Object.values(nodes), ...Object.values(edges)].filter((i) => !(i.status === "superseded" && replaced.has(i.id)));
