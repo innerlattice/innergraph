@@ -3,6 +3,7 @@
 // tokens; models are then called directly on their plan. No Codex app, CLI or MCP involved.
 import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModel } from "ai";
+import { postJson } from "./postJson.js";
 
 const ISSUER = "https://auth.openai.com";
 /** Codex's public OAuth client id (a public identifier, not a secret). */
@@ -69,10 +70,6 @@ export function tokensFrom(response: TokenResponse, previous?: ChatGptTokens, no
   const fresh = { refresh: response.refresh_token, accountId: auth.chatgpt_account_id, plan: auth.chatgpt_plan_type, email: id.email as string | undefined };
   const kept = Object.fromEntries(Object.entries(fresh).filter(([, v]) => v !== undefined));
   return { refresh: "", accountId: "", ...previous, ...kept, access: response.access_token, expiresAt: expiryOf(access, now) };
-}
-
-function postJson(http: Fetch, url: string, body: unknown): Promise<Response> {
-  return http(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 }
 
 async function failure(res: Response, what: string): Promise<ChatGptAuthError> {

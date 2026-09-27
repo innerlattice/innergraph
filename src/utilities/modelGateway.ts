@@ -1,4 +1,5 @@
 // ModelGateway: the only place that knows how to talk to an inference runtime.
+import { postJson } from "./postJson.js";
 
 export interface JsonRequest {
   system: string;
@@ -12,6 +13,9 @@ export interface ModelGateway {
   readonly hosted: boolean;
   generateJson(request: JsonRequest): Promise<unknown>;
 }
+
+/** Where Ollama listens by default. */
+const OLLAMA_URL = "http://127.0.0.1:11434";
 
 export function isLocalUrl(url: string): boolean {
   const host = new URL(url).hostname;
@@ -31,18 +35,14 @@ export class OllamaGateway implements ModelGateway {
   private readonly fetchImpl: typeof fetch;
 
   constructor(options: OllamaOptions = {}) {
-    this.baseUrl = options.baseUrl ?? "http://127.0.0.1:11434";
+    this.baseUrl = options.baseUrl ?? OLLAMA_URL;
     this.name = options.model ?? "gemma4:latest";
     this.hosted = !isLocalUrl(this.baseUrl);
     this.fetchImpl = options.fetchImpl ?? fetch;
   }
 
   async generateJson(request: JsonRequest): Promise<unknown> {
-    const response = await this.fetchImpl(`${this.baseUrl}/api/chat`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(this.payload(request)),
-    });
+    const response = await postJson(this.fetchImpl, `${this.baseUrl}/api/chat`, this.payload(request));
     if (!response.ok) throw new Error(`Model runtime returned ${response.status}`);
     const data = (await response.json()) as { message?: { content?: string } };
     return JSON.parse(data.message?.content ?? "{}");
@@ -100,18 +100,14 @@ export class OllamaEmbedder implements Embedder {
   private readonly fetchImpl: typeof fetch;
 
   constructor(options: OllamaOptions = {}) {
-    this.baseUrl = options.baseUrl ?? "http://127.0.0.1:11434";
+    this.baseUrl = options.baseUrl ?? OLLAMA_URL;
     this.name = options.model ?? "qwen3-embedding:0.6b";
     this.fetchImpl = options.fetchImpl ?? fetch;
   }
 
   async embed(texts: string[]): Promise<number[][]> {
     if (texts.length === 0) return [];
-    const response = await this.fetchImpl(`${this.baseUrl}/api/embed`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ model: this.name, input: texts }),
-    });
+    const response = await postJson(this.fetchImpl, `${this.baseUrl}/api/embed`, { model: this.name, input: texts });
     if (!response.ok) throw new Error(`Embedding model ${this.name} unavailable (${response.status}); try: ollama pull ${this.name}`);
     return ((await response.json()) as { embeddings: number[][] }).embeddings;
   }
