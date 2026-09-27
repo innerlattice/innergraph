@@ -2,10 +2,11 @@
 // page), OpenRouter (one key, many models), or a local OpenAI-compatible server. Keys and
 // tokens are write-only; they never come back to the page.
 import { Check, Copy, ExternalLink, X } from "lucide-react";
-import { type FormEvent, type ReactNode, useEffect, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import { type ChatProvider, type LinkStatus, PLAN_MODELS, type PublicChatSettings, api } from "../api";
 import { Button, buttonClass } from "../components/ui";
 import { ICON } from "../design/tokens";
+import { useDismiss } from "../lib/useDismiss";
 
 function Field(props: { label: string; hint?: string; children: ReactNode }) {
   return (
@@ -204,6 +205,8 @@ export function SettingsDialog(props: { settings: PublicChatSettings; onSaved: (
   const [provider, setProvider] = useState<ChatProvider>(props.settings.provider);
   const switched = provider !== props.settings.provider;
   const [error, setError] = useState<string>();
+  const panel = useRef<HTMLFormElement>(null);
+  useDismiss(panel, props.onClose);
   const save = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
@@ -223,7 +226,7 @@ export function SettingsDialog(props: { settings: PublicChatSettings; onSaved: (
   };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/20 p-4 backdrop-blur-sm" role="dialog" aria-label="Settings">
-      <form onSubmit={save} className="max-h-full w-full max-w-lg animate-rise space-y-4 overflow-y-auto rounded-2xl bg-stone-50 p-6 shadow-lifted">
+      <form ref={panel} onSubmit={save} className="max-h-full w-full max-w-lg animate-rise space-y-4 overflow-y-auto rounded-2xl bg-stone-50 p-6 shadow-lifted">
         <header className="flex items-center justify-between">
           <h2 className="font-serif text-xl text-stone-800">Settings</h2>
           <button type="button" aria-label="Close" onClick={props.onClose} className="rounded-md p-1 text-stone-400 hover:bg-stone-200 hover:text-stone-700">

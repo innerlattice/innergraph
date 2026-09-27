@@ -48,3 +48,12 @@ it("puts every kind under one heading when the schema has no groups", () => {
   fireEvent.click(screen.getByRole("button", { name: "Key" }));
   expect(screen.getByText("Kinds of thing")).toBeTruthy();
 });
+
+it("closes on a click outside it", () => {
+  render(<GraphKey schema={schema} />);
+  fireEvent.click(screen.getByRole("button", { name: "Key" }));
+  fireEvent.pointerDown(screen.getByText("Links"));
+  expect(screen.getByText("Hide key")).toBeTruthy();
+  fireEvent.pointerDown(document.body);
+  expect(screen.getByText("Key")).toBeTruthy();
+});

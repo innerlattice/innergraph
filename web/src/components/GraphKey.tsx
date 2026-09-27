@@ -1,11 +1,12 @@
 // A small, collapsible key for the canvas: node types and edge looks from the graph design
 // system, what the states look like, and the gestures.
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import type { Schema } from "../api";
 import { humanise } from "../../../src/core/edgeText";
 import { EDGE_LOOKS, edgeLookOf, nodeLookOf } from "../design/graph";
 import { EdgeGlyph, LABEL_FONT, NodeGlyph } from "./GraphGlyph";
 import { TipBody, Tooltip } from "./Tooltip";
+import { useDismiss } from "../lib/useDismiss";
 
 /** The edge looks this Schema can produce, in design-system order. */
 function looksIn(schema: Schema | null) {
@@ -102,8 +103,10 @@ function KeyBody(props: { schema: Schema | null }) {
 
 export function GraphKey(props: { schema: Schema | null }) {
   const [open, setOpen] = useState(false);
+  const panel = useRef<HTMLDivElement>(null);
+  useDismiss(panel, () => setOpen(false), open);
   return (
-    <div className={`absolute bottom-3 left-3 z-10 ${open ? "w-64" : ""} max-w-inset rounded-xl bg-white/90 text-xs text-stone-600 shadow-floating backdrop-blur`}>
+    <div ref={panel} className={`absolute bottom-3 left-3 z-10 ${open ? "w-64" : ""} max-w-inset rounded-xl bg-white/90 text-xs text-stone-600 shadow-floating backdrop-blur`}>
       <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="w-full rounded-xl px-3 py-2 text-left font-medium hover:text-stone-900">
         {open ? "Hide key" : "Key"}
       </button>

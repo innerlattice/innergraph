@@ -311,6 +311,16 @@ describe("rails and settings", () => {
     expect(onToggle).toHaveBeenCalledWith("loops");
   });
 
+  it("close on a click outside or on Escape, but not on a click inside", () => {
+    const onClose = vi.fn();
+    render(<SettingsDialog settings={SETTINGS} onSaved={vi.fn()} onClose={onClose} />);
+    fireEvent.pointerDown(screen.getByText("OpenRouter"));
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.pointerDown(screen.getByRole("dialog"));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(2);
+  });
+
   it("save the provider, model and budget", async () => {
     const onSaved = vi.fn();
     const onClose = vi.fn();
