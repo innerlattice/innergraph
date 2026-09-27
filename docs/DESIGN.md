@@ -53,7 +53,7 @@ conversation about someone's life, the words come first; the machinery sits lowe
 ## The graph looks like gems
 
 Nodes are small cut stones seen from above: a flat table in the middle and a ring of crown facets
-sloping down to the girdle, each facet flat-shaded by the same overhead light, with a warm
+sloping down to the girdle, each facet flat-shaded by one light above and a little left (335°, `LIGHT_ANGLE` in `gem.ts`), with a warm
 shadow on the paper beneath. The faceting is what makes them read as stone rather than as glossy
 buttons, so keep it crisp: flat facets and a fine dark edge, no blurred gloss or white rims.
 Statement nodes are cut from pale tinted glass with a wide table that holds their text. Colours

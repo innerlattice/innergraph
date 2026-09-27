@@ -1,5 +1,5 @@
 // A node drawn as a cut stone seen from above: a flat table in the middle, a ring of crown facets
-// sloping down to the girdle, each facet flat-shaded by a light from above, and a warm
+// sloping down to the girdle, each facet flat-shaded by one light from above left, and a warm
 // shadow on the paper beneath. Statement nodes are cut from pale glass with a wide table for their
 // text. Rendered as an SVG data URI so the canvas (as a node background) and the page (as an <img>)
 // show exactly the same thing.
@@ -25,8 +25,10 @@ export interface Gem {
 const SHADOW = "#4a3526";
 /** Extra resolution so gems stay crisp when the map is zoomed in. */
 const DENSITY = 4;
-/** Where the light comes from: straight above, as for every shadow on the page. */
-const LIGHT: Point = [0, -1];
+/** Where the light comes from, in degrees clockwise from straight up: above and a little to the
+ *  left, the same for every stone, so the whole map reads as lit by one lamp. */
+const LIGHT_ANGLE = 335;
+const LIGHT: Point = [Math.sin((LIGHT_ANGLE * Math.PI) / 180), -Math.cos((LIGHT_ANGLE * Math.PI) / 180)];
 /** How wide the crown is on a glass stone, so the table stays big enough for text. */
 const GLASS_BEVEL = 4;
 /** How much of a small stone's width is table. */
@@ -54,10 +56,19 @@ function tableOf(outer: Point[], spec: GemSpec): Point[] {
   return outer.map(([x, y]) => [cx + (x - cx) * sx, cy + (y - cy) * sy]);
 }
 
+/** 1 if the corners run clockwise on screen, -1 if not: outlines are drawn both ways round. */
+function winding(pts: Point[]): number {
+  const area = pts.reduce((s, p, i) => {
+    const q = pts[(i + 1) % pts.length];
+    return s + p[0] * q[1] - q[0] * p[1];
+  }, 0);
+  return area < 0 ? -1 : 1;
+}
+
 /** How directly a facet facing outward along the edge a→b catches the light, -1..1. */
-function lit(a: Point, b: Point): number {
-  const nx = b[1] - a[1];
-  const ny = a[0] - b[0];
+function lit(a: Point, b: Point, turn: number): number {
+  const nx = (b[1] - a[1]) * turn;
+  const ny = (a[0] - b[0]) * turn;
   const len = Math.hypot(nx, ny) || 1;
   return (nx * LIGHT[0] + ny * LIGHT[1]) / len;
 }
@@ -65,10 +76,11 @@ function lit(a: Point, b: Point): number {
 /** Each crown facet is split into two triangles, the second a touch darker, as a real cut would catch it. */
 function crown(outer: Point[], table: Point[], body: string, glass: boolean): string {
   const range = glass ? 0.3 : 0.38;
+  const turn = winding(outer);
   return outer
     .map((a, i) => {
       const j = (i + 1) % outer.length;
-      const tone = lit(a, outer[j]) * range;
+      const tone = lit(a, outer[j], turn) * range;
       const first = polygonPath([a, outer[j], table[j]]);
       const second = polygonPath([a, table[j], table[i]]);
       return `<path d="${first}" fill="${shade(body, tone)}"/><path d="${second}" fill="${shade(body, tone - 0.07)}"/>`;
@@ -76,11 +88,12 @@ function crown(outer: Point[], table: Point[], body: string, glass: boolean): st
     .join("");
 }
 
-/** The flat top: lit a little from above, and for glass, almost clear so text reads. */
+/** The flat top: brighter on the side facing the light, and for glass, almost clear so text reads. */
 function tableFill(spec: GemSpec, body: string): string {
   const top = spec.glass ? shade(body, 0.74) : shade(body, 0.16);
   const bottom = spec.glass ? shade(body, 0.6) : shade(body, -0.06);
-  return `<linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${bottom}"/></linearGradient>`;
+  const [x1, y1, x2, y2] = [0.5 + LIGHT[0] / 2, 0.5 + LIGHT[1] / 2, 0.5 - LIGHT[0] / 2, 0.5 - LIGHT[1] / 2].map((n) => n.toFixed(3));
+  return `<linearGradient id="t" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"><stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${bottom}"/></linearGradient>`;
 }
 
 function gemBody(spec: GemSpec, blur: number, drop: number): string {
@@ -96,7 +109,7 @@ function gemBody(spec: GemSpec, blur: number, drop: number): string {
     `<filter id="f" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${blur}"/></filter>`,
     `<clipPath id="c"><path d="${outline}"/></clipPath>`,
     "</defs>",
-    `<path d="${outline}" transform="translate(0 ${drop})" filter="url(#f)" fill="${SHADOW}" opacity="${spec.glass ? 0.16 : 0.3}"/>`,
+    `<path d="${outline}" transform="translate(${(-LIGHT[0] * drop).toFixed(2)} ${(-LIGHT[1] * drop).toFixed(2)})" filter="url(#f)" fill="${SHADOW}" opacity="${spec.glass ? 0.16 : 0.3}"/>`,
     `<g clip-path="url(#c)">`,
     crown(outer, table, body, spec.glass ?? false),
     `<path d="${polygonPath(table)}" fill="url(#t)" stroke="#fff" stroke-opacity=".5" stroke-width="${hair}"/>`,
