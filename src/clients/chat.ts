@@ -19,9 +19,6 @@ import {
 import { z } from "zod";
 import type { ActorId } from "../core/types.js";
 import type { SelectionItem } from "../managers/exploreManager.js";
-import type { ChatSettings } from "../managers/chatManager.js";
-import { ChatGptNotConnected } from "../managers/chatgptLink.js";
-import { chatgptModel, chatgptOptions } from "../utilities/chatgpt.js";
 import { chatModel, modelActor } from "../utilities/chatModel.js";
 import type { Vault } from "../vault.js";
 import { allowedTools, toolSpecs } from "./tools.js";
@@ -126,20 +123,6 @@ export function estimateTokens(...parts: unknown[]): number {
   return Math.ceil(JSON.stringify(parts).length / 4);
 }
 
-interface ModelChoice {
-  model: LanguageModel;
-  instructions?: string;
-  providerOptions?: ReturnType<typeof chatgptOptions>;
-}
-
-/** The model for this turn. The ChatGPT plan takes the instructions as a provider option. */
-export function modelFor(vault: Vault, settings: ChatSettings, instructions: string): ModelChoice {
-  if (settings.provider !== "chatgpt") return { model: chatModel({ ...settings, provider: settings.provider }), instructions };
-  if (vault.chat.chatgpt.status().state !== "connected") throw new ChatGptNotConnected("Connect your ChatGPT plan in Settings, or choose another provider.");
-  const model = chatgptModel(settings.model, () => vault.chat.chatgpt.tokens());
-  return { model, providerOptions: chatgptOptions(instructions, settings.effort ?? "medium") };
-}
-
 /** Runs one turn: loads the conversation, streams the answer, and stores it when done. */
 export async function respondToChat(vault: Vault, request: ChatRequest, model?: LanguageModel): Promise<Response> {
   const { chat, budget } = vault.chat.open(request.id);
@@ -150,7 +133,7 @@ export async function respondToChat(vault: Vault, request: ChatRequest, model?: 
   const tools = chatTools(vault, actor, messageText(request.message));
   const instructions = chatInstructions(vault.explore.selection().items);
   const estimate = estimateTokens(instructions, messages);
-  const choice = model ? { model, instructions } : modelFor(vault, settings, instructions);
+  const choice = model ? { model, instructions } : chatModel(settings, instructions, vault.chat.chatgpt.planTokens());
   let last: LanguageModelUsage | undefined;
   const result = streamText({
     ...choice,

@@ -4,24 +4,15 @@ import type { ChatAccess, ChatRecord, ChatSummary } from "../access/chatAccess.j
 import type { VaultAccess } from "../access/vaultAccess.js";
 import { type BudgetLevel, budgetLevel } from "../core/budget.js";
 import type { Fetch } from "../utilities/chatgpt.js";
+import type { ChatModelSettings, ChatProvider } from "../utilities/chatModel.js";
 import { newId } from "../utilities/crypto.js";
 import { isLocalUrl } from "../utilities/modelGateway.js";
 import { ChatGptLink } from "./chatgptLink.js";
 import { requireFound } from "./sessions.js";
 
-export type ChatProvider = "openrouter" | "chatgpt" | "local";
-
-export interface ChatSettings {
-  provider: ChatProvider;
-  model: string;
-  /** OpenRouter key; never sent back to Clients. */
-  apiKey?: string;
-  /** OpenAI-compatible endpoint for a local model (Ollama, LM Studio, llama.cpp). */
-  baseUrl: string;
+export interface ChatSettings extends ChatModelSettings {
   /** Token budget for one conversation; it ends as it nears this. */
   contextWindow: number;
-  /** Reasoning effort, for models that take one (the ChatGPT plan's). */
-  effort?: string;
 }
 
 export interface PublicChatSettings extends Omit<ChatSettings, "apiKey"> {

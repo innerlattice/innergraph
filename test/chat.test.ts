@@ -83,9 +83,9 @@ describe("chat settings", () => {
   });
 
   it("build a model for each provider", () => {
-    expect(chatModel({ provider: "local", model: "m", baseUrl: "http://127.0.0.1:1/v1" })).toBeTruthy();
-    expect(chatModel({ provider: "openrouter", model: "m", apiKey: "k", baseUrl: "" })).toBeTruthy();
-    expect(() => chatModel({ provider: "openrouter", model: "m", baseUrl: "" })).toThrow(ChatModelError);
+    expect(chatModel({ provider: "local", model: "m", baseUrl: "http://127.0.0.1:1/v1" }, "i")).toMatchObject({ instructions: "i" });
+    expect(chatModel({ provider: "openrouter", model: "m", apiKey: "k", baseUrl: "" }, "i")).toMatchObject({ instructions: "i" });
+    expect(() => chatModel({ provider: "openrouter", model: "m", baseUrl: "" }, "i")).toThrow(ChatModelError);
     expect(modelActor("anthropic/claude-sonnet-5")).toBe("model:claude-sonnet-5");
   });
 });

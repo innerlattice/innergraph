@@ -2,6 +2,7 @@
 // produced (kept in the encrypted Vault), and refreshing them before they expire.
 import type { VaultAccess } from "../access/vaultAccess.js";
 import { type ChatGptTokens, type DeviceCode, type Fetch, pollDeviceCode, refreshTokens, requestDeviceCode } from "../utilities/chatgpt.js";
+import { ChatModelError, type PlanTokens } from "../utilities/chatModel.js";
 
 type LinkState = "disconnected" | "pending" | "connected";
 
@@ -15,8 +16,6 @@ export interface LinkStatus {
   /** Why the last attempt failed, if it did. */
   error?: string;
 }
-
-export class ChatGptNotConnected extends Error {}
 
 const KEY = "chatgpt";
 /** OpenAI's device codes last fifteen minutes. */
@@ -101,10 +100,15 @@ export class ChatGptLink {
     return this.status();
   }
 
+  /** Where a turn on the plan gets its tokens; undefined until the person signs in. */
+  planTokens(): PlanTokens {
+    return this.stored() ? () => this.tokens() : undefined;
+  }
+
   /** Current tokens, refreshed first when they are about to expire. */
   async tokens(): Promise<ChatGptTokens> {
     const tokens = this.stored();
-    if (!tokens) throw new ChatGptNotConnected("Connect your ChatGPT plan in Settings, or choose another provider.");
+    if (!tokens) throw new ChatModelError("Connect your ChatGPT plan in Settings, or choose another provider.");
     if (tokens.expiresAt - MARGIN > this.now()) return tokens;
     const fresh = await refreshTokens(tokens, this.deps.http);
     this.save(fresh);

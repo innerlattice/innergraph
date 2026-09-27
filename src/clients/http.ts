@@ -6,15 +6,15 @@ import { InvariantError } from "../access/invariants.js";
 import { SchemaError } from "../access/schemaAccess.js";
 import { VIEW_STATUSES, type ViewStatus } from "../access/view.js";
 import { ChatFullError } from "../managers/chatManager.js";
-import { ChatGptNotConnected } from "../managers/chatgptLink.js";
 import { ForbiddenError, NotFoundError, requireFound } from "../managers/sessions.js";
+import { ChatModelError } from "../utilities/chatModel.js";
 import type { Vault } from "../vault.js";
 import { respondToChat } from "./chat.js";
 
 const ERROR_STATUS: [new (...args: never[]) => Error, ContentfulStatusCode][] = [
   [NotFoundError, 404],
   [ChatFullError, 409],
-  [ChatGptNotConnected, 400],
+  [ChatModelError, 400],
   [ForbiddenError, 403],
   [SchemaError, 400],
   [InvariantError, 400],

@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { modelFor } from "../src/clients/chat.js";
 import { createApp } from "../src/clients/http.js";
-import { ChatGptLink, ChatGptNotConnected, type SettingsStore } from "../src/managers/chatgptLink.js";
+import { ChatGptLink, type SettingsStore } from "../src/managers/chatgptLink.js";
 import { ChatGptAuthError, PLAN_MODELS, chatgptModel, chatgptOptions, claims, planFetch, pollDeviceCode, prepareBody, refreshTokens, requestDeviceCode, tokensFrom } from "../src/utilities/chatgpt.js";
+import { ChatModelError, chatModel } from "../src/utilities/chatModel.js";
 import { type TestVault, makeVault } from "./helpers.js";
 
 const jwt = (payload: object) => `h.${Buffer.from(JSON.stringify(payload)).toString("base64url")}.s`;
@@ -108,7 +108,7 @@ describe("the ChatGPT link", () => {
       "/oauth/token": [json(tokenBody()), json({ ...tokenBody(NOW / 1000 + 7200), refresh_token: "r2" })],
     });
     expect(link.status()).toEqual({ state: "disconnected", error: undefined });
-    await expect(link.tokens()).rejects.toThrow(ChatGptNotConnected);
+    await expect(link.tokens()).rejects.toThrow(ChatModelError);
     expect(await link.connect()).toMatchObject({ state: "pending", userCode: "ABCD" });
     await step();
     expect(link.status().state).toBe("pending");
@@ -146,10 +146,11 @@ describe("the ChatGPT link", () => {
   it("is required before a turn on the plan, and reachable over HTTP", async () => {
     t.vault.chat.updateSettings({ provider: "chatgpt" });
     expect(t.vault.chat.publicSettings()).toMatchObject({ provider: "chatgpt", model: "gpt-6-sol", effort: "medium", hosted: true });
-    expect(() => modelFor(t.vault, t.vault.chat.settings(), "i")).toThrow(ChatGptNotConnected);
+    const choose = (effort?: string) => chatModel({ ...t.vault.chat.settings(), effort }, "i", t.vault.chat.chatgpt.planTokens());
+    expect(() => choose("medium")).toThrow(ChatModelError);
     (t.vault.chat.chatgpt as unknown as { save(tokens: unknown): void }).save(tokensFrom(tokenBody()));
-    expect(modelFor(t.vault, t.vault.chat.settings(), "i").providerOptions?.openai.reasoningEffort).toBe("medium");
-    expect(modelFor(t.vault, { ...t.vault.chat.settings(), effort: undefined }, "i").providerOptions?.openai.reasoningEffort).toBe("medium");
+    expect(choose("high").providerOptions?.openai.reasoningEffort).toBe("high");
+    expect(choose(undefined).providerOptions?.openai.reasoningEffort).toBe("medium");
     const app = createApp(t.vault);
     expect((await (await app.request("/api/chat/chatgpt")).json()).state).toBe("connected");
     expect((await (await app.request("/api/chat/chatgpt", { method: "DELETE" })).json()).state).toBe("disconnected");
