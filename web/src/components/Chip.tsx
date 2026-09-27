@@ -81,5 +81,5 @@ export function EdgeLabel(props: { from?: string; type: string; sign?: number; t
 /** Any item's label: an Edge (written as "from —type→ to") renders as EdgeLabel, anything else as is. */
 export function ItemLabel(props: { label: string }) {
   const edge = parseEdgeText(props.label);
-  return edge ? <EdgeLabel {...edge} /> : <>{props.label}</>;
+  return edge ? <EdgeLabel {...edge} /> : props.label;
 }

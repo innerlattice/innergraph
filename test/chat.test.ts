@@ -41,7 +41,7 @@ describe("conversations", () => {
   it("are created, listed, named from the first message, renamed and removed", () => {
     const { chat } = t.vault.chat.create();
     expect(t.vault.chat.list().map((c) => c.id)).toEqual([chat.id]);
-    t.vault.chat.save(chat.id, [userMessage("x".repeat(40) + " and then quite a lot more words follow here")], 10);
+    t.vault.chat.save(chat.id, [userMessage(`${"x".repeat(40)} and then quite a lot more words follow here`)], 10);
     const title = t.vault.chat.get(chat.id).chat.title;
     expect(title).toMatch(/^x{40} and then quite a …$|^x{40} and then quite a\S*…$/);
     expect(title.length).toBeLessThanOrEqual(61);
@@ -121,7 +121,7 @@ describe("chat turns", () => {
     expect(stream).toContain('"contextTokens":1540');
 
     const { chat, budget } = t.vault.chat.get("chat1");
-    expect(chat.title).toBe(TEXT.slice(0, 60).replace(/\s+\S*$/, "") + "…");
+    expect(chat.title).toBe(`${TEXT.slice(0, 60).replace(/\s+\S*$/, "")}…`);
     expect(chat.messages).toHaveLength(2);
     expect(budget).toMatchObject({ contextTokens: 1540, level: "ok" });
     expect(t.vault.explore.entries()[0]).toMatchObject({ title: "The meeting" });

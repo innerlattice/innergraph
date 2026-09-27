@@ -122,6 +122,7 @@ export function MapView(props: MapViewProps) {
   };
 
   // Items can leave the View (removed, filtered out, merged away): keep the selection to what is shown.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: prune only when the view changes, not on every selection
   useEffect(() => {
     if (!view) return;
     const kept = selection.filter((id) => view.nodes[id] || view.edges[id]);

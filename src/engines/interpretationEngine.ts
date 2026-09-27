@@ -228,8 +228,8 @@ export function parseInterpretation(raw: unknown, input: InterpretInput): Interp
     return result;
   }
   const ctx: ParseContext = { input, refs: new Map(), result };
-  parsed.data.nodes.forEach((n) => parseNode(ctx, n));
-  parsed.data.edges.forEach((e) => parseEdge(ctx, e));
+  for (const n of parsed.data.nodes) parseNode(ctx, n);
+  for (const e of parsed.data.edges) parseEdge(ctx, e);
   return result;
 }
 

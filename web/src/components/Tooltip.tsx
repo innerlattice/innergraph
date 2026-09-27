@@ -35,6 +35,7 @@ export function Tooltip(props: { content: ReactNode; children: ReactNode }) {
   const hide = () => (setOpen(false), setAt(undefined));
   return (
     // An empty title hides any native tooltip from an enclosing element while this one shows.
+    // biome-ignore lint/a11y/noStaticElementInteractions: listens for the pointer and focus arriving at what it wraps; not itself a control
     <span ref={anchor} title="" className="inline-flex shrink-0" onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide}>
       {props.children}
       {open

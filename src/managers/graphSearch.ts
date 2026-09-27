@@ -51,7 +51,7 @@ export async function cachedVectors(vault: VaultAccess, embedder: Embedder, text
   for (let i = 0; i < missing.length; i += BATCH) {
     const batch = missing.slice(i, i + BATCH);
     const vectors = await embedder.embed(batch.map((k) => byKey.get(k) as string));
-    batch.forEach((k, j) => fresh.set(k, toBytes(vectors[j])));
+    for (const [j, k] of batch.entries()) fresh.set(k, toBytes(vectors[j]));
   }
   if (fresh.size > 0) vault.writeCache(namespace, fresh);
   return keys.map((k) => fromBytes(Buffer.from(fresh.get(k) ?? (cached.get(k) as Buffer))));

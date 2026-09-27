@@ -57,8 +57,8 @@ export class VaultAccess {
       this.refresh();
       const events: AnyEvent[] = [];
       for (const draft of drafts) events.push(this.seal(draft, events.at(-1)?.id ?? this.log.at(-1)?.id));
-      events.forEach((e) => this.insert(e));
-      events.forEach((e) => applyEvent(this.head, e));
+      for (const e of events) this.insert(e);
+      for (const e of events) applyEvent(this.head, e);
       this.writeDerived(this.head);
       this.log.push(...events);
       return events;
@@ -136,7 +136,9 @@ export class VaultAccess {
 
   writeCache(namespace: string, entries: Map<string, Uint8Array>): void {
     const put = this.db.prepare("INSERT OR REPLACE INTO cache (namespace, key, value) VALUES (?, ?, ?)");
-    this.db.transaction(() => entries.forEach((value, key) => put.run(namespace, key, Buffer.from(value))))();
+    this.db.transaction(() => {
+      for (const [key, value] of entries) put.run(namespace, key, Buffer.from(value));
+    })();
   }
 
   // ---- internals -----------------------------------------------------------------
@@ -181,11 +183,11 @@ export class VaultAccess {
     const evidence = this.db.prepare("INSERT INTO view_evidence VALUES (?, ?, ?, ?)");
     for (const n of Object.values(view.nodes)) {
       node.run(n.id, n.type, n.label, n.status, Number(n.confirmed), n.confidence, JSON.stringify(n.attributes), JSON.stringify(n.derivedFrom));
-      n.evidence.forEach((ev) => evidence.run(n.id, ev.entry, ev.start, ev.end));
+      for (const ev of n.evidence) evidence.run(n.id, ev.entry, ev.start, ev.end);
     }
     for (const e of Object.values(view.edges)) {
       edge.run(e.id, e.type, e.from, e.to, e.sign ?? null, e.status, Number(e.confirmed), e.confidence, JSON.stringify(e.attributes));
-      e.evidence.forEach((ev) => evidence.run(e.id, ev.entry, ev.start, ev.end));
+      for (const ev of e.evidence) evidence.run(e.id, ev.entry, ev.start, ev.end);
     }
   }
 

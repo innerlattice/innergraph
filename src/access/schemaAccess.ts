@@ -94,7 +94,7 @@ export function derivationalNodeTypes(schema: Schema): Set<string> {
   for (const def of Object.values(schema.edgeTypes)) {
     if (def.role !== "derivational") continue;
     for (const end of [def.from, def.to]) {
-      (end === "*" ? Object.keys(schema.nodeTypes) : end).forEach((t) => types.add(t));
+      for (const t of end === "*" ? Object.keys(schema.nodeTypes) : end) types.add(t);
     }
   }
   return types;

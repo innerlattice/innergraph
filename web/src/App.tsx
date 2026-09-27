@@ -19,9 +19,7 @@ import { MapView } from "./views/MapView";
 
 export type ViewName = PaneName;
 
-export interface Navigate {
-  (view: ViewName, focus?: string): void;
-}
+export type Navigate = (view: ViewName, focus?: string) => void
 
 const EMPTY: Selection = { ids: [], at: "", items: [] };
 

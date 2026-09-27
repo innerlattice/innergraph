@@ -154,7 +154,7 @@ function rank(scores: number[]): Ranked[] {
 export function fuse(rankings: Ranked[][]): Ranked[] {
   const fused = new Map<number, number>();
   for (const ranking of rankings) {
-    ranking.forEach((r, position) => fused.set(r.index, (fused.get(r.index) ?? 0) + 1 / (RRF_K + position + 1)));
+    for (const [position, r] of ranking.entries()) fused.set(r.index, (fused.get(r.index) ?? 0) + 1 / (RRF_K + position + 1));
   }
   return [...fused].map(([index, score]) => ({ index, score })).sort((a, b) => b.score - a.score);
 }

@@ -209,7 +209,10 @@ describe("EntriesView", () => {
       class {
         listeners: ((e: { data: string }) => void)[] = [];
         constructor() {
-          sources.push({ emit: (data) => this.listeners.forEach((fn) => fn({ data })) });
+          sources.push({ emit: (data) => {
+              for (const fn of this.listeners) fn({ data });
+            },
+          });
         }
         addEventListener(_: string, fn: (e: { data: string }) => void) {
           this.listeners.push(fn);

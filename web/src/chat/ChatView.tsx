@@ -92,6 +92,7 @@ function TurnNotes(props: { last?: ChatMessage; busy: boolean; error?: Error; fu
 function MessageList(props: ListProps) {
   const { messages, busy } = props;
   const end = useRef<HTMLDivElement>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll to the end whenever the conversation grows
   useEffect(() => {
     end.current?.scrollIntoView?.({ block: "end", behavior: "smooth" });
   }, [messages, busy]);

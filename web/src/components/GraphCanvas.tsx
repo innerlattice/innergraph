@@ -79,7 +79,9 @@ export function GraphCanvas({ elements, selection, highlight = [], onSelectionCh
   }, [cy, elements]);
 
   useEffect(() => void (cy && tidied > 0 && tidy(cy, positions.current)), [cy, tidied]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-apply when the elements are rebuilt
   useEffect(() => applySelection(cy, selection), [cy, selection, elements]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-apply when the elements are rebuilt
   useEffect(() => applyHighlight(cy, highlight), [cy, highlight, elements]);
 
   return (

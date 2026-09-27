@@ -28,6 +28,7 @@ export function EntryText(props: { view: EntryView; focus?: Span; onOpen: (id: s
   const spans = view.citations.map((c) => ({ target: c.target, ...c.evidence }));
   const segments = citedRuns(view.text, focus ? [...spans, { target: FOCUS, ...focus }] : spans);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll to the passage whenever the focus or entry changes
   useEffect(() => {
     container.current?.querySelector("[data-focus]")?.scrollIntoView?.({ block: "center" });
   }, [focus?.start, view.entry.id]);
@@ -39,8 +40,10 @@ export function EntryText(props: { view: EntryView; focus?: Span; onOpen: (id: s
         const focused = s.cited.includes(FOCUS);
         if (cited.length === 0 && !focused) return <span key={i}>{s.text}</span>;
         return (
+          // biome-ignore lint/a11y/useSemanticElements: a highlighted passage in running text; a button would break the text's flow and selection
           <mark
             key={i}
+            // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: it is clickable and focusable like a button
             role="button"
             tabIndex={0}
             data-focus={focused || undefined}
@@ -105,6 +108,7 @@ export function SupportedItems(props: { view: EntryView; onOpen: (ids: string) =
         Show all {items.length} on the map
       </Chip>
       {items.map(([id, label]) => (
+        // biome-ignore lint/a11y/noStaticElementInteractions: hovering only lights the passages; the chip inside is the control
         <span key={id} className="inline-flex min-w-0 max-w-full" onMouseEnter={() => hover.onHover([id])} onMouseLeave={() => hover.onHover([])}>
           <ItemChip id={id} label={label} lit={hover.lit.includes(id)} onClick={() => props.onOpen(id)} />
         </span>

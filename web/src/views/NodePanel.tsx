@@ -168,6 +168,7 @@ function EditableTitle(props: { value: string; readOnly: boolean; onSave: (value
       aria-label="Rename"
       className="w-full rounded-md border border-stone-300 px-2 py-1 font-serif text-xl text-stone-800 outline-none focus:border-stone-500"
       value={draft}
+      // biome-ignore lint/a11y/noAutofocus: renaming starts where the person double-clicked
       autoFocus
       onChange={(e) => setDraft(e.target.value)}
       onBlur={save}

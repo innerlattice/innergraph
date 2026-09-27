@@ -9,6 +9,7 @@ import { ICON } from "../design/tokens";
 
 function Field(props: { label: string; hint?: string; children: ReactNode }) {
   return (
+    // biome-ignore lint/a11y/noLabelWithoutControl: the control comes in as children
     <label className="block">
       <span className="text-sm text-stone-700">{props.label}</span>
       {props.children}
@@ -52,6 +53,7 @@ function useLink() {
       .catch((e: Error) => setError(e.message));
   // biome-ignore lint/correctness/useExhaustiveDependencies: load once
   useEffect(() => void run(api.chatgptStatus), []);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: poll only while a sign-in is pending; run is a fresh closure each render
   useEffect(() => {
     if (status?.state !== "pending") return;
     const timer = setInterval(() => void run(api.chatgptStatus), linkPoll.ms);

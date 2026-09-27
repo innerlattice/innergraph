@@ -42,7 +42,9 @@ class Turn {
 
   async call<T = Record<string, unknown>>(name: string, input: Record<string, unknown>): Promise<T> {
     const toolCallId = `call-${name}-${this.parts.length}`;
-    const output = JSON.parse(JSON.stringify(await this.tools[name].execute!(input, { toolCallId, messages: [], context: {} })));
+    const execute = this.tools[name].execute;
+    if (!execute) throw new Error(`${name} cannot run`);
+    const output = JSON.parse(JSON.stringify(await execute(input, { toolCallId, messages: [], context: {} })));
     this.parts.push({ type: `tool-${name}`, toolCallId, state: "output-available", input, output });
     return output as T;
   }

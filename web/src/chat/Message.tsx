@@ -18,7 +18,9 @@ function Highlight(props: { segment: MarkedRun; onSelect: (ids: string[]) => voi
   const pending = segment.ids.length === 0;
   const title = segment.labels.length > 0 ? `On your map: ${segment.labels.join(", ")}` : "Adding to your map…";
   return (
+    // biome-ignore lint/a11y/useSemanticElements: a highlighted passage in running text; a button would break the text's flow and selection
     <mark
+      // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: it is clickable and focusable like a button
       role="button"
       tabIndex={0}
       title={title}
@@ -76,7 +78,7 @@ export class MessageBoundary extends Component<{ children: ReactNode }, { failed
 /** A slow, breathing dot while the assistant thinks. */
 export function Thinking() {
   return (
-    <div className="flex items-center gap-2 py-2 text-sm text-stone-400" aria-label="Thinking">
+    <div role="status" className="flex items-center gap-2 py-2 text-sm text-stone-400" aria-label="Thinking">
       <span className="h-2.5 w-2.5 animate-breathe rounded-full bg-clay-300" />
     </div>
   );

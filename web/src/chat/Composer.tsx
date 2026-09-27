@@ -87,6 +87,7 @@ export function Composer(props: ComposerProps) {
     setText(props.draft);
     box.current?.focus();
   }, [props.draft]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: resize the box whenever its text changes
   useEffect(() => {
     const el = box.current;
     if (!el) return;

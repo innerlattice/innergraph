@@ -59,7 +59,7 @@ function nodeGroups(nodes: GraphNode[]): DuplicateGroup[] {
     if (seen.has(node.id)) continue;
     const same = ordered.filter((o) => o.id !== node.id && !seen.has(o.id) && isSame(node, o));
     if (same.length === 0) continue;
-    [node, ...same].forEach((n) => seen.add(n.id));
+    for (const n of [node, ...same]) seen.add(n.id);
     groups.push({ kind: "node", ids: [node.id, ...same.map((s) => s.id)], reason: `duplicates of “${node.label}”` });
   }
   return groups;
