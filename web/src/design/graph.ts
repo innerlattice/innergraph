@@ -69,6 +69,8 @@ export interface EdgeLook {
   name: string;
   /** What the key calls it. */
   label: string;
+  /** What it means, in everyday words. */
+  description: string;
   color: string;
   width: number;
   line: "solid" | "double" | "dashed" | "dotted";
@@ -79,11 +81,28 @@ export interface EdgeLook {
 
 /** Each look differs in line and arrowhead as well as colour. */
 export const EDGE_LOOKS: EdgeLook[] = [
-  { name: "plain", label: "Other link", color: COLOR.faint, width: 1.3, line: "solid", arrow: "triangle" },
-  { name: "builds-on", label: "Builds on", color: COLOR.strong, width: 3.6, line: "double", arrow: "triangle" },
-  { name: "increases", label: "Increases", color: COLOR.clay, width: 2, line: "solid", arrow: "triangle", mark: "+" },
-  { name: "decreases", label: "Decreases", color: COLOR.slate, width: 2, line: "dashed", arrow: "tee", mark: "−" },
-  { name: "part-of", label: "Part of", color: MUTED, width: 1.6, line: "dotted", arrow: "circle" },
+  { name: "plain", label: "Other link", description: "Any other kind of link. Its name says which.", color: COLOR.faint, width: 1.3, line: "solid", arrow: "triangle" },
+  {
+    name: "builds-on",
+    label: "Builds on",
+    description: "One thing grew out of another, like a belief taken from a memory.",
+    color: COLOR.strong,
+    width: 3.6,
+    line: "double",
+    arrow: "triangle",
+  },
+  { name: "increases", label: "Increases", description: "One thing makes another stronger.", color: COLOR.clay, width: 2, line: "solid", arrow: "triangle", mark: "+" },
+  {
+    name: "decreases",
+    label: "Decreases",
+    description: "One thing makes another weaker, or calms it down.",
+    color: COLOR.slate,
+    width: 2,
+    line: "dashed",
+    arrow: "tee",
+    mark: "−",
+  },
+  { name: "part-of", label: "Part of", description: "One thing is a side, piece or example of another.", color: MUTED, width: 1.6, line: "dotted", arrow: "circle" },
 ];
 
 /** Which look an edge of this Role (and, for causal edges, sign) gets. */

@@ -34,7 +34,7 @@ export function LinkMark(props: { type: string; sign?: number }) {
   const title = isCausal(look) ? `${look.label} (${humanise(props.type)})` : humanise(props.type);
   return (
     <Tooltip content={<TipBody title={title} text={schema?.edgeTypes[props.type]?.description} />}>
-      <span className="inline-flex items-center gap-1">
+      <span className="inline-flex items-center gap-0.5">
         <span className="text-aside italic opacity-60">{word}</span>
         <EdgeGlyph look={look} width={LINK_GLYPH.chip} />
       </span>

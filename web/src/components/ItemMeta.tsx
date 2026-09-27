@@ -2,6 +2,7 @@
 // who put it there. Each has its own element and form, so none of it runs together as a list.
 import type { ReactNode } from "react";
 import { actorLabel, pct } from "../lib/format";
+import { Tooltip } from "./Tooltip";
 
 /** A short bar pressed into the page, filled as far as the map is sure. */
 function Confidence(props: { value: number }) {
@@ -23,14 +24,17 @@ function Confidence(props: { value: number }) {
   );
 }
 
-/** The line above the title: the kind, with the mark the map draws it with, and the confidence. */
-export function Eyebrow(props: { mark: ReactNode; kind: string; confidence: number }) {
+/** The line above the title: the kind, with the mark the map draws it with, and the confidence.
+ *  Hovering the kind shows `tip`, which says what that kind of thing is. */
+export function Eyebrow(props: { mark: ReactNode; kind: string; confidence: number; tip: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="inline-flex min-w-0 items-center gap-2 text-xs font-medium uppercase tracking-wide text-stone-500">
-        {props.mark}
-        <span className="truncate">{props.kind}</span>
-      </span>
+      <Tooltip content={props.tip}>
+        <span className="inline-flex min-w-0 items-center gap-2 text-xs font-medium uppercase tracking-wide text-stone-500">
+          {props.mark}
+          <span className="truncate">{props.kind}</span>
+        </span>
+      </Tooltip>
       <Confidence value={props.confidence} />
     </div>
   );

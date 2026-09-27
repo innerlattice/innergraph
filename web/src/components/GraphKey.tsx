@@ -5,6 +5,7 @@ import type { Schema } from "../api";
 import { humanise } from "../../../src/core/edgeText";
 import { EDGE_LOOKS, edgeLookOf, nodeLookOf } from "../design/graph";
 import { EdgeGlyph, LABEL_FONT, NodeGlyph } from "./GraphGlyph";
+import { TipBody, Tooltip } from "./Tooltip";
 
 /** The edge looks this Schema can produce, in design-system order. */
 function looksIn(schema: Schema | null) {
@@ -21,14 +22,30 @@ function Group(props: { title: string; children: ReactNode }) {
   );
 }
 
-/** Every row has the same height and a fixed-width cell for its sample, so the words line up. */
-function Row(props: { mark: ReactNode; children: ReactNode }) {
-  return (
-    <li className="flex h-5 items-center gap-2">
+/** Every row has the same height and a fixed-width cell for its sample, so the words line up.
+ *  A row with a `tip` explains itself on hover. */
+function Row(props: { mark: ReactNode; children: ReactNode; tip?: ReactNode }) {
+  const body = (
+    <span className="flex h-5 items-center gap-2">
       <span className="flex w-9 shrink-0 justify-center">{props.mark}</span>
       <span className="min-w-0 truncate">{props.children}</span>
-    </li>
+    </span>
   );
+  return <li>{props.tip ? <Tooltip content={props.tip}>{body}</Tooltip> : body}</li>;
+}
+
+/** Node types by their Schema group, in the order the Schema lists them; ungrouped ones last. */
+function typeGroups(schema: Schema | null): [string, string[]][] {
+  const groups = new Map<string, string[]>();
+  for (const [name, def] of Object.entries(schema?.nodeTypes ?? {})) {
+    const group = def.display?.group ?? "";
+    groups.set(group, [...(groups.get(group) ?? []), name]);
+  }
+  const ungrouped = groups.get("");
+  groups.delete("");
+  const named = [...groups.entries()];
+  if (!ungrouped) return named;
+  return [...named, [named.length === 0 ? "Kinds of thing" : "Other kinds", ungrouped]];
 }
 
 const STATES = [
@@ -39,22 +56,23 @@ const STATES = [
 const GESTURES = ["Drag across empty space to select", "Shift-click to add to the selection", "Scroll to pan, pinch to zoom", "Double-click a title to rename it"];
 
 function KeyBody(props: { schema: Schema | null }) {
-  const types = Object.keys(props.schema?.nodeTypes ?? {});
   return (
     <div className="max-h-popover space-y-3 overflow-y-auto px-3 pb-3 pt-1">
-      <Group title="Kinds of thing">
-        {types.map((name) => {
-          const look = nodeLookOf(props.schema, name);
-          return (
-            <Row key={name} mark={<NodeGlyph look={look} />}>
-              <span className={LABEL_FONT[look.style]}>{humanise(name)}</span>
-            </Row>
-          );
-        })}
-      </Group>
+      {typeGroups(props.schema).map(([title, types]) => (
+        <Group key={title} title={title}>
+          {types.map((name) => {
+            const look = nodeLookOf(props.schema, name);
+            return (
+              <Row key={name} mark={<NodeGlyph look={look} />} tip={<TipBody title={humanise(name)} text={props.schema?.nodeTypes[name].description} />}>
+                <span className={LABEL_FONT[look.style]}>{humanise(name)}</span>
+              </Row>
+            );
+          })}
+        </Group>
+      ))}
       <Group title="Links">
         {looksIn(props.schema).map((look) => (
-          <Row key={look.name} mark={<EdgeGlyph look={look} />}>
+          <Row key={look.name} mark={<EdgeGlyph look={look} />} tip={<TipBody title={look.label} text={look.description} />}>
             {look.label}
             {look.mark ? (
               <span className="ml-1 font-bold" style={{ color: look.color }}>

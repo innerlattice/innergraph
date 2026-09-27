@@ -10,6 +10,7 @@ import { entryFocus } from "../lib/format";
 import { nodeLookOf } from "../design/graph";
 import { NodeGlyph } from "../components/GraphGlyph";
 import { AddedBy, Eyebrow } from "../components/ItemMeta";
+import { TipBody } from "../components/Tooltip";
 import { useAsync } from "../lib/useAsync";
 import { type Done, ItemActions } from "./ItemControls";
 import { Related } from "../components/Related";
@@ -227,7 +228,12 @@ export function NodePanel(props: NodePanelProps) {
   return (
     <div className="space-y-5 p-5">
       <header className="space-y-1">
-        <Eyebrow mark={<NodeGlyph look={nodeLookOf(props.schema ?? null, node.type)} />} kind={humanise(node.type)} confidence={node.confidence} />
+        <Eyebrow
+          mark={<NodeGlyph look={nodeLookOf(props.schema ?? null, node.type)} />}
+          kind={humanise(node.type)}
+          confidence={node.confidence}
+          tip={<TipBody title={humanise(node.type)} text={props.schema?.nodeTypes[node.type]?.description} />}
+        />
         <EditableTitle value={node.label} readOnly={readOnly} onSave={(label) => run(() => api.rename(node.id, label))} />
         <StatusPill status={node.status} />
       </header>

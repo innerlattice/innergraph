@@ -4,6 +4,7 @@ import { type Schema, api } from "../api";
 import { edgeLook } from "../design/graph";
 import { EdgeGlyph } from "../components/GraphGlyph";
 import { AddedBy, Eyebrow } from "../components/ItemMeta";
+import { TipBody } from "../components/Tooltip";
 import { ErrorNote, StatusPill } from "../components/ui";
 import { humanise } from "../../../src/core/edgeText";
 import { entryFocus } from "../lib/format";
@@ -33,7 +34,12 @@ export function EdgePanel(props: EdgePanelProps) {
   return (
     <div className="space-y-5 p-5">
       <header className="space-y-1">
-        <Eyebrow mark={<EdgeGlyph look={look} />} kind={look.label} confidence={edge.confidence} />
+        <Eyebrow
+          mark={<EdgeGlyph look={look} />}
+          kind={look.label}
+          confidence={edge.confidence}
+          tip={<TipBody title={humanise(edge.type)} text={props.schema?.edgeTypes[edge.type]?.description ?? look.description} />}
+        />
         <h3 className="flex flex-col items-start font-serif text-xl leading-snug text-stone-800">
           <button type="button" className="text-left hover:underline" onClick={() => props.onSelect(edge.from)}>
             {fromLabel}

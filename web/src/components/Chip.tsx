@@ -48,7 +48,7 @@ export function Chip(props: ChipProps) {
       title={props.title}
       disabled={props.struck || !props.onClick}
       onClick={props.onClick}
-      className={`inline-flex min-w-0 items-center gap-1.5 text-left ${props.struck ? "line-through" : ""}`}
+      className={`inline-flex min-w-0 items-center gap-1 text-left ${props.struck ? "line-through" : ""}`}
     >
       {props.lead}
       <span className="min-w-0 truncate">{props.children}</span>
@@ -81,7 +81,7 @@ export function Chip(props: ChipProps) {
  *  Node's own panel). */
 export function EdgeLabel(props: { from?: string; type: string; sign?: number; to?: string }) {
   return (
-    <span className="inline-flex min-w-0 items-center gap-1.5">
+    <span className="inline-flex min-w-0 items-center gap-1">
       {props.from ? <span className="min-w-0 truncate">{props.from}</span> : null}
       <LinkMark type={props.type} sign={props.sign} />
       {props.to ? <span className="min-w-0 truncate">{props.to}</span> : null}
