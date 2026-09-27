@@ -6,9 +6,11 @@ import type { Vault } from "../vault.js";
 
 export type Tier = "read" | "write";
 
-/** Older launch configs name "propose" or "commit"; both mean write now. */
+/** The --tier flag: write unless asked for read. */
 export function tierOf(name: string | undefined): Tier {
-  return name === "read" ? "read" : "write";
+  if (name === undefined || name === "write") return "write";
+  if (name === "read") return "read";
+  throw new Error(`Unknown tier "${name}": use read or write`);
 }
 
 export interface ToolSpec {

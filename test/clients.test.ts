@@ -117,7 +117,8 @@ describe("MCP client", () => {
     const specs = toolSpecs(t.vault, "agent:x");
     expect(allowedTools(specs, "read").map((s) => s.name)).not.toContain("add_to_graph");
     expect(allowedTools(specs, "write")).toHaveLength(specs.length);
-    expect([tierOf("read"), tierOf("propose"), tierOf("commit"), tierOf(undefined)]).toEqual(["read", "write", "write", "write"]);
+    expect([tierOf("read"), tierOf("write"), tierOf(undefined)]).toEqual(["read", "write", "write"]);
+    expect(() => tierOf("commit")).toThrow(/Unknown tier/);
     expect(connectionNotice({ tier: "read", agent: "x" })).toContain("hosted");
   });
 
