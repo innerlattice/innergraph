@@ -48,11 +48,13 @@ export function LoopCard(props: { loop: LoopView; onOpen: (focus: string) => voi
     <Card className="space-y-4">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className={`text-xs font-medium ${reinforcing ? "text-clay-600" : "text-slate-600"}`}>{reinforcing ? "Reinforcing loop" : "Balancing loop"}</p>
+          <p className={`text-xs font-medium ${reinforcing ? "text-clay-600" : "text-slate-600"}`}>
+            {reinforcing ? "Reinforcing loop: it feeds itself" : "Balancing loop: it holds itself steady"}
+          </p>
           <h3 className="font-serif text-lg text-stone-800">{[...loop.steps.map((s) => s.fromLabel), loop.steps[0]?.fromLabel].join(" → ")}</h3>
           <p className="text-xs text-stone-400">
             {loop.steps.length} steps, {pct(loop.certainty)} certain
-            {loop.linkedLoops > 0 ? `, sharing nodes with ${loop.linkedLoops} other loop${loop.linkedLoops === 1 ? "" : "s"}` : ""}
+            {loop.linkedLoops > 0 ? `, overlapping ${loop.linkedLoops} other loop${loop.linkedLoops === 1 ? "" : "s"}` : ""}
           </p>
         </div>
         <Button onClick={() => props.onOpen(loopFocus(loop))}>Show on map</Button>
@@ -73,10 +75,13 @@ export function LoopsView(props: { navigate: Navigate }) {
   const loops = useAsync(api.loops);
   useLive(loops.reload);
   return (
-    <Page title="Loops" subtitle="Cycles over causal edges. A loop is a pattern to notice, not a problem to fix. Ask the assistant what one might mean for you.">
+    <Page
+      title="Loops"
+      subtitle="Chains that come back round, so each thing keeps the next one going. A loop is a pattern to notice, not a problem to fix. Ask the assistant what one might mean for you."
+    >
       <ErrorNote error={loops.error} />
       <div className="space-y-4">
-        {loops.data?.length === 0 ? <Empty>No feedback loops yet.</Empty> : null}
+        {loops.data?.length === 0 ? <Empty>No loops yet.</Empty> : null}
         {loops.data?.map((loop) => (
           <LoopCard key={loop.edges.join()} loop={loop} onOpen={(focus) => props.navigate("map", focus)} />
         ))}

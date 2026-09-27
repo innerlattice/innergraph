@@ -176,13 +176,13 @@ describe("LoopsView and LogView", () => {
   it("shows loop structure, implications and opens the loop on the map", async () => {
     const navigate = vi.fn();
     render(<LoopsView navigate={navigate} />);
-    expect(await screen.findByText("Reinforcing loop")).toBeTruthy();
+    expect(await screen.findByText("Reinforcing loop: it feeds itself")).toBeTruthy();
     expect(screen.getByText("A → B → A")).toBeTruthy();
-    expect(screen.getByText(/“R” dampens “B” from outside the loop/)).toBeTruthy();
+    expect(screen.getByText(/“R” calms “B” from outside the loop/)).toBeTruthy();
     expect(screen.getByText(/“F” feeds “A”/)).toBeTruthy();
     expect(screen.getByText(/least certain link is B → A \(40%\)/)).toBeTruthy();
     expect(screen.getByText("What this loop drives")).toBeTruthy();
-    expect(screen.getByText(/sharing nodes with 1 other loop$/)).toBeTruthy();
+    expect(screen.getByText(/overlapping 1 other loop$/)).toBeTruthy();
     fireEvent.click(screen.getByText("Show on map"));
     expect(navigate).toHaveBeenCalledWith("map", "a,b,ab,ba");
   });
@@ -199,7 +199,7 @@ describe("LoopsView and LogView", () => {
       linkedLoops: 2,
     };
     render(<LoopCard loop={loop} onOpen={vi.fn()} />);
-    expect(screen.getByText("Balancing loop")).toBeTruthy();
+    expect(screen.getByText("Balancing loop: it holds itself steady")).toBeTruthy();
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
     expect(screen.getByText(/2 other loops/)).toBeTruthy();
   });
@@ -315,8 +315,8 @@ describe("NodePanel", () => {
     expect([incoming.textContent, incoming.innerHTML.includes("line-through")]).toEqual(["Dinner tableabduces", true]);
     expect(screen.getByText("Came from")).toBeTruthy();
     fireEvent.click(screen.getByText("Looks right"));
-    fireEvent.click(screen.getByText("Trace roots"));
-    expect(await screen.findByText("Supports 1 downstream")).toBeTruthy();
+    fireEvent.click(screen.getByText("Where it starts"));
+    expect(await screen.findByText("Leads on to 1 thing")).toBeTruthy();
     fireEvent.click(screen.getByText("Related"));
     expect(await screen.findByText("needing")).toBeTruthy();
     fireEvent.doubleClick(screen.getByText("Needing is unsafe", { selector: "h3" }));
@@ -334,7 +334,7 @@ describe("NodePanel", () => {
   it("is read-only in the past and offers Restore for removed nodes", async () => {
     routes["/api/nodes/n1"] = { ...nodeView, node: { ...graph.nodes.n1, status: "removed" }, outgoing: [], incoming: [], derivedFrom: [] };
     const { unmount } = render(<NodePanel {...props} readOnly />);
-    expect(await screen.findByText("No edges.")).toBeTruthy();
+    expect(await screen.findByText("Not linked to anything yet.")).toBeTruthy();
     expect(screen.queryByText("Restore")).toBeNull();
     unmount();
     render(<NodePanel {...props} />);
@@ -343,11 +343,11 @@ describe("NodePanel", () => {
     routes["/api/nodes/n1"] = nodeView;
   });
 
-  it("shows when a node is itself a root, and errors", async () => {
+  it("shows when nothing leads to a node, and errors", async () => {
     routes["/api/nodes/n1/roots"] = { node: "n1", upstream: [], roots: [] };
     render(<NodePanel {...props} id="n1" />);
-    fireEvent.click(await screen.findByText("Trace roots"));
-    expect(await screen.findByText(/itself a root/)).toBeTruthy();
+    fireEvent.click(await screen.findByText("Where it starts"));
+    expect(await screen.findByText(/It is where things start/)).toBeTruthy();
     cleanup();
     render(<NodePanel {...props} id="missing" />);
     expect(await screen.findByText("missing")).toBeTruthy();

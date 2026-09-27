@@ -79,8 +79,8 @@ describe("format helpers", () => {
       ["NodesSplit", { source: "n1", into: [{ label: "A" }, { label: "B" }] }, "split One into A, B"],
       ["NodesMerged", { sources: ["n1", "n2"], into: { label: "M" } }, "merge One + Two into “M”"],
       ["EntryAdded", { title: "T" }, "entry “T”"],
-      ["SessionOpened", { purpose: "ingest" }, "session opened (ingest)"],
-      ["SchemaChanged", { schema: { name: "s", version: 2 } }, "schema “s” v2"],
+      ["SessionOpened", { purpose: "ingest" }, "began: ingest"],
+      ["SchemaChanged", { schema: { name: "s", version: 2 } }, "kinds of thing: “s” version 2"],
       ["SessionClosed", {}, "SessionClosed"],
     ];
     for (const [type, body, text] of cases) expect(describeEvent(ev(type, body), labels)).toBe(text);

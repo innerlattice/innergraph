@@ -7,8 +7,8 @@ import { ICON } from "../design/tokens";
 export type PaneName = "map" | "loops" | "entries" | "log";
 
 const VIEWS: { view: PaneName; label: string; hint: string; icon: ReactNode }[] = [
-  { view: "map", label: "Map", hint: "Your graph, now or at any time", icon: <Network size={ICON.xl} /> },
-  { view: "loops", label: "Loops", hint: "Cycles that keep themselves going", icon: <Repeat size={ICON.xl} /> },
+  { view: "map", label: "Map", hint: "Your map, as it is now or was before", icon: <Network size={ICON.xl} /> },
+  { view: "loops", label: "Loops", hint: "Patterns that keep themselves going", icon: <Repeat size={ICON.xl} /> },
   { view: "entries", label: "Entries", hint: "Your writing and what it supports", icon: <BookOpen size={ICON.xl} /> },
   { view: "log", label: "Log", hint: "Every change, with who made it", icon: <History size={ICON.xl} /> },
 ];

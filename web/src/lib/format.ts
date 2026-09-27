@@ -83,8 +83,8 @@ const DESCRIBERS: Describers = {
   NodesSplit: (b, name) => `split ${name(b.source)} into ${b.into.map((p) => p.label).join(", ")}`,
   NodesMerged: (b, name) => `merge ${b.sources.map(name).join(" + ")} into “${b.into.label}”`,
   EntryAdded: (b) => `entry “${b.title}”`,
-  SessionOpened: (b) => `session opened (${b.purpose})`,
-  SchemaChanged: (b) => `schema “${b.schema.name}” v${b.schema.version}`,
+  SessionOpened: (b) => `began: ${b.purpose}`,
+  SchemaChanged: (b) => `kinds of thing: “${b.schema.name}” version ${b.schema.version}`,
 };
 
 export function describeEvent(e: AnyEvent, labels: Record<string, string>): string {

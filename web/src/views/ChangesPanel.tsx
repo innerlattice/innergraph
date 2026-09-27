@@ -65,13 +65,13 @@ const PURPOSE: Record<string, string> = {
   amend: "Corrections",
   remove: "Removed",
   confirm: "Confirmed",
-  refactor: "Refactor",
+  refactor: "Reorganised",
   deduplicate: "Duplicates cleaned up",
   undo: "Undo",
   revert: "Revert",
   restore: "Restored",
   edit: "Edit",
-  schema: "Schema",
+  schema: "Kinds of thing changed",
 };
 
 function SessionCard(props: { change: SessionChanges; onFocus: (ids: string[]) => void; onUndone: () => void }) {

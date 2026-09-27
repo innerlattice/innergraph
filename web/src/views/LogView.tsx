@@ -24,7 +24,7 @@ export function LogView() {
       .then(() => (setError(undefined), data.reload()))
       .catch((e: Error) => setError(e.message));
   return (
-    <Page title="Log" subtitle="The append-only record. Nothing here is ever edited or removed; undoing a change adds a new one.">
+    <Page title="Log" subtitle="Every change, in order. Nothing here is ever edited or removed; undoing a change adds a new one.">
       <ErrorNote error={data.error ?? error} />
       <table className="w-full text-sm">
         <tbody>

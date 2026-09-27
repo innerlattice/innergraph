@@ -111,7 +111,7 @@ function Lineage(props: { view: NodeView; onSelect?: (id: string) => void }) {
   ].filter((g) => g.nodes.length > 0);
   if (groups.length === 0) return null;
   return (
-    <Section title="Lineage">
+    <Section title="How it grew">
       {groups.map((g) => (
         <ChipGroup key={g.title} title={g.title}>
           {g.nodes.map((n) => (
@@ -130,7 +130,7 @@ function EdgeList(props: { view: NodeView; labels: Record<string, string>; onSel
   const { view, labels } = props;
   const outgoing = view.outgoing.map((e) => ({ id: e.id, status: e.status, text: <EdgeLabel type={e.type} sign={e.sign} to={labels[e.to] ?? e.to} /> }));
   const incoming = view.incoming.map((e) => ({ id: e.id, status: e.status, text: <EdgeLabel from={labels[e.from] ?? e.from} type={e.type} sign={e.sign} /> }));
-  if (outgoing.length + incoming.length === 0) return <p className="text-sm text-stone-400">No edges.</p>;
+  if (outgoing.length + incoming.length === 0) return <p className="text-sm text-stone-400">Not linked to anything yet.</p>;
   return (
     <div className="space-y-2">
       <EdgeGroup title="From here" rows={outgoing} onSelect={props.onSelect} />
@@ -185,7 +185,7 @@ function EditableTitle(props: { value: string; readOnly: boolean; onSave: (value
 /** Each root and the path from it to this node, as chips joined by arrows. */
 function RootsList(props: { trace?: RootTrace; labels: Record<string, string>; onSelect?: (id: string) => void }) {
   if (!props.trace) return null;
-  if (props.trace.roots.length === 0) return <p className="text-sm text-stone-500">No upstream roots: this node is itself a root.</p>;
+  if (props.trace.roots.length === 0) return <p className="text-sm text-stone-500">Nothing leads to this. It is where things start.</p>;
   return (
     <ol className="space-y-3">
       {props.trace.roots.map((r) => (
@@ -198,7 +198,9 @@ function RootsList(props: { trace?: RootTrace; labels: Record<string, string>; o
               </span>
             ))}
           </p>
-          <p className="text-xs text-stone-400">Supports {r.support} downstream</p>
+          <p className="text-xs text-stone-400">
+            Leads on to {r.support} {r.support === 1 ? "thing" : "things"}
+          </p>
         </li>
       ))}
     </ol>
@@ -245,13 +247,13 @@ export function NodePanel(props: NodePanelProps) {
         ))}
         <StaleNote count={node.staleEvidence} />
       </Section>
-      <Section title="Edges">
+      <Section title="Links">
         <EdgeList view={view.data} labels={labels} onSelect={props.onSelect} />
       </Section>
       <Lineage view={view.data} onSelect={props.onSelect} />
       <Section title="Explore">
         <div className="flex gap-2">
-          <Button onClick={traceRoots}>Trace roots</Button>
+          <Button onClick={traceRoots}>Where it starts</Button>
           <Button onClick={() => api.relatedToNode(id).then(setRelated)}>Related</Button>
         </div>
         <RootsList trace={trace} labels={labels} onSelect={props.onSelect} />

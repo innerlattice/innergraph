@@ -85,7 +85,7 @@ it("selects nodes, traces roots, and travels back in time", async () => {
   render(<Harness />);
   fireEvent.click(await screen.findByText("node:n1"));
   expect(await screen.findByText("One", { selector: "h3" })).toBeTruthy();
-  fireEvent.click(screen.getByText("Trace roots"));
+  fireEvent.click(screen.getByText("Where it starts"));
   expect(await screen.findByText("highlight:n0,n1")).toBeTruthy();
   fireEvent.click(screen.getByText("Looks right"));
   fireEvent.click(screen.getByText("background"));

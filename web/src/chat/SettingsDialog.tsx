@@ -188,7 +188,7 @@ function ProviderFields(props: { provider: ChatProvider; settings: PublicChatSet
         <input key={`model-${provider}`} name="model" defaultValue={switched ? "" : settings.model} placeholder={switched ? "Default for this provider" : ""} className={INPUT} />
       </Field>
       {provider === "openrouter" ? (
-        <Field label="OpenRouter key" hint={settings.hasKey ? "A key is saved. Leave empty to keep it." : "Stored encrypted in your vault."}>
+        <Field label="OpenRouter key" hint={settings.hasKey ? "A key is saved. Leave empty to keep it." : "Stored encrypted on this device."}>
           <input name="apiKey" type="password" autoComplete="off" className={INPUT} />
         </Field>
       ) : (
