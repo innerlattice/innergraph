@@ -33,6 +33,14 @@ describe("HTTP client", () => {
     expect(statusFor("weird")).toBe(400);
   });
 
+  it("shows other agents how to connect, when it knows how it runs", async () => {
+    expect((await call(createApp(t.vault), "/api/connect")).json).toEqual({ agents: [] });
+    const info = { runner: { command: "tsx", prefix: ["bin.ts"] }, vaultDir: "/v", version: "1.2.3", platform: "freebsd" as const };
+    const { json } = await call(createApp(t.vault, info), "/api/connect");
+    expect(json.version).toBe("1.2.3");
+    expect(json.agents.find((a: { id: string }) => a.id === "codex").how).toContain("~/.codex/config.toml");
+  });
+
   it("sends null as null, not as { ok: true }", async () => {
     vi.spyOn(t.vault.explore, "schema").mockReturnValue(null);
     expect((await call(createApp(t.vault), "/api/schema")).json).toBeNull();

@@ -1,22 +1,18 @@
 // CLI Client: init a Vault, serve the desktop UI, run the MCP server, add Entries.
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, extname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { extname, join } from "node:path";
 import { parseArgs } from "node:util";
-import { type ServerType, serve } from "@hono/node-server";
-import { serveStatic } from "@hono/node-server/serve-static";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { InputFormat } from "../access/ingestAccess.js";
 import { loadSchemaFile } from "../access/schemaAccess.js";
+import { PATHS, ROOT } from "../paths.js";
 import type { ModelGateway } from "../utilities/modelGateway.js";
 import { type Vault, initVault, openVault, vaultExists } from "../vault.js";
-import { createApp } from "./http.js";
-import { type LaunchPlan, launchContext, planFor, writeAgentFiles } from "./launcher.js";
+import { type LaunchPlan, launchContext, planFor, sourceRunner, writeAgentFiles } from "./launcher.js";
 import { connectionNotice, createMcpServer, tierOf } from "./mcp.js";
-
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+import { startServer } from "./server.js";
 
 const USAGE = "Usage: inner-graph [chat|init|serve|mcp|add|schema] [--vault dir] [--harness claude|<command>] [--schema file] [--port n] [--tier read|write] [--agent name]";
 
@@ -39,7 +35,7 @@ function parse(argv: string[]) {
     allowPositionals: true,
     options: {
       vault: { type: "string", default: process.env.INNER_GRAPH_VAULT ?? join(homedir(), ".inner-graph", "default") },
-      schema: { type: "string", default: join(ROOT, "schema", "author.yaml") },
+      schema: { type: "string", default: PATHS.schema },
       port: { type: "string", default: "4317" },
       tier: { type: "string" },
       harness: { type: "string", default: "claude" },
@@ -65,19 +61,12 @@ function open(args: Parsed, env: CliEnv): Vault {
   return openVault({ dir, gateway: env.gateway, key: env.key });
 }
 
-function closeServer(server: ServerType, vault: Vault): Promise<void> {
-  return new Promise((done) => server.close(() => done(vault.close())));
-}
-
-function startView(args: Parsed, env: CliEnv): Running {
+async function startView(args: Parsed, env: CliEnv): Promise<Running> {
   const vault = open(args, env);
-  const app = createApp(vault);
-  const dist = join(ROOT, "web", "dist");
-  if (existsSync(dist)) app.use("/*", serveStatic({ root: dist }));
-  const server = serve({ fetch: app.fetch, port: Number(args.values.port), hostname: "127.0.0.1" });
+  const server = await startServer({ vault, vaultDir: args.values.vault, port: Number(args.values.port), runner: sourceRunner(ROOT) });
   const where = vault.gateway.hosted ? "HOSTED model: Entry text leaves this device" : "local model";
-  env.log(`Inner Graph on http://127.0.0.1:${args.values.port} (${vault.gateway.name}, ${where})`);
-  return { stop: () => closeServer(server, vault) };
+  env.log(`Inner Graph on ${server.url} (${vault.gateway.name}, ${where})`);
+  return server;
 }
 
 export function spawnInForeground(plan: LaunchPlan): Promise<number> {
@@ -96,7 +85,7 @@ const commands: Record<string, Command> = {
   },
   serve: (args, env) => startView(args, env),
   chat: async (args, env) => {
-    const view = startView(args, env);
+    const view = await startView(args, env);
     const ctx = launchContext(ROOT, args.values.vault, { tier: tierOf(args.values.tier), agent: args.values.harness, port: args.values.port });
     writeAgentFiles(ctx);
     const plan = planFor(args.values.harness, ctx);

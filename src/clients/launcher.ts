@@ -3,6 +3,7 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { type Runner, SERVER_NAME, mcpLaunch, serverEntry } from "./connect.js";
 import type { Tier } from "./mcp.js";
 
 export interface LaunchPlan {
@@ -23,15 +24,13 @@ export interface LaunchContext {
   pluginDir: string;
 }
 
+/** This program run from source, as in development. */
+export function sourceRunner(root: string): Runner {
+  return { command: join(root, "node_modules", ".bin", "tsx"), prefix: [join(root, "src", "bin.ts")] };
+}
+
 export function mcpServerConfig(ctx: LaunchContext) {
-  return {
-    mcpServers: {
-      "inner-graph": {
-        command: join(ctx.root, "node_modules", ".bin", "tsx"),
-        args: [join(ctx.root, "src", "bin.ts"), "mcp", "--vault", ctx.vault, "--tier", ctx.tier, "--agent", ctx.agent],
-      },
-    },
-  };
+  return { mcpServers: { [SERVER_NAME]: serverEntry(mcpLaunch(sourceRunner(ctx.root), ctx.vault, ctx.tier, ctx.agent)) } };
 }
 
 function baseEnv(ctx: LaunchContext): Record<string, string> {

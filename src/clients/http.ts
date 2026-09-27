@@ -10,6 +10,7 @@ import { ForbiddenError, NotFoundError, requireFound } from "../managers/session
 import { ChatModelError } from "../utilities/chatModel.js";
 import type { Vault } from "../vault.js";
 import { respondToChat } from "./chat.js";
+import { type Platform, type Runner, agentSetups } from "./connect.js";
 
 const ERROR_STATUS: [new (...args: never[]) => Error, ContentfulStatusCode][] = [
   [NotFoundError, 404],
@@ -275,10 +276,27 @@ function registerChat(app: Hono, vault: Vault): void {
   });
 }
 
-export function createApp(vault: Vault): Hono {
+/** What the app knows about how it is running, to show other agents how to connect. */
+export interface AppInfo {
+  runner: Runner;
+  vaultDir: string;
+  version: string;
+  platform: NodeJS.Platform;
+}
+
+function registerConnect(app: Hono, info?: AppInfo): void {
+  const platform = (p: NodeJS.Platform): Platform => (p === "darwin" || p === "win32" ? p : "linux");
+  app.get(
+    "/api/connect",
+    route(() => ({ version: info?.version, agents: info ? agentSetups(info.runner, info.vaultDir, platform(info.platform)) : [] })),
+  );
+}
+
+export function createApp(vault: Vault, info?: AppInfo): Hono {
   const app = new Hono();
   registerReads(app, vault);
   registerWrites(app, vault);
   registerChat(app, vault);
+  registerConnect(app, info);
   return app;
 }

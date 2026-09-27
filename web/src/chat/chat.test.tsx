@@ -379,6 +379,24 @@ describe("rails and settings", () => {
     linkPoll.ms = 2500;
   });
 
+  it("show how to connect other agents, with a snippet to copy for each", async () => {
+    const agents = [
+      { id: "claude-code", name: "Claude Code", how: "Run this in a terminal.", language: "shell", snippet: "claude mcp add inner-graph" },
+      { id: "codex", name: "Codex", how: "Add this to ~/.codex/config.toml", language: "toml", snippet: "[mcp_servers.inner-graph]" },
+    ];
+    routes["GET /api/connect"] = () => json({ version: "0.2.0", agents });
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.assign(navigator, { clipboard: { writeText } });
+    render(<SettingsDialog settings={SETTINGS} onSaved={vi.fn()} onClose={vi.fn()} />);
+    expect(await screen.findByText("claude mcp add inner-graph")).toBeTruthy();
+    expect(screen.getByText("Inner Graph 0.2.0")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Codex" }));
+    expect(screen.getByText(/codex\/config.toml/)).toBeTruthy();
+    fireEvent.click(screen.getByLabelText("Copy"));
+    expect(writeText).toHaveBeenCalledWith("[mcp_servers.inner-graph]");
+    expect(await screen.findByLabelText("Copied")).toBeTruthy();
+  });
+
   it("keep a custom plan model and cancel a pending sign-in", async () => {
     routes["GET /api/chat/chatgpt"] = () => json({ state: "pending", userCode: "Z", url: "u" });
     routes["DELETE /api/chat/chatgpt"] = () => json({ error: "offline" }, 500);

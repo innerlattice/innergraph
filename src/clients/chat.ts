@@ -2,7 +2,6 @@
 // server exposes, plus `record_entry`, which saves the person's own message as an Entry word
 // for word so the quotes it cites can be highlighted in that message.
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import {
   type LanguageModel,
   type LanguageModelUsage,
@@ -21,6 +20,7 @@ import { type ActivityRequest, activityInstructions } from "../core/activities.j
 import type { ActorId } from "../core/types.js";
 import type { SelectionItem } from "../managers/exploreManager.js";
 import { chatModel, modelActor } from "../utilities/chatModel.js";
+import { PATHS } from "../paths.js";
 import type { Vault } from "../vault.js";
 import { allowedTools, toolSpecs } from "./tools.js";
 
@@ -42,10 +42,8 @@ export interface ChatRequest {
 const HIDDEN = new Set(["add_entry"]);
 const MAX_STEPS = 24;
 
-const SKILL_FILE = join(import.meta.dirname, "..", "..", "plugin", "skills", "inner-graph", "SKILL.md");
-
 function skillText(): string {
-  return readFileSync(SKILL_FILE, "utf8").replace(/^---\n[\s\S]*?\n---\n/, "");
+  return readFileSync(PATHS.skill, "utf8").replace(/^---\n[\s\S]*?\n---\n/, "");
 }
 
 const IN_APP = `You are the assistant inside the Inner Graph app. The person talks to you in a chat

@@ -36,6 +36,20 @@ export interface ChatDetail {
 
 export type ChatSettingsPatch = Partial<ChatSettings>;
 
+/** One agent's way of connecting to the map over MCP: where the snippet goes, and the snippet. */
+interface AgentSetup {
+  id: string;
+  name: string;
+  how: string;
+  language: "json" | "toml" | "yaml" | "shell";
+  snippet: string;
+}
+
+export interface ConnectInfo {
+  version?: string;
+  agents: AgentSetup[];
+}
+
 export class ApiError extends Error {}
 
 export async function request<T>(path: string, body?: unknown, fetchImpl: typeof fetch = fetch, method = "POST"): Promise<T> {
@@ -88,4 +102,5 @@ export const api = {
   chatgptStatus: () => request<LinkStatus>("/chat/chatgpt"),
   connectChatgpt: () => request<LinkStatus>("/chat/chatgpt", {}),
   disconnectChatgpt: () => request<LinkStatus>("/chat/chatgpt", {}, fetch, "DELETE"),
+  connect: () => request<ConnectInfo>("/connect"),
 };

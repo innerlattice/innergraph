@@ -1,12 +1,13 @@
 // Which model the assistant uses: the person's ChatGPT plan (signed in with a code on OpenAI's
 // page), OpenRouter (one key, many models), or a local OpenAI-compatible server. Keys and
-// tokens are write-only; they never come back to the page.
+// tokens are write-only; they never come back to the page. Below that, how other agents connect.
 import { Check, Copy, ExternalLink, X } from "lucide-react";
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import { type ChatProvider, type LinkStatus, PLAN_MODELS, type PublicChatSettings, api } from "../api";
 import { Button, buttonClass } from "../components/ui";
 import { ICON } from "../design/tokens";
 import { useDismiss } from "../lib/useDismiss";
+import { ConnectAgents } from "./AgentSetup";
 
 function Field(props: { label: string; hint?: string; children: ReactNode }) {
   return (
@@ -255,6 +256,7 @@ export function SettingsDialog(props: { settings: PublicChatSettings; onSaved: (
             Save
           </Button>
         </div>
+        <ConnectAgents />
       </form>
     </div>
   );
