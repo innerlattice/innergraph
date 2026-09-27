@@ -1,7 +1,6 @@
 // Gentle, theory-free observations about a loop's structure. Offered, never verdicts.
 import type { LoopView } from "../api";
-
-const pct = (n: number) => `${Math.round(n * 100)}%`;
+import { pct } from "./format";
 
 const POLARITY: Record<LoopView["polarity"], string> = {
   reinforcing: "Each step strengthens the next, so this pattern can escalate or entrench. Easing any one step would slow the whole loop.",
@@ -20,4 +19,3 @@ export function loopFocus(loop: LoopView): string {
   return [...loop.nodes, ...loop.edges].join(",");
 }
 
-export { pct };

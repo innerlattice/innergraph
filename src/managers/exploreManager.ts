@@ -1,5 +1,5 @@
 // ExploreManager: queries and Projections (root tracing, loops, recall, evidence search).
-import { edgeText } from "../core/edgeText.js";
+import { edgeTextIn } from "../core/edgeText.js";
 import { rolesOf } from "../access/schemaAccess.js";
 import type { VaultAccess } from "../access/vaultAccess.js";
 import type { AnyEvent, EntryRecord, Evidence, Graph, GraphNode, ProjectionState, Schema } from "../core/types.js";
@@ -100,7 +100,7 @@ function overlaps(a: Evidence, b: Evidence): boolean {
 
 function citationsOf(graph: Graph) {
   return [...Object.values(graph.nodes), ...Object.values(graph.edges)].flatMap((item) =>
-    item.evidence.map((evidence) => ({ target: item.id, label: "label" in item ? item.label : edgeLabel(graph, item), evidence })),
+    item.evidence.map((evidence) => ({ target: item.id, label: "label" in item ? item.label : edgeTextIn(graph, item), evidence })),
   );
 }
 
@@ -127,15 +127,11 @@ export interface Selection {
   items: SelectionItem[];
 }
 
-function edgeLabel(view: { nodes: Record<string, { label: string }> }, edge: { from: string; to: string; type: string }): string {
-  return edgeText(view.nodes[edge.from]?.label ?? edge.from, edge.type, view.nodes[edge.to]?.label ?? edge.to);
-}
-
 function describeItem(view: GraphView, id: string): SelectionItem | undefined {
   const node = view.nodes[id];
   if (node) return { id, kind: "node", type: node.type, label: node.label, status: node.status, confirmed: node.confirmed };
   const edge = view.edges[id];
-  return edge ? { id, kind: "edge", type: edge.type, label: edgeLabel(view, edge), status: edge.status, confirmed: edge.confirmed } : undefined;
+  return edge ? { id, kind: "edge", type: edge.type, label: edgeTextIn(view, edge), status: edge.status, confirmed: edge.confirmed } : undefined;
 }
 
 export interface LoopStepView extends LoopStep {

@@ -1,7 +1,8 @@
 import type { Navigate } from "../App";
 import { type LoopStepView, type LoopView, api } from "../api";
 import { Button, Card, Empty, ErrorNote, Page } from "../components/ui";
-import { implications, loopFocus, pct } from "../lib/loops";
+import { pct } from "../lib/format";
+import { implications, loopFocus } from "../lib/loops";
 import { useAsync } from "../lib/useAsync";
 
 function Sign(props: { sign: 1 | -1 }) {

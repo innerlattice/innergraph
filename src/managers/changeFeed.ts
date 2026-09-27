@@ -1,6 +1,6 @@
 // "What changed": the Log grouped by Session, one readable row per thing touched, newest first.
 // Every Session can be undone as a whole (MapManager.undoSession). Helpers for ExploreManager.
-import { edgeText as writeEdge } from "../core/edgeText.js";
+import { edgeTextIn } from "../core/edgeText.js";
 import type { ActorId, AnyEvent, EventBodies, ProjectionState, VaultEvent } from "../core/types.js";
 
 export type ChangeAction = "added" | "updated" | "renamed" | "edited" | "removed" | "restored" | "confirmed" | "merged" | "split" | "revised";
@@ -32,13 +32,9 @@ function nodeLabel(ctx: FeedContext, id: string): string {
   return ctx.state.graph.nodes[id]?.label ?? id;
 }
 
-function edgeText(ctx: FeedContext, edge: { from: string; to: string; type: string }): string {
-  return writeEdge(nodeLabel(ctx, edge.from), edge.type, nodeLabel(ctx, edge.to));
-}
-
 function itemLabel(ctx: FeedContext, id: string): { kind: "node" | "edge"; label: string } {
   const edge = ctx.state.graph.edges[id];
-  return edge ? { kind: "edge", label: edgeText(ctx, edge) } : { kind: "node", label: nodeLabel(ctx, id) };
+  return edge ? { kind: "edge", label: edgeTextIn(ctx.state.graph, edge) } : { kind: "node", label: nodeLabel(ctx, id) };
 }
 
 function firstTime(ctx: FeedContext, id: string): ChangeAction {
@@ -53,7 +49,7 @@ type RowMaker<K extends keyof EventBodies> = (ctx: FeedContext, e: VaultEvent<K>
 const ROWS: { [K in keyof EventBodies]?: RowMaker<K> } = {
   EntryAdded: (_, e) => [{ id: e.body.entry, kind: "entry", label: e.body.title, action: e.body.revises ? "revised" : "added" }],
   NodeAsserted: (ctx, e) => [{ id: e.body.id, kind: "node", label: ctx.state.graph.nodes[e.body.id]?.label ?? e.body.label, action: firstTime(ctx, e.body.id) }],
-  EdgeAsserted: (ctx, e) => [{ id: e.body.id, kind: "edge", label: edgeText(ctx, e.body), action: firstTime(ctx, e.body.id) }],
+  EdgeAsserted: (ctx, e) => [{ id: e.body.id, kind: "edge", label: edgeTextIn(ctx.state.graph, e.body), action: firstTime(ctx, e.body.id) }],
   AttributesChanged: (ctx, e) => [{ id: e.body.target, ...itemLabel(ctx, e.body.target), action: e.body.label ? "renamed" : "edited", detail: e.body.label }],
   StatusChanged: (ctx, e) => [{ id: e.body.target, ...itemLabel(ctx, e.body.target), action: STATUS_ACTION[e.body.status] ?? "restored" }],
   NodesMerged: (ctx, e) => {

@@ -1,6 +1,7 @@
 // Graph -> Cytoscape elements. Shape, colour and label style come from the Schema's display
 // hints; edges are styled by Role and sign. No type names are hard-coded here.
 import type { ElementDefinition, StylesheetJson } from "cytoscape";
+import { humanise } from "../../../src/core/edgeText";
 import type { LabelStyle } from "../../../src/core/types";
 import type { Schema, ViewEdge, ViewNode } from "../api";
 import { colorFor } from "./format";
@@ -15,10 +16,6 @@ export function roleOf(schema: Schema | null, edgeType: string): string {
 
 export function labelStyleOf(schema: Schema | null, nodeType: string): LabelStyle {
   return schema?.nodeTypes[nodeType]?.label ?? "name";
-}
-
-export function humanise(type: string): string {
-  return type.replace(/_/g, " ");
 }
 
 export function clip(text: string, max = MAX_LABEL): string {

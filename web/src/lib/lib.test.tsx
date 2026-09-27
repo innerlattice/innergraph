@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { AnyEvent, GraphView, Schema } from "../api";
 import { ApiError, request } from "../api";
-import { boxSize, clip, edgeLabel, humanise, labelStyleOf, roleOf, toElements } from "./elements";
+import { humanise } from "../../../src/core/edgeText";
+import { boxSize, clip, edgeLabel, labelStyleOf, roleOf, toElements } from "./elements";
 import { appeared, loadPositions, partition, savePositions } from "./layoutCache";
 import { entryFocus, parseEntryFocus } from "./format";
 import { actorLabel, charIndex, colorFor, describeEvent, formatHlc, highlightSegments, labelsFrom, spanText } from "./format";

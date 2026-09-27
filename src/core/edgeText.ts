@@ -6,8 +6,19 @@ export interface EdgeParts {
   to: string;
 }
 
+/** A schema type as words: "part_of" → "part of". */
+export function humanise(type: string): string {
+  return type.replace(/_/g, " ");
+}
+
 export function edgeText(from: string, type: string, to: string): string {
   return `${from} —${type}→ ${to}`;
+}
+
+/** An Edge written with its Nodes' labels from `graph` (their ids when a Node isn't there). */
+export function edgeTextIn(graph: { nodes: Record<string, { label: string } | undefined> }, edge: { from: string; type: string; to: string }): string {
+  const name = (id: string) => graph.nodes[id]?.label ?? id;
+  return edgeText(name(edge.from), edge.type, name(edge.to));
 }
 
 const PATTERN = /^(.+?) —(.+?)→ (.+)$/s;
@@ -15,5 +26,5 @@ const PATTERN = /^(.+?) —(.+?)→ (.+)$/s;
 /** The parts of an Edge written by `edgeText`; undefined for anything else (a Node's label). */
 export function parseEdgeText(text: string): EdgeParts | undefined {
   const match = PATTERN.exec(text);
-  return match ? { from: match[1], verb: match[2].replace(/_/g, " "), to: match[3] } : undefined;
+  return match ? { from: match[1], verb: humanise(match[2]), to: match[3] } : undefined;
 }

@@ -1,7 +1,7 @@
 import { type ViewStatus, api } from "../api";
 import { ItemLabel } from "../components/Chip";
 import { Button, ErrorNote, StatusPill } from "../components/ui";
-import { humanise } from "../lib/elements";
+import { humanise } from "../../../src/core/edgeText";
 import { useAsync } from "../lib/useAsync";
 import { type Done, ItemActions } from "./ItemControls";
 

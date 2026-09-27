@@ -3,8 +3,8 @@ import { EdgeLabel } from "../components/Chip";
 import type { Navigate } from "../App";
 import { type NodeView, type RelatedItem, type RootTrace, type ViewStatus, api } from "../api";
 import { Button, ErrorNote, StatusPill } from "../components/ui";
-import { humanise } from "../lib/elements";
-import { actorLabel, entryFocus } from "../lib/format";
+import { humanise } from "../../../src/core/edgeText";
+import { actorLabel, entryFocus, pct } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 import { type Done, ItemActions } from "./ItemControls";
 import { Related } from "../components/Related";
@@ -197,7 +197,7 @@ export function NodePanel(props: NodePanelProps) {
   return (
     <div className="space-y-5 p-5">
       <header className="space-y-1">
-        <p className="text-xs text-stone-400">{node.type.replace(/_/g, " ")} · {Math.round(node.confidence * 100)}% · by {actorLabel(node.assertedBy)}</p>
+        <p className="text-xs text-stone-400">{humanise(node.type)} · {pct(node.confidence)} · by {actorLabel(node.assertedBy)}</p>
         <EditableTitle value={node.label} readOnly={readOnly} onSave={(label) => run(() => api.rename(node.id, label))} />
         <StatusPill status={node.status} confirmed={node.confirmed} />
       </header>

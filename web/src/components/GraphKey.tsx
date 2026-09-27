@@ -1,7 +1,7 @@
 // A small, collapsible key for the canvas: node types (from the Schema) and edge styles.
 import { useState } from "react";
 import type { Schema } from "../api";
-import { humanise } from "../lib/elements";
+import { humanise } from "../../../src/core/edgeText";
 import { colorFor } from "../lib/format";
 
 const SHAPE_CLASS: Record<string, string> = {

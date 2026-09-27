@@ -1,5 +1,6 @@
 // MapManager: Refactors, Schema migrations, Status changes and time travel.
 import { SchemaError } from "../access/schemaAccess.js";
+import { edgeTextIn } from "../core/edgeText.js";
 import type { SchemaAccess } from "../access/schemaAccess.js";
 import type { VaultAccess } from "../access/vaultAccess.js";
 import {
@@ -52,12 +53,6 @@ function withAttachedEdges(ids: Set<string>, graphs: Graph[]): Set<string> {
   return new Set([...ids, ...edges.map((e) => e.id)]);
 }
 
-function describeEdge(edge: GraphEdge, graph: Graph): string {
-  const from = graph.nodes[edge.from]?.label ?? edge.from;
-  const to = graph.nodes[edge.to]?.label ?? edge.to;
-  return `${from} -[${edge.type}]-> ${to}`;
-}
-
 function checkMigration(schema: Schema, migration: MigrationMap): void {
   const badNodes = Object.values(migration.nodeTypes).filter((t) => !schema.nodeTypes[t]);
   const badEdges = Object.values(migration.edgeTypes).filter((t) => !schema.edgeTypes[t]);
@@ -102,7 +97,7 @@ export class MapManager {
       label: node.label,
       parts: parts.map((p) => p.label),
       evidence: node.evidence.map((e) => this.deps.vault.readSpan(e)),
-      edges: edges.map((e) => describeEdge(e, graph)),
+      edges: edges.map((e) => edgeTextIn(graph, e)),
     });
     const into: SplitPart[] = parts.map((p, i) => ({
       id: newId(),

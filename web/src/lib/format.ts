@@ -61,7 +61,8 @@ export function labelsFrom(graph: GraphLike, events: AnyEvent[] = []): Record<st
   return labels;
 }
 
-const pct = (n: number) => `${Math.round(n * 100)}%`;
+/** 0.72 → "72%". */
+export const pct = (n: number) => `${Math.round(n * 100)}%`;
 
 type Name = (id: string) => string;
 type Describers = { [K in EventType]?: (body: EventBodies[K], name: Name) => string };

@@ -1,5 +1,6 @@
 // Documents and cached vectors for graph search. Helpers for ExploreManager; not a Manager.
 import type { VaultAccess } from "../access/vaultAccess.js";
+import { humanise } from "../core/edgeText.js";
 import { ACTIVE, type GraphView, type ViewEdge, type ViewNode, materialize } from "../access/view.js";
 import type { ProjectionState } from "../core/types.js";
 import type { RecallDoc } from "../engines/recallEngine.js";
@@ -16,11 +17,11 @@ function edgeText(vault: VaultAccess, e: ViewEdge, view: GraphView): string {
   const sign = e.sign === -1 ? " (decreases)" : e.sign === 1 ? " (increases)" : "";
   const from = view.nodes[e.from]?.label ?? e.from;
   const to = view.nodes[e.to]?.label ?? e.to;
-  return [`${from} ${e.type.replace(/_/g, " ")}${sign} ${to}`, ...e.evidence.map((ev) => vault.readSpan(ev))].join("\n");
+  return [`${from} ${humanise(e.type)}${sign} ${to}`, ...e.evidence.map((ev) => vault.readSpan(ev))].join("\n");
 }
 
 function nodeText(vault: VaultAccess, n: ViewNode): string {
-  return [`${n.label} (${n.type.replace(/_/g, " ")})`, values(n.attributes), ...n.evidence.map((ev) => vault.readSpan(ev))].filter(Boolean).join("\n");
+  return [`${n.label} (${humanise(n.type)})`, values(n.attributes), ...n.evidence.map((ev) => vault.readSpan(ev))].filter(Boolean).join("\n");
 }
 
 /** Searchable items: everything on the map. Removed items never are. */
