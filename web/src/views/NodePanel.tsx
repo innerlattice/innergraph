@@ -58,7 +58,7 @@ export function EvidenceCard(props: { evidence: NodeView["evidence"][number]; on
       <p className="mt-2 flex items-center justify-between text-xs text-stone-400">
         <span className="truncate">{e.entryTitle}</span>
         <span className="shrink-0 text-stone-500 underline-offset-2 group-hover:underline" aria-hidden="true">
-          Open in entry →
+          View entry →
         </span>
       </p>
     </button>
