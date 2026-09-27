@@ -4,6 +4,7 @@ import { type AnyEvent, api } from "../api";
 import { ErrorNote, Page } from "../components/ui";
 import { actorLabel, describeEvent, formatHlc, labelsFrom } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
+import { useLive } from "../lib/useLive";
 
 /** Events whose effect on the graph can be undone (workflow and entry events cannot). */
 export function undoable(e: AnyEvent): boolean {
@@ -16,6 +17,7 @@ export function LogView() {
     const [events, graph] = await Promise.all([api.timeline(), api.graph(true)]);
     return { events, labels: labelsFrom(graph, events) };
   });
+  useLive(data.reload);
   const undo = (id: string) =>
     api
       .undo(id)

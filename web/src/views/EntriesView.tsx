@@ -6,6 +6,7 @@ import { Button, Card, Empty, ErrorNote, Page, passageClass } from "../component
 import { formatHlc, citedRuns, parseEntryFocus } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 import { useJob } from "../lib/useJob";
+import { useLive } from "../lib/useLive";
 
 const FOCUS = "\u0000focus";
 
@@ -133,6 +134,8 @@ export function EntriesView(props: { focus?: string; navigate: Navigate }) {
   const [revision, setRevision] = useState<RevisionResult>();
   const entries = useAsync(api.entries);
   const entry = useAsync(() => (selected ? api.entry(selected) : Promise.resolve(undefined)), [selected]);
+  // A rename, a new entry or an item removed elsewhere shows here as it happens.
+  useLive(() => (entries.reload(), entry.reload()));
   const choose = (id: string) => {
     setSelected(id);
     setFocus(undefined);

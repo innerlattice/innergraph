@@ -179,6 +179,29 @@ describe("EntriesView", () => {
     fireEvent.click(screen.getByText("Tuesday"));
   });
 
+  it("follows renames made elsewhere as they happen", async () => {
+    const sources: { emit: (data: string) => void }[] = [];
+    vi.stubGlobal(
+      "EventSource",
+      class {
+        listeners: ((e: { data: string }) => void)[] = [];
+        constructor() {
+          sources.push({ emit: (data) => this.listeners.forEach((fn) => fn({ data })) });
+        }
+        addEventListener(_: string, fn: (e: { data: string }) => void) {
+          this.listeners.push(fn);
+        }
+        close() {}
+      },
+    );
+    render(<EntriesView focus="h" navigate={vi.fn()} />);
+    expect(await screen.findByText("Needing is unsafe")).toBeTruthy();
+    routes["/api/entries/h"] = { ...entryView, citations: [{ ...entryView.citations[0], label: "Needing is allowed" }] };
+    for (const source of sources) (source.emit("p1"), source.emit("p2"));
+    expect(await screen.findByText("Needing is allowed")).toBeTruthy();
+    routes["/api/entries/h"] = entryView;
+  });
+
   it("edits an entry and reports how evidence carried over", async () => {
     calls = fakeServer((call) => {
       if (call.method === "POST") return call.path.includes("fail") ? failure("The Entry is unchanged") : { session: "s9", entry: "h", previous: "h0", remapped: 1, cited: [{ moved: false }, { moved: true }] };

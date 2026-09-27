@@ -4,6 +4,7 @@ import { Button, Card, Empty, ErrorNote, Page } from "../components/ui";
 import { pct } from "../lib/format";
 import { implications, loopFocus } from "../lib/loops";
 import { useAsync } from "../lib/useAsync";
+import { useLive } from "../lib/useLive";
 
 function Sign(props: { sign: 1 | -1 }) {
   return props.sign === 1 ? (
@@ -75,6 +76,7 @@ export function LoopCard(props: { loop: LoopView; onOpen: (focus: string) => voi
 
 export function LoopsView(props: { navigate: Navigate }) {
   const loops = useAsync(api.loops);
+  useLive(loops.reload);
   return (
     <Page title="Loops" subtitle="Cycles over causal edges. A loop is a pattern to notice, not a problem to fix. Ask the assistant what one might mean for you.">
       <ErrorNote error={loops.error} />
