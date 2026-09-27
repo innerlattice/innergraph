@@ -1,5 +1,6 @@
 // "What changed": recent Sessions (an entry decomposed, a rename, a merge…), newest first, each
 // undoable as a whole, plus duplicates worth merging. Opened from the status bar.
+import { ItemLabel } from "../components/Chip";
 import { useState } from "react";
 import { type ChangeAction, type DuplicateGroup, type SessionChanges, api } from "../api";
 import { Button, ErrorNote } from "../components/ui";
@@ -57,7 +58,9 @@ function SessionCard(props: { change: SessionChanges; onFocus: (ids: string[]) =
         {change.rows.map((row, i) => (
           <li key={`${row.id}-${i}`}>
             <button type="button" disabled={row.kind === "entry"} onClick={() => props.onFocus([row.id])} className="w-full rounded px-1 text-left hover:bg-stone-100 disabled:hover:bg-transparent">
-              <span className={`text-xs ${VERB[row.action].tone}`}>{VERB[row.action].text}</span> <span className="text-stone-700">{row.label}</span>
+              <span className={`text-xs ${VERB[row.action].tone}`}>{VERB[row.action].text}</span> <span className="text-stone-700">
+                <ItemLabel label={row.label} />
+              </span>
               {row.detail ? <span className="text-stone-400"> · {row.detail}</span> : null}
             </button>
           </li>

@@ -228,8 +228,12 @@ describe("NodePanel", () => {
   it("shows evidence, edges and lineage, and runs actions", async () => {
     render(<NodePanel {...props} />);
     expect(await screen.findByText("Needing is unsafe", { selector: "h3" })).toBeTruthy();
-    expect(screen.getByText("→ scaffolds → Dinner table")).toBeTruthy();
-    expect(screen.getByText("← abduces ← Dinner table").className).toContain("line-through");
+    expect(screen.getByText("From here")).toBeTruthy();
+    expect(screen.getByText("Into here")).toBeTruthy();
+    const outgoing = screen.getByText("scaffolds").closest("button") as HTMLElement;
+    expect(outgoing.textContent).toBe("scaffoldsDinner table");
+    const incoming = screen.getByText("abduces").closest("button") as HTMLElement;
+    expect([incoming.textContent, incoming.className.includes("line-through")]).toEqual(["Dinner tableabduces", true]);
     expect(screen.getByText(/from “Dinner table”/)).toBeTruthy();
     fireEvent.click(screen.getByText("Looks right"));
     fireEvent.click(screen.getByText("Trace roots"));

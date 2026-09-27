@@ -3,6 +3,7 @@
 import { Check, CircleAlert, Search, Sparkles, Undo2 } from "lucide-react";
 import { useState } from "react";
 import { api } from "../api";
+import { Chip, ItemLabel } from "../components/Chip";
 import { type ToolCardInfo, type ToolPart, describeTool } from "./parts";
 
 export interface ToolCardProps {
@@ -34,15 +35,9 @@ function Chips(props: { info: ToolCardInfo; undone: boolean; onSelect: (ids: str
   return (
     <div className="mt-2 flex flex-wrap gap-1.5">
       {props.info.items.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          disabled={props.undone}
-          onClick={() => props.onSelect([item.id])}
-          className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 text-xs text-stone-700 transition hover:border-clay-300 hover:bg-clay-50 disabled:line-through disabled:opacity-60"
-        >
-          {item.label}
-        </button>
+        <Chip key={item.id} struck={props.undone} onClick={() => props.onSelect([item.id])}>
+          <ItemLabel label={item.label} />
+        </Chip>
       ))}
     </div>
   );

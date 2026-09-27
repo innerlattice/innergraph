@@ -1,5 +1,6 @@
 // "What changed": the Log grouped by Session, one readable row per thing touched, newest first.
 // Every Session can be undone as a whole (MapManager.undoSession). Helpers for ExploreManager.
+import { edgeText as writeEdge } from "../core/edgeText.js";
 import type { ActorId, AnyEvent, EventBodies, ProjectionState, VaultEvent } from "../core/types.js";
 
 export type ChangeAction = "added" | "updated" | "renamed" | "edited" | "removed" | "restored" | "confirmed" | "merged" | "split" | "revised";
@@ -32,7 +33,7 @@ function nodeLabel(ctx: FeedContext, id: string): string {
 }
 
 function edgeText(ctx: FeedContext, edge: { from: string; to: string; type: string }): string {
-  return `${nodeLabel(ctx, edge.from)} → ${edge.type} → ${nodeLabel(ctx, edge.to)}`;
+  return writeEdge(nodeLabel(ctx, edge.from), edge.type, nodeLabel(ctx, edge.to));
 }
 
 function itemLabel(ctx: FeedContext, id: string): { kind: "node" | "edge"; label: string } {

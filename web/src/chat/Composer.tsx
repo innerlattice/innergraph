@@ -1,8 +1,9 @@
 // Where the person writes: what they have selected on the map (so "these" means something),
 // how full the conversation is, and the box itself.
-import { ArrowUp, Square, X } from "lucide-react";
+import { ArrowUp, Square } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import type { BudgetLevel, SelectionItem } from "../api";
+import { Chip, ItemLabel } from "../components/Chip";
 
 /** Beyond this many, the chips fold into "+N more". */
 const SHOWN = 4;
@@ -15,14 +16,9 @@ export function SelectionChips(props: { items: SelectionItem[]; onRemove: (id: s
     <div className="mb-2 flex max-h-40 flex-wrap items-center gap-1.5 overflow-y-auto px-1 text-xs">
       <span className="text-stone-400">About</span>
       {props.items.slice(0, props.items.length - hidden).map((item) => (
-        <span key={item.id} className="flex items-center gap-1 rounded-full border border-sage-200 bg-sage-50 py-0.5 pr-1 pl-2.5 text-sage-700">
-          <button type="button" className="hover:underline" onClick={() => props.onSelect([item.id])}>
-            {item.label}
-          </button>
-          <button type="button" aria-label={`Unselect ${item.label}`} className="rounded-full p-0.5 hover:bg-sage-100" onClick={() => props.onRemove(item.id)}>
-            <X size={11} />
-          </button>
-        </span>
+        <Chip key={item.id} tone="context" onClick={() => props.onSelect([item.id])} onRemove={() => props.onRemove(item.id)} removeLabel={`Unselect ${item.label}`}>
+          <ItemLabel label={item.label} />
+        </Chip>
       ))}
       {hidden > 0 ? (
         <button type="button" className="rounded-full px-1.5 text-sage-700 hover:underline" onClick={() => setOpen(true)}>

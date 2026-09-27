@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
+import { EdgeLabel } from "../components/Chip";
 import type { Navigate } from "../App";
 import { type NodeView, type RelatedItem, type RootTrace, type ViewStatus, api } from "../api";
 import { Button, ErrorNote, StatusPill } from "../components/ui";
+import { humanise } from "../lib/elements";
 import { actorLabel, entryFocus } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 import { type Done, ItemActions } from "./ItemControls";
@@ -63,23 +65,41 @@ export function EvidenceCard(props: { evidence: NodeView["evidence"][number]; on
   );
 }
 
+interface EdgeRow {
+  id: string;
+  status: string;
+  text: ReactNode;
+}
+
+function EdgeGroup(props: { title: string; rows: EdgeRow[]; onSelect?: (id: string) => void }) {
+  if (props.rows.length === 0) return null;
+  return (
+    <div>
+      <p className="mb-0.5 text-[11px] text-stone-400">{props.title}</p>
+      <ul className="space-y-1 text-sm text-stone-600">
+        {props.rows.map((r) => (
+          <li key={r.id}>
+            <button type="button" className={`text-left hover:underline ${r.status === "removed" ? "text-stone-400 line-through" : ""}`} onClick={() => props.onSelect?.(r.id)}>
+              {r.text}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** A Node's Edges, split by direction so each row reads as a phrase with this Node implied. */
 function EdgeList(props: { view: NodeView; labels: Record<string, string>; onSelect?: (id: string) => void }) {
   const { view, labels } = props;
-  const rows = [
-    ...view.outgoing.map((e) => ({ id: e.id, status: e.status, text: `→ ${e.type} → ${labels[e.to] ?? e.to}` })),
-    ...view.incoming.map((e) => ({ id: e.id, status: e.status, text: `← ${e.type} ← ${labels[e.from] ?? e.from}` })),
-  ];
-  if (rows.length === 0) return <p className="text-sm text-stone-400">No edges.</p>;
+  const outgoing = view.outgoing.map((e) => ({ id: e.id, status: e.status, text: <EdgeLabel verb={humanise(e.type)} to={labels[e.to] ?? e.to} /> }));
+  const incoming = view.incoming.map((e) => ({ id: e.id, status: e.status, text: <EdgeLabel from={labels[e.from] ?? e.from} verb={humanise(e.type)} /> }));
+  if (outgoing.length + incoming.length === 0) return <p className="text-sm text-stone-400">No edges.</p>;
   return (
-    <ul className="space-y-1 text-sm text-stone-600">
-      {rows.map((r) => (
-        <li key={r.id}>
-          <button type="button" className={`text-left hover:underline ${r.status === "removed" ? "text-stone-400 line-through" : ""}`} onClick={() => props.onSelect?.(r.id)}>
-            {r.text}
-          </button>
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-2">
+      <EdgeGroup title="From here" rows={outgoing} onSelect={props.onSelect} />
+      <EdgeGroup title="Into here" rows={incoming} onSelect={props.onSelect} />
+    </div>
   );
 }
 

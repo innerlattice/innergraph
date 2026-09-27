@@ -1,4 +1,5 @@
 import { type ViewStatus, api } from "../api";
+import { ItemLabel } from "../components/Chip";
 import { Button, ErrorNote, StatusPill } from "../components/ui";
 import { humanise } from "../lib/elements";
 import { useAsync } from "../lib/useAsync";
@@ -29,7 +30,9 @@ export function SelectionPanel(props: {
           <li key={item.id}>
             <button type="button" onClick={() => props.onFocus(item.id)} className="flex w-full items-start justify-between gap-3 rounded-md px-2 py-1.5 text-left text-sm hover:bg-stone-100">
               <span className="min-w-0">
-                <span className="block text-stone-800">{item.label}</span>
+                <span className="block text-stone-800">
+                  <ItemLabel label={item.label} />
+                </span>
                 <span className="text-xs text-stone-400">
                   {humanise(item.type)} · {item.kind}
                 </span>

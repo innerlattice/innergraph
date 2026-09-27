@@ -1,4 +1,5 @@
 import type { Navigate } from "../App";
+import { ArrowDown } from "lucide-react";
 import { api } from "../api";
 import { ErrorNote, StatusPill } from "../components/ui";
 import { humanise } from "../lib/elements";
@@ -35,12 +36,15 @@ export function EdgePanel(props: EdgePanelProps) {
           {humanise(edge.type)}
           {signText(edge.sign)} · {Math.round(edge.confidence * 100)}% · by {actorLabel(edge.assertedBy)}
         </p>
-        <h3 className="font-serif text-xl text-stone-800">
-          <button type="button" className="hover:underline" onClick={() => props.onSelect(edge.from)}>
+        <h3 className="flex flex-col items-start font-serif text-xl leading-snug text-stone-800">
+          <button type="button" className="text-left hover:underline" onClick={() => props.onSelect(edge.from)}>
             {fromLabel}
-          </button>{" "}
-          <span className="text-stone-400">→</span>{" "}
-          <button type="button" className="hover:underline" onClick={() => props.onSelect(edge.to)}>
+          </button>
+          <span className="my-0.5 inline-flex items-center gap-1 pl-0.5 font-sans text-sm text-stone-400 italic">
+            <ArrowDown size={13} aria-hidden />
+            {humanise(edge.type)}
+          </span>
+          <button type="button" className="text-left hover:underline" onClick={() => props.onSelect(edge.to)}>
             {toLabel}
           </button>
         </h3>

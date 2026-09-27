@@ -1,4 +1,5 @@
 // Pure presentation helpers. No React, so they are easy to test.
+import { edgeText } from "../../../src/core/edgeText";
 import type { EventBodies, EventType } from "../../../src/core/types";
 import type { AnyEvent, Graph, Schema } from "../api";
 
@@ -56,7 +57,7 @@ export function labelsFrom(graph: GraphLike, events: AnyEvent[] = []): Record<st
   for (const node of Object.values(graph.nodes)) labels[node.id] = node.label;
   for (const e of events) if (e.type === "NodeAsserted") labels[e.body.id] = e.body.label;
   const name = (id: string) => labels[id] ?? id.slice(-6);
-  for (const edge of Object.values(graph.edges)) labels[edge.id] = `${name(edge.from)} —${edge.type.replace(/_/g, " ")}→ ${name(edge.to)}`;
+  for (const edge of Object.values(graph.edges)) labels[edge.id] = edgeText(name(edge.from), edge.type, name(edge.to));
   return labels;
 }
 

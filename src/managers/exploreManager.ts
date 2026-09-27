@@ -1,4 +1,5 @@
 // ExploreManager: queries and Projections (root tracing, loops, recall, evidence search).
+import { edgeText } from "../core/edgeText.js";
 import { rolesOf } from "../access/schemaAccess.js";
 import type { VaultAccess } from "../access/vaultAccess.js";
 import type { AnyEvent, EntryRecord, Evidence, Graph, GraphEdge, GraphNode, ProjectionState, Schema } from "../core/types.js";
@@ -127,7 +128,7 @@ export interface Selection {
 }
 
 export function edgeLabel(view: { nodes: Record<string, { label: string }> }, edge: { from: string; to: string; type: string }): string {
-  return `${view.nodes[edge.from]?.label ?? edge.from} —${edge.type}→ ${view.nodes[edge.to]?.label ?? edge.to}`;
+  return edgeText(view.nodes[edge.from]?.label ?? edge.from, edge.type, view.nodes[edge.to]?.label ?? edge.to);
 }
 
 function describeItem(view: GraphView, id: string): SelectionItem | undefined {

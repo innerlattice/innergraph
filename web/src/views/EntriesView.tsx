@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Chip, ItemLabel } from "../components/Chip";
 import type { Navigate } from "../App";
 import { type EntryView, type RevisionResult, api } from "../api";
 import { Button, Card, Empty, ErrorNote, Page } from "../components/ui";
@@ -92,13 +93,13 @@ export function SupportedItems(props: { view: EntryView; onOpen: (ids: string) =
   if (items.length === 0) return <p className="text-xs text-stone-400">Nothing on the map cites this entry yet.</p>;
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <button type="button" onClick={() => props.onOpen(items.map(([id]) => id).join(","))} className="rounded-full bg-clay-500 px-3 py-0.5 text-xs text-white hover:bg-clay-600">
+      <Chip tone="accent" onClick={() => props.onOpen(items.map(([id]) => id).join(","))}>
         Show all {items.length} on the map
-      </button>
+      </Chip>
       {items.map(([id, label]) => (
-        <button key={id} type="button" onClick={() => props.onOpen(id)} className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 text-xs text-stone-700 hover:border-clay-300 hover:bg-clay-50">
-          {label}
-        </button>
+        <Chip key={id} onClick={() => props.onOpen(id)}>
+          <ItemLabel label={label} />
+        </Chip>
       ))}
     </div>
   );
