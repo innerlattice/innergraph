@@ -1,14 +1,13 @@
 import { useState } from "react";
+import { GRAPH_EVENT_TYPES } from "../../../src/core/types";
 import { type AnyEvent, api } from "../api";
 import { ErrorNote, Page } from "../components/ui";
 import { actorLabel, describeEvent, formatHlc, labelsFrom } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 
-const UNDOABLE = new Set(["StatusChanged", "AttributesChanged", "NodesSplit", "NodesMerged", "NodeAsserted", "EdgeAsserted"]);
-
 /** Events whose effect on the graph can be undone (workflow and entry events cannot). */
 export function undoable(e: AnyEvent): boolean {
-  return UNDOABLE.has(e.type);
+  return GRAPH_EVENT_TYPES.includes(e.type);
 }
 
 export function LogView() {
