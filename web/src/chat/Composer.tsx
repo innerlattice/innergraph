@@ -5,6 +5,7 @@ import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { WARN_AT } from "../../../src/core/budget";
 import type { BudgetLevel, SelectionItem } from "../api";
 import { Chip, ItemLabel } from "../components/Chip";
+import { Button } from "../components/ui";
 
 /** Beyond this many, the chips fold into "+N more". */
 const SHOWN = 4;
@@ -49,9 +50,9 @@ export function FullNotice(props: { onNewChat: () => void }) {
     <div className="rounded-2xl border border-stone-200 bg-white/80 px-5 py-4 text-center">
       <p className="font-serif text-stone-700">This conversation is full.</p>
       <p className="mt-1 text-sm text-stone-500">Everything it added to your map stays. Start a new one to keep going.</p>
-      <button type="button" onClick={props.onNewChat} className="mt-3 rounded-full bg-clay-500 px-4 py-1.5 text-sm text-white transition hover:bg-clay-600">
+      <Button tone="primary" onClick={props.onNewChat} className="mt-3">
         Start a new conversation
-      </button>
+      </Button>
     </div>
   );
 }

@@ -4,6 +4,7 @@
 import { Check, Copy, ExternalLink, X } from "lucide-react";
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import { type ChatProvider, type LinkStatus, PLAN_MODELS, type PublicChatSettings, api } from "../api";
+import { Button, buttonClass } from "../components/ui";
 
 function Field(props: { label: string; hint?: string; children: ReactNode }) {
   return (
@@ -74,7 +75,7 @@ function CodeBox(props: { code: string; url: string }) {
           {copied ? <Check size={15} /> : <Copy size={15} />}
         </button>
       </div>
-      <a href={props.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full bg-clay-500 px-4 py-1.5 text-sm text-white hover:bg-clay-600">
+      <a href={props.url} target="_blank" rel="noreferrer" className={buttonClass("primary")}>
         Open OpenAI <ExternalLink size={13} />
       </a>
       <p className="flex items-center justify-center gap-2 text-xs text-stone-500">
@@ -219,12 +220,12 @@ export function SettingsDialog(props: { settings: PublicChatSettings; onSaved: (
         </Field>
         {error ? <p className="text-sm text-rose-700">{error}</p> : null}
         <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={props.onClose} className="rounded-full px-4 py-1.5 text-sm text-stone-600 hover:bg-stone-200">
+          <Button tone="ghost" onClick={props.onClose}>
             Cancel
-          </button>
-          <button type="submit" className="rounded-full bg-clay-500 px-4 py-1.5 text-sm text-white hover:bg-clay-600">
+          </Button>
+          <Button tone="primary" type="submit">
             Save
-          </button>
+          </Button>
         </div>
       </form>
     </div>

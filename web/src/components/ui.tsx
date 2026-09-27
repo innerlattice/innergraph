@@ -1,21 +1,26 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type Tone = "primary" | "quiet" | "danger";
+// Buttons: one shape, and tones that say how much an action matters.
+//   primary: the one thing to do here (Save, Confirm)
+//   quiet:   everything else
+//   ghost:   backing out (Cancel), no border
+//   danger:  not to be taken lightly
+type Tone = "primary" | "quiet" | "ghost" | "danger";
 
 const TONES: Record<Tone, string> = {
-  primary: "bg-stone-800 text-stone-50 hover:bg-stone-700",
-  quiet: "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100",
-  danger: "border border-rose-200 bg-white text-rose-700 hover:bg-rose-50",
+  primary: "bg-clay-500 text-white enabled:hover:bg-clay-600",
+  quiet: "border border-stone-300 bg-white text-stone-700 enabled:hover:border-clay-300 enabled:hover:bg-clay-50",
+  ghost: "text-stone-600 enabled:hover:bg-stone-200",
+  danger: "border border-rose-200 bg-white text-rose-700 enabled:hover:bg-rose-50",
 };
 
+/** The classes of a Button, for links that act as one. */
+export function buttonClass(tone: Tone = "quiet"): string {
+  return `inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-1.5 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${TONES[tone]}`;
+}
+
 export function Button({ tone = "quiet", className = "", ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { tone?: Tone }) {
-  return (
-    <button
-      type="button"
-      className={`rounded-md px-3 py-1.5 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${TONES[tone]} ${className}`}
-      {...rest}
-    />
-  );
+  return <button type="button" className={`${buttonClass(tone)} ${className}`} {...rest} />;
 }
 
 export function Page(props: { title: string; subtitle?: string; children: ReactNode; actions?: ReactNode }) {
@@ -49,7 +54,7 @@ export function ErrorNote(props: { error?: string }) {
 /** Only what is worth saying: confirmed, or removed. Unconfirmed is the quiet default. */
 export function StatusPill(props: { status: string; confirmed?: boolean }) {
   if (props.status === "removed") return <span className="rounded-full border border-stone-200 px-2 py-0.5 text-xs text-stone-400 line-through">removed</span>;
-  if (props.confirmed) return <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-800">confirmed</span>;
+  if (props.confirmed) return <span className="rounded-full border border-sage-200 bg-sage-50 px-2 py-0.5 text-xs text-sage-700">confirmed</span>;
   return null;
 }
 
