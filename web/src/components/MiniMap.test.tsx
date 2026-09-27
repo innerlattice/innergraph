@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import cytoscape from "cytoscape";
 import { afterEach, expect, it, vi } from "vitest";
+import { COLOR } from "../design/tokens";
 import { MiniMap, snapshot } from "./MiniMap";
 
 afterEach(cleanup);
@@ -23,7 +24,7 @@ it("snapshots nodes, edges and the viewport", () => {
   const cy = graph();
   cy.getElementById("a").select();
   const snap = snapshot(cy);
-  expect(snap.nodes.map((n) => [n.id, n.color, n.selected])).toEqual([["a", "#123", true], ["b", "#a8a29e", false]]);
+  expect(snap.nodes.map((n) => [n.id, n.color, n.selected])).toEqual([["a", "#123", true], ["b", COLOR.faint, false]]);
   expect(snap.edges[0]).toMatchObject({ x1: 0, y1: 0, x2: 100, y2: 50 });
   expect(snapshot(cytoscape({ headless: true })).nodes).toEqual([]);
 });

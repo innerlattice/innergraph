@@ -3,6 +3,16 @@
 Inner Graph should feel calm, warm and a little delightful: a place people want to come back to.
 These principles hold across the app. When a change breaks one, change the principle here first.
 
+## Every value is a token
+
+Colours, type sizes, widths, shadows and icon sizes come from the design tokens and nowhere else:
+the `@theme` in `web/src/index.css` for the page, and `web/src/design/tokens.ts` for the few the
+canvas and icons need as values (`COLOR`, `TYPE_PALETTE`, `ICON`), which a test keeps in step with
+the theme. Tailwind's own palette and shadows are cleared, so only ours exist. Nothing else writes
+a length, a colour literal, an arbitrary value like `text-[11px]` or `!important`; when a value is
+missing, add a token (or an `@utility` for a layout the scale can't say). `npm run styles` checks,
+and runs as part of `npm run quality`.
+
 ## Meaning never rests on colour alone
 
 Every semantic difference that colour carries is carried a second way too: shape, line style,

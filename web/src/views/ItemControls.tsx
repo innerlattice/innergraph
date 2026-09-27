@@ -67,7 +67,7 @@ export function UndoBar(props: { done?: Done; onUndo: () => void; onClose: () =>
       <span>
         Removed {count} item{count === 1 ? "" : "s"}.
       </span>
-      <button type="button" className="font-medium text-amber-300 hover:underline" onClick={props.onUndo}>
+      <button type="button" className="font-medium text-clay-200 hover:underline" onClick={props.onUndo}>
         Undo
       </button>
       <button type="button" aria-label="Dismiss" className="text-stone-400 hover:text-stone-100" onClick={props.onClose}>

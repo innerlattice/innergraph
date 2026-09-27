@@ -2,8 +2,7 @@
 import { edgeText } from "../../../src/core/edgeText";
 import type { EventBodies, EventType } from "../../../src/core/types";
 import type { AnyEvent, Schema } from "../api";
-
-const PALETTE = ["#7c9885", "#b08968", "#8e7dbe", "#c97b84", "#5f8fa8", "#a3a35c", "#d4a373", "#6d8a96", "#9c6644", "#7a7aa8"];
+import { TYPE_PALETTE as PALETTE } from "../design/tokens";
 
 export function colorFor(type: string, schema: Schema | null): string {
   const types = Object.keys(schema?.nodeTypes ?? {});

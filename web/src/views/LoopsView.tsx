@@ -7,12 +7,13 @@ import { pct } from "../lib/format";
 import { implications, loopFocus } from "../lib/loops";
 import { useAsync } from "../lib/useAsync";
 import { useLive } from "../lib/useLive";
+import { ICON } from "../design/tokens";
 
 function Sign(props: { sign: 1 | -1 }) {
   return props.sign === 1 ? (
-    <span className="font-bold text-orange-700" title="increases">+</span>
+    <span className="font-bold text-clay-600" title="increases">+</span>
   ) : (
-    <span className="font-bold text-sky-700" title="decreases">−</span>
+    <span className="font-bold text-slate-600" title="decreases">−</span>
   );
 }
 
@@ -23,7 +24,7 @@ function StepRow(props: { step: LoopStepView; onOpen: (focus: string) => void })
       <p className="flex flex-wrap items-center gap-1.5 text-sm">
         <ItemChip id={step.from} label={step.fromLabel} onClick={() => props.onOpen(step.from)} />
         <Sign sign={step.sign} />
-        <ArrowRight size={12} className="shrink-0 text-stone-400" aria-hidden />
+        <ArrowRight size={ICON.sm} className="shrink-0 text-stone-400" aria-hidden />
         <ItemChip id={step.to} label={step.toLabel} onClick={() => props.onOpen(step.to)} />
         <span className="text-xs text-stone-400">{pct(step.confidence)} sure</span>
       </p>
@@ -57,7 +58,7 @@ export function LoopCard(props: { loop: LoopView; onOpen: (focus: string) => voi
     <Card className="space-y-4">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className={`text-xs font-medium ${reinforcing ? "text-orange-700" : "text-sky-700"}`}>{reinforcing ? "Reinforcing loop" : "Balancing loop"}</p>
+          <p className={`text-xs font-medium ${reinforcing ? "text-clay-600" : "text-slate-600"}`}>{reinforcing ? "Reinforcing loop" : "Balancing loop"}</p>
           <h3 className="font-serif text-lg text-stone-800">{[...loop.steps.map((s) => s.fromLabel), loop.steps[0]?.fromLabel].join(" → ")}</h3>
           <p className="text-xs text-stone-400">
             {loop.steps.length} steps, {pct(loop.certainty)} certain

@@ -8,17 +8,18 @@ import { type ChangeAction, type DuplicateGroup, type SessionChanges, api } from
 import { Button, ErrorNote } from "../components/ui";
 import { actorLabel, formatHlc } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
+import { ICON } from "../design/tokens";
 
 // Each change is marked like a diff: a green plus for what arrived, a red minus for what went, a
 // pen for what was reworded. The mark carries a word for screen readers and on hover, so colour is
 // never the only signal. `joiner` links the item to the row's detail: "Renamed to B".
 const MARK: Record<ChangeAction, { icon: LucideIcon; word: string; tone: string; joiner?: string }> = {
-  added: { icon: Plus, word: "Added", tone: "text-sage-600" },
+  added: { icon: Plus, word: "Added", tone: "text-diff-add" },
   updated: { icon: Quote, word: "More evidence", tone: "text-stone-400" },
   renamed: { icon: PenLine, word: "Renamed", tone: "text-clay-500", joiner: "to" },
   edited: { icon: PenLine, word: "Edited", tone: "text-clay-500" },
-  removed: { icon: Minus, word: "Removed", tone: "text-rose-600" },
-  restored: { icon: RotateCcw, word: "Restored", tone: "text-sage-600" },
+  removed: { icon: Minus, word: "Removed", tone: "text-diff-remove" },
+  restored: { icon: RotateCcw, word: "Restored", tone: "text-diff-add" },
   confirmed: { icon: Check, word: "Confirmed", tone: "text-sage-600" },
   merged: { icon: Merge, word: "Merged", tone: "text-stone-500", joiner: "from" },
   split: { icon: Split, word: "Split", tone: "text-stone-500", joiner: "into" },
@@ -29,7 +30,7 @@ function Mark(props: { action: ChangeAction }) {
   const { icon: Icon, word, tone } = MARK[props.action];
   return (
     <span title={word} className={`flex h-5 w-4 shrink-0 items-center justify-center ${tone}`}>
-      <Icon size={14} strokeWidth={2.5} aria-hidden />
+      <Icon size={ICON.md} strokeWidth={2.5} aria-hidden />
       <span className="sr-only">{word}</span>
     </span>
   );
@@ -43,7 +44,7 @@ function ChangeRowView(props: { row: SessionChanges["rows"][number]; onFocus: (i
       <Mark action={row.action} />
       <div className="min-w-0 flex-1">
         {row.kind === "entry" ? (
-          <Chip lead={<BookOpen size={11} aria-hidden />}>{row.label}</Chip>
+          <Chip lead={<BookOpen size={ICON.xs} aria-hidden />}>{row.label}</Chip>
         ) : (
           <ItemChip id={row.id} label={row.label} onClick={() => props.onFocus([row.id])} />
         )}

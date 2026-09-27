@@ -13,6 +13,7 @@ import { AddedBy, Eyebrow } from "../components/ItemMeta";
 import { useAsync } from "../lib/useAsync";
 import { type Done, ItemActions } from "./ItemControls";
 import { Related } from "../components/Related";
+import { ICON } from "../design/tokens";
 
 export interface NodePanelProps {
   id: string;
@@ -186,7 +187,7 @@ function RootsList(props: { trace?: RootTrace; labels: Record<string, string>; o
           <p className="flex flex-wrap items-center gap-1">
             {r.path.map((p, i) => (
               <span key={p} className="inline-flex min-w-0 max-w-full items-center gap-1">
-                {i > 0 ? <ArrowRight size={12} className="shrink-0 text-stone-400" aria-hidden /> : null}
+                {i > 0 ? <ArrowRight size={ICON.sm} className="shrink-0 text-stone-400" aria-hidden /> : null}
                 <ItemChip id={p} label={props.labels[p]} onClick={() => props.onSelect?.(p)} />
               </span>
             ))}

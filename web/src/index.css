@@ -2,9 +2,16 @@
 @import "streamdown/styles.css";
 @source "../../node_modules/streamdown/dist/*.js";
 
-/* Warm paper, ink, a clay accent and a sage second voice: calm rather than clinical.
-   Tailwind's stone scale is redefined so every existing surface warms up with it. */
+/* The design tokens. Every colour, size and shadow in the app comes from here (or, for the graph
+   canvas, from web/src/design/tokens.ts, which a test keeps in step with this file); nothing else
+   writes a unit or a colour. `npm run styles` checks.
+
+   Warm paper, ink, a clay accent and a sage second voice: calm rather than clinical. Tailwind's
+   own palette and shadows are cleared, so only these exist. */
 @theme {
+  --color-*: initial;
+  --shadow-*: initial;
+
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-serif: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
 
@@ -34,6 +41,39 @@
   --color-sage-400: #8ea27f;
   --color-sage-600: #5f7753;
   --color-sage-700: #4b5f42;
+  /* Warnings and removals: a warm brick rather than an alarm red. */
+  --color-rose-50: #fbefec;
+  --color-rose-500: #c45a4c;
+  --color-rose-600: #ad4a3e;
+  --color-rose-700: #903d33;
+  --color-rose-800: #73322a;
+  /* The cool counterweight to clay: what decreases, what balances. */
+  --color-slate-600: #4f7391;
+  --color-slate-700: #3f5d76;
+  /* A diff's marks, clear enough to read at icon size: what arrived, what went. */
+  --color-diff-add: #3f8f45;
+  --color-diff-remove: #c63f33;
+  /* The map's highlight: what you asked to see. */
+  --color-highlight: #d4a017;
+  --color-white: #fff;
+  --color-black: #000;
+
+  /* Type beyond Tailwind's scale. `reading` is the conversation's serif; `micro` the smallest label. */
+  --text-micro: 0.625rem;
+  --text-micro--line-height: 0.875rem;
+  --text-caption: 0.6875rem;
+  --text-caption--line-height: 1rem;
+  --text-reading: 0.9375rem;
+  --text-reading--line-height: 1.5rem;
+  /* A shade smaller than the words around it, such as an edge's verb inside a chip. */
+  --text-aside: 0.9em;
+  --tracking-code: 0.2em;
+
+  /* Layout widths. */
+  --spacing-panel: 22rem;
+  --spacing-sidebar: 14rem;
+  --spacing-chat-rail: 3.5rem;
+  --spacing-view-rail: 3rem;
 
   /* Depth from light, not lines (docs/DESIGN.md): warm shadows falling slightly downward.
      Five levels: inset (pressed into the page), surface (no shadow), raised, floating, lifted. */
@@ -41,6 +81,8 @@
   --shadow-raised: 0 1px 2px rgb(74 53 38 / 0.06), 0 2px 6px -1px rgb(74 53 38 / 0.08);
   --shadow-floating: 0 2px 4px rgb(74 53 38 / 0.05), 0 10px 28px -6px rgb(74 53 38 / 0.18);
   --shadow-lifted: 0 4px 8px rgb(74 53 38 / 0.06), 0 18px 44px -10px rgb(74 53 38 / 0.26);
+  /* The green halo round something that just changed on the map. */
+  --shadow-halo: 0 0 0 4px color-mix(in srgb, var(--color-sage-400) 45%, transparent);
 
   --animate-breathe: breathe 2.4s ease-in-out infinite;
   --animate-rise: rise 0.35s ease-out both;
@@ -66,6 +108,22 @@
       opacity: 1;
     }
   }
+}
+
+/* Layouts the utility scale can't say. */
+@utility grid-cols-sidebar {
+  grid-template-columns: var(--spacing-sidebar) minmax(0, 1fr);
+}
+/* Something floating inside a region, kept off its edges. */
+@utility max-w-inset {
+  max-width: calc(100% - --spacing(6));
+}
+@utility max-h-popover {
+  max-height: 60vh;
+}
+/* The view beside the chat takes `--share` of the width the rails leave. */
+@utility basis-share {
+  flex-basis: calc(var(--share) * (100vw - var(--spacing-chat-rail) - var(--spacing-view-rail)));
 }
 
 @layer base {

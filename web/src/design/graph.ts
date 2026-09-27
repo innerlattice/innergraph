@@ -8,10 +8,9 @@ import { colorFor } from "../lib/format";
 import { type Gem, gem } from "./gem";
 import { RHOMBOID_LEAN, aspectOf } from "./shapes";
 
-const PAPER = "#f8f4ee";
-const INK = "#3b332b";
-const MUTED = "#867867";
-const HIGHLIGHT = "#d4a017";
+import { COLOR } from "./tokens";
+
+const { paper: PAPER, ink: INK, muted: MUTED, highlight: HIGHLIGHT } = COLOR;
 
 // ---- Nodes ----
 
@@ -80,10 +79,10 @@ export interface EdgeLook {
 
 /** Each look differs in line and arrowhead as well as colour. */
 export const EDGE_LOOKS: EdgeLook[] = [
-  { name: "plain", label: "Other link", color: "#aa9c8a", width: 1.3, line: "solid", arrow: "triangle" },
-  { name: "builds-on", label: "Builds on", color: "#685c4f", width: 3.6, line: "double", arrow: "triangle" },
-  { name: "increases", label: "Increases", color: "#c06b49", width: 2, line: "solid", arrow: "triangle", mark: "+" },
-  { name: "decreases", label: "Decreases", color: "#4f7391", width: 2, line: "dashed", arrow: "tee", mark: "−" },
+  { name: "plain", label: "Other link", color: COLOR.faint, width: 1.3, line: "solid", arrow: "triangle" },
+  { name: "builds-on", label: "Builds on", color: COLOR.strong, width: 3.6, line: "double", arrow: "triangle" },
+  { name: "increases", label: "Increases", color: COLOR.clay, width: 2, line: "solid", arrow: "triangle", mark: "+" },
+  { name: "decreases", label: "Decreases", color: COLOR.slate, width: 2, line: "dashed", arrow: "tee", mark: "−" },
   { name: "part-of", label: "Part of", color: MUTED, width: 1.6, line: "dotted", arrow: "circle" },
 ];
 
@@ -131,8 +130,8 @@ const nodeRules: StylesheetJson = [
   },
   // Removed (shown on request): faded, with a dashed ring. Confirmed is the norm, so it looks like nothing.
   { selector: "node.removed", style: { "background-image-opacity": 0.35, color: MUTED, "outline-width": 1, "outline-style": "dashed", "outline-color": MUTED, "outline-offset": 3, "outline-opacity": 0.8 } },
-  { selector: "node.appeared", style: { "underlay-color": "#8ea27f", "underlay-opacity": 0.3, "underlay-padding": 8, "underlay-shape": "ellipse" } },
-  { selector: "node:selected", style: { "underlay-color": "#2a241f", "underlay-opacity": 0.16, "underlay-padding": 8, "underlay-shape": "ellipse" } },
+  { selector: "node.appeared", style: { "underlay-color": COLOR.sage, "underlay-opacity": 0.3, "underlay-padding": 8, "underlay-shape": "ellipse" } },
+  { selector: "node:selected", style: { "underlay-color": COLOR.deep, "underlay-opacity": 0.16, "underlay-padding": 8, "underlay-shape": "ellipse" } },
   { selector: "node.style-statement:selected", style: { "underlay-shape": "round-rectangle" } },
   { selector: "node.highlight", style: { "outline-width": 3, "outline-color": HIGHLIGHT, "outline-style": "solid", "outline-offset": 3, "outline-opacity": 1 } },
 ];
@@ -171,7 +170,7 @@ const edgeRules: StylesheetJson = [
   },
   ...lookRules,
   { selector: "edge.removed", style: { opacity: 0.3 } },
-  { selector: "edge:selected", style: { "underlay-color": "#2a241f", "underlay-opacity": 0.14, "underlay-padding": 5 } },
+  { selector: "edge:selected", style: { "underlay-color": COLOR.deep, "underlay-opacity": 0.14, "underlay-padding": 5 } },
   { selector: "edge.highlight", style: { "line-color": HIGHLIGHT, "target-arrow-color": HIGHLIGHT, width: 3.5 } },
 ];
 

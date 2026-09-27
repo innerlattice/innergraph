@@ -2,6 +2,7 @@
 import { MessageCircle, Plus, Settings, Trash2 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import type { ChatListItem } from "../api";
+import { ICON } from "../design/tokens";
 
 export interface ChatRailProps {
   chats: ChatListItem[];
@@ -55,13 +56,13 @@ function ChatRow(props: { chat: ChatListItem; active: boolean } & Pick<ChatRailP
     <div className={`group/row flex items-center rounded-lg transition ${props.active ? "bg-white shadow-raised" : "hover:bg-stone-200/60"}`}>
       <button type="button" onClick={() => props.onOpen(chat.id)} onDoubleClick={() => setEditing(true)} title="Double-click to rename" className="min-w-0 flex-1 px-2.5 py-1.5 text-left">
         <span className="block truncate text-sm text-stone-700">{chat.title}</span>
-        <span className="block text-[11px] text-stone-400">
+        <span className="block text-caption text-stone-400">
           {ago(chat.updatedAt)}
           {chat.budget.level === "full" ? " (full)" : ""}
         </span>
       </button>
       <button type="button" aria-label={`Delete ${chat.title}`} onClick={() => props.onDelete(chat.id)} className="mr-1 rounded-md p-1.5 text-stone-400 opacity-0 transition group-hover/row:opacity-100 hover:bg-stone-200 hover:text-rose-600">
-        <Trash2 size={13} />
+        <Trash2 size={ICON.sm} />
       </button>
     </div>
   );
@@ -69,16 +70,16 @@ function ChatRow(props: { chat: ChatListItem; active: boolean } & Pick<ChatRailP
 
 export function ChatRail(props: ChatRailProps) {
   return (
-    <div className="relative w-14 shrink-0">
+    <div className="relative w-chat-rail shrink-0">
       <nav
         aria-label="Conversations"
-        className="group/rail absolute inset-y-0 left-0 z-40 flex w-14 flex-col gap-1 overflow-hidden bg-stone-100/95 px-2 py-4 backdrop-blur transition-[width,box-shadow] duration-200 hover:w-72 hover:shadow-2xl has-[:focus-visible]:w-72"
+        className="group/rail absolute inset-y-0 left-0 z-40 flex w-chat-rail flex-col gap-1 overflow-hidden bg-stone-100/95 px-2 py-4 backdrop-blur transition-[width,box-shadow] duration-200 hover:w-72 hover:shadow-lifted has-[:focus-visible]:w-72"
       >
         <div className="mb-3 flex h-8 items-center gap-3 px-2.5">
           <span className="h-3 w-3 shrink-0 rounded-full bg-clay-400" />
           <span className="whitespace-nowrap font-serif text-lg text-stone-800 opacity-0 transition-opacity group-hover/rail:opacity-100">Inner Graph</span>
         </div>
-        <RailButton icon={<Plus size={18} />} label="New conversation" onClick={props.onNew} />
+        <RailButton icon={<Plus size={ICON.xl} />} label="New conversation" onClick={props.onNew} />
         <button
           type="button"
           aria-pressed={props.chatOpen}
@@ -87,17 +88,17 @@ export function ChatRail(props: ChatRailProps) {
           onClick={props.onToggleChat}
           className={`flex h-9 w-full items-center gap-3 rounded-xl px-2.5 text-sm transition ${props.chatOpen ? "bg-white text-clay-600 shadow-raised" : "text-stone-500 hover:bg-stone-200/70 hover:text-stone-900"}`}
         >
-          <MessageCircle size={18} className="shrink-0" />
+          <MessageCircle size={ICON.xl} className="shrink-0" />
           <span className="truncate opacity-0 transition-opacity group-hover/rail:opacity-100 group-has-[:focus-visible]/rail:opacity-100">Chat</span>
         </button>
-        <p className="mt-3 px-2.5 text-[11px] tracking-wide whitespace-nowrap text-stone-400 uppercase opacity-0 transition-opacity group-hover/rail:opacity-100">Conversations</p>
+        <p className="mt-3 px-2.5 text-caption tracking-wide whitespace-nowrap text-stone-400 uppercase opacity-0 transition-opacity group-hover/rail:opacity-100">Conversations</p>
         <div className="mt-1 min-h-0 flex-1 overflow-y-auto opacity-0 transition-opacity group-hover/rail:opacity-100 group-has-[:focus-visible]/rail:opacity-100">
           {props.chats.length === 0 ? <p className="px-2.5 py-2 text-xs whitespace-nowrap text-stone-400">Nothing here yet.</p> : null}
           {props.chats.map((chat) => (
             <ChatRow key={chat.id} chat={chat} active={chat.id === props.active} onOpen={props.onOpen} onRename={props.onRename} onDelete={props.onDelete} />
           ))}
         </div>
-        <RailButton icon={<Settings size={18} />} label="Settings" onClick={props.onSettings} />
+        <RailButton icon={<Settings size={ICON.xl} />} label="Settings" onClick={props.onSettings} />
       </nav>
     </div>
   );

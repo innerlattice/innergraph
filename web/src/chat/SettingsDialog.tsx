@@ -5,6 +5,7 @@ import { Check, Copy, ExternalLink, X } from "lucide-react";
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import { type ChatProvider, type LinkStatus, PLAN_MODELS, type PublicChatSettings, api } from "../api";
 import { Button, buttonClass } from "../components/ui";
+import { ICON } from "../design/tokens";
 
 function Field(props: { label: string; hint?: string; children: ReactNode }) {
   return (
@@ -70,13 +71,13 @@ function CodeBox(props: { code: string; url: string }) {
     <div className="space-y-3 rounded-xl bg-clay-50 p-4 text-center">
       <p className="text-sm text-stone-600">Enter this code on OpenAI's page:</p>
       <div className="flex items-center justify-center gap-2">
-        <span className="font-mono text-2xl tracking-[0.2em] text-stone-800">{props.code}</span>
+        <span className="font-mono text-2xl tracking-code text-stone-800">{props.code}</span>
         <button type="button" aria-label="Copy code" onClick={copy} className="rounded-md p-1.5 text-stone-500 hover:bg-clay-100">
-          {copied ? <Check size={15} /> : <Copy size={15} />}
+          {copied ? <Check size={ICON.md} /> : <Copy size={ICON.md} />}
         </button>
       </div>
       <a href={props.url} target="_blank" rel="noreferrer" className={buttonClass("primary")}>
-        Open OpenAI <ExternalLink size={13} />
+        Open OpenAI <ExternalLink size={ICON.sm} />
       </a>
       <p className="flex items-center justify-center gap-2 text-xs text-stone-500">
         <span className="h-2 w-2 animate-breathe rounded-full bg-clay-400" /> Waiting for you to finish there…
@@ -206,11 +207,11 @@ export function SettingsDialog(props: { settings: PublicChatSettings; onSaved: (
   };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/20 p-4 backdrop-blur-sm" role="dialog" aria-label="Settings">
-      <form onSubmit={save} className="max-h-full w-full max-w-lg animate-rise space-y-4 overflow-y-auto rounded-2xl bg-stone-50 p-6 shadow-2xl">
+      <form onSubmit={save} className="max-h-full w-full max-w-lg animate-rise space-y-4 overflow-y-auto rounded-2xl bg-stone-50 p-6 shadow-lifted">
         <header className="flex items-center justify-between">
           <h2 className="font-serif text-xl text-stone-800">Settings</h2>
           <button type="button" aria-label="Close" onClick={props.onClose} className="rounded-md p-1 text-stone-400 hover:bg-stone-200 hover:text-stone-700">
-            <X size={16} />
+            <X size={ICON.lg} />
           </button>
         </header>
         <ProviderPicker value={provider} onChange={setProvider} />

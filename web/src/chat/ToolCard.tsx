@@ -7,6 +7,7 @@ import { useState } from "react";
 import { api } from "../api";
 import { ItemChip } from "../components/ItemChip";
 import { type ToolCardInfo, type ToolPart, describeTool } from "./parts";
+import { ICON } from "../design/tokens";
 
 export interface ToolCardProps {
   part: ToolPart;
@@ -19,7 +20,7 @@ function Lookup(props: { info: ToolCardInfo }) {
   const { info } = props;
   return (
     <p className="flex items-center gap-2 py-0.5 text-xs text-stone-400">
-      <Search size={12} className={info.phase === "running" ? "animate-pulse" : ""} />
+      <Search size={ICON.sm} className={info.phase === "running" ? "animate-pulse" : ""} />
       {info.title}
       {info.phase === "running" ? "…" : ""}
     </p>
@@ -27,9 +28,9 @@ function Lookup(props: { info: ToolCardInfo }) {
 }
 
 function CardIcon(props: { phase: ToolCardInfo["phase"]; undone: boolean }) {
-  if (props.phase === "error") return <CircleAlert size={13} className="text-rose-500" />;
-  if (props.phase === "running") return <Sparkles size={13} className="animate-pulse text-clay-500" />;
-  return props.undone ? <Undo2 size={13} className="text-stone-400" /> : <Check size={13} className="text-sage-600" />;
+  if (props.phase === "error") return <CircleAlert size={ICON.sm} className="text-rose-500" />;
+  if (props.phase === "running") return <Sparkles size={ICON.sm} className="animate-pulse text-clay-500" />;
+  return props.undone ? <Undo2 size={ICON.sm} className="text-stone-400" /> : <Check size={ICON.sm} className="text-sage-600" />;
 }
 
 function Chips(props: { info: ToolCardInfo; undone: boolean; onSelect: (ids: string[]) => void }) {
@@ -52,7 +53,7 @@ function UndoButton(props: { session?: string; undone: boolean; onUndone: () => 
       .catch((e: Error) => props.onError(e.message));
   return (
     <button type="button" onClick={undo} className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-stone-500 transition hover:bg-white/70 hover:text-stone-800">
-      <Undo2 size={12} /> Undo
+      <Undo2 size={ICON.sm} /> Undo
     </button>
   );
 }

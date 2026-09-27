@@ -4,6 +4,7 @@ import { BookOpen } from "lucide-react";
 import type { RelatedItem } from "../api";
 import { Chip } from "./Chip";
 import { ItemChip } from "./ItemChip";
+import { ICON } from "../design/tokens";
 
 export function Related(props: { items: RelatedItem[]; onSelect: (id: string) => void; onOpenEntry: (id: string) => void }) {
   if (props.items.length === 0) return <p className="text-sm text-stone-400">Nothing from before looks related.</p>;
@@ -13,7 +14,7 @@ export function Related(props: { items: RelatedItem[]; onSelect: (id: string) =>
         <li key={item.id} className="space-y-1">
           {item.kind === "entry" ? (
             <>
-              <Chip lead={<BookOpen size={11} aria-hidden />} onClick={() => props.onOpenEntry(item.id)}>
+              <Chip lead={<BookOpen size={ICON.xs} aria-hidden />} onClick={() => props.onOpenEntry(item.id)}>
                 {item.title}
               </Chip>
               <p className="line-clamp-2 pl-2.5 font-serif text-sm text-stone-500">{item.snippet}</p>

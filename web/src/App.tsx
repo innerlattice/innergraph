@@ -1,7 +1,7 @@
 // The app shell: conversations on the left (hover to open), the conversation in the middle,
 // and one view beside it (map, loops, entries, log) chosen from the right rail. The map
 // selection lives here so the chat can say "these" and a highlight can show its item.
-import { type ReactElement, useCallback, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, type ReactElement, useCallback, useEffect, useMemo, useState } from "react";
 import { type Selection, api } from "./api";
 import { ChatRail } from "./chat/ChatRail";
 import { ChatView } from "./chat/ChatView";
@@ -110,7 +110,7 @@ export function App() {
     <ItemsProvider value={items}>
     <div className="flex h-screen bg-paper text-stone-800">
       <ChatRail chats={chats.list} active={chats.active} onOpen={openChat} onNew={newChat} onRename={chats.rename} onDelete={chats.remove} onSettings={() => setSettingsOpen(true)} chatOpen={chatOpen} onToggleChat={toggleChat} />
-      <main aria-label="Conversation" className={chatOpen ? "min-w-[22rem] flex-1" : "hidden"}>
+      <main aria-label="Conversation" className={chatOpen ? "min-w-panel flex-1" : "hidden"}>
         <ChatView
           id={chats.active}
           selection={selection.items}
@@ -148,11 +148,11 @@ export function App() {
 
 /** The view beside the chat, sized by the divider; alone, it takes the whole width. */
 function ViewPane(props: { chatOpen: boolean; share: number; onResize: (share: number) => void; children: ReactElement }) {
-  const style = props.chatOpen ? { flexBasis: `calc(${props.share} * (100vw - 104px))` } : undefined;
+  const style = props.chatOpen ? ({ "--share": props.share } as CSSProperties) : undefined;
   return (
     <>
       {props.chatOpen ? <Divider share={props.share} onChange={props.onResize} /> : null}
-      <section aria-label="View" style={style} className={`min-w-0 overflow-hidden bg-stone-50 ${props.chatOpen ? "shrink-0" : "flex-1"}`}>
+      <section aria-label="View" style={style} className={`min-w-0 overflow-hidden bg-stone-50 ${props.chatOpen ? "basis-share shrink-0" : "flex-1"}`}>
         <div className="h-full overflow-auto">{props.children}</div>
       </section>
     </>

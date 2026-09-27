@@ -37,7 +37,7 @@ export function UserMessage(props: { message: ChatMessage; replies: ChatMessage[
   const parts = markedRuns(text, marksFor(text, recordedEntry(props.replies), props.later));
   return (
     <div className="flex animate-rise justify-end">
-      <div className="max-w-[88%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-stone-100 px-4 py-3 font-serif text-[15px] leading-relaxed text-stone-800">
+      <div className="max-w-7/8 whitespace-pre-wrap rounded-2xl rounded-br-md bg-stone-100 px-4 py-3 font-serif text-reading leading-relaxed text-stone-800">
         {parts.map((segment, i) => (segment.marked ? <Highlight key={i} segment={segment} onSelect={props.onSelect} /> : <span key={i}>{segment.text}</span>))}
       </div>
     </div>
@@ -50,7 +50,7 @@ export function AssistantMessage(props: { message: ChatMessage; streaming: boole
       {props.message.parts.map((part, i) => {
         if (part.type === "text") {
           return (
-            <Streamdown key={i} className="font-serif text-[15px] leading-relaxed text-stone-800" isAnimating={props.streaming} controls={false}>
+            <Streamdown key={i} className="font-serif text-reading leading-relaxed text-stone-800" isAnimating={props.streaming} controls={false}>
               {part.text}
             </Streamdown>
           );

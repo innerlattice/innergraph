@@ -8,6 +8,7 @@
 import { ArrowRight, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { parseEdgeText } from "../../../src/core/edgeText";
+import { ICON } from "../design/tokens";
 
 type ChipTone = "neutral" | "context" | "accent";
 
@@ -52,7 +53,7 @@ export function Chip(props: ChipProps) {
     <span className={`${BASE} ${TONES[tone]} py-0 pr-1 pl-2.5`} data-tone={tone}>
       {body}
       <button type="button" aria-label={props.removeLabel ?? "Remove"} onClick={props.onRemove} className="shrink-0 rounded-full p-0.5 opacity-70 hover:bg-black/5 hover:opacity-100">
-        <X size={11} />
+        <X size={ICON.xs} />
       </button>
     </span>
   );
@@ -64,9 +65,9 @@ export function EdgeLabel(props: { from?: string; verb: string; to?: string }) {
   return (
     <span className="inline-flex min-w-0 items-baseline gap-1.5">
       {props.from ? <span className="min-w-0 truncate">{props.from}</span> : null}
-      <span className="inline-flex shrink-0 items-center gap-0.5 text-[0.9em] italic opacity-60">
+      <span className="inline-flex shrink-0 items-center gap-0.5 text-aside italic opacity-60">
         {props.verb}
-        <ArrowRight size={10} strokeWidth={2.25} aria-hidden />
+        <ArrowRight size={ICON.xs} strokeWidth={2.25} aria-hidden />
       </span>
       {props.to ? <span className="min-w-0 truncate">{props.to}</span> : null}
     </span>

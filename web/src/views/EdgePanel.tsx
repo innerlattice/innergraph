@@ -10,6 +10,7 @@ import { entryFocus } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 import { EvidenceCard, StaleNote } from "./NodePanel";
 import { type Done, ItemActions } from "./ItemControls";
+import { ICON } from "../design/tokens";
 
 /** The look the map draws this Edge with: a signed Edge is causal whatever the Schema says. */
 function lookFor(schema: Schema | null | undefined, type: string, sign?: number): EdgeLook {
@@ -45,7 +46,7 @@ export function EdgePanel(props: EdgePanelProps) {
             {fromLabel}
           </button>
           <span className="my-0.5 inline-flex items-center gap-1 pl-0.5 font-sans text-sm text-stone-400 italic">
-            <ArrowDown size={13} aria-hidden />
+            <ArrowDown size={ICON.sm} aria-hidden />
             {humanise(edge.type)}
           </span>
           <button type="button" className="text-left hover:underline" onClick={() => props.onSelect(edge.to)}>

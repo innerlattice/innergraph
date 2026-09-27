@@ -1,4 +1,5 @@
 import { History } from "lucide-react";
+import { ICON } from "../design/tokens";
 
 // One quiet bar over the map: what changed recently, and whether removed items are shown.
 export interface StatusBarProps {
@@ -27,9 +28,9 @@ export function StatusBar(props: StatusBarProps) {
         onClick={props.onChanges}
         className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 transition ${props.changesOpen ? CHANGES.open : CHANGES.closed}`}
       >
-        <History size={14} aria-hidden="true" />
+        <History size={ICON.md} aria-hidden="true" />
         What changed
-        {props.duplicates > 0 ? <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 text-xs text-amber-800">{props.duplicates} duplicate{props.duplicates === 1 ? "" : "s"}</span> : null}
+        {props.duplicates > 0 ? <span className="ml-1.5 rounded-full bg-clay-100 px-1.5 text-xs text-clay-700">{props.duplicates} duplicate{props.duplicates === 1 ? "" : "s"}</span> : null}
       </button>
       <label className="ml-auto flex items-center gap-1.5 text-xs text-stone-500">
         <input type="checkbox" checked={props.showRemoved} onChange={(e) => props.onShowRemoved(e.target.checked)} />

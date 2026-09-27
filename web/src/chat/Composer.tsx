@@ -6,6 +6,7 @@ import { WARN_AT } from "../../../src/core/budget";
 import type { BudgetLevel, SelectionItem } from "../api";
 import { ItemChip } from "../components/ItemChip";
 import { Button } from "../components/ui";
+import { ICON } from "../design/tokens";
 
 /** Beyond this many, the chips fold into "+N more". */
 const SHOWN = 4;
@@ -90,7 +91,7 @@ export function Composer(props: ComposerProps) {
     const el = box.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 320)}px`;
+    el.style.height = `${el.scrollHeight}px`;
   }, [text]);
   const send = () => {
     if (!text.trim() || props.busy) return;
@@ -114,19 +115,19 @@ export function Composer(props: ComposerProps) {
           onKeyDown={onKey}
           placeholder="Write what's on your mind…"
           aria-label="Message"
-          className="max-h-80 min-h-7 flex-1 resize-none bg-transparent font-serif text-[15px] leading-relaxed text-stone-800 outline-none placeholder:text-stone-400"
+          className="max-h-80 min-h-7 flex-1 resize-none bg-transparent font-serif text-reading leading-relaxed text-stone-800 outline-none placeholder:text-stone-400"
         />
         {props.busy ? (
           <button type="button" aria-label="Stop" onClick={props.onStop} className="rounded-full bg-stone-200 p-2 text-stone-600 transition hover:bg-stone-300">
-            <Square size={14} />
+            <Square size={ICON.md} />
           </button>
         ) : (
           <button type="button" aria-label="Send" disabled={!text.trim()} onClick={send} className="rounded-full bg-clay-500 p-2 text-white transition hover:bg-clay-600 disabled:bg-stone-200 disabled:text-stone-400">
-            <ArrowUp size={16} />
+            <ArrowUp size={ICON.lg} />
           </button>
         )}
       </div>
-      <div className="mt-1.5 flex items-center justify-between px-3 text-[11px] text-stone-400">
+      <div className="mt-1.5 flex items-center justify-between px-3 text-caption text-stone-400">
         <span>{props.footer}</span>
         <ContextMeter share={props.share} />
       </div>

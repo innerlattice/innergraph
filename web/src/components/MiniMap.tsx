@@ -1,5 +1,6 @@
 import type { Core } from "cytoscape";
 import { type PointerEvent, useEffect, useState } from "react";
+import { COLOR } from "../design/tokens";
 import { type Box, fit, panToCentre, toMini, toModel, union } from "../lib/minimap";
 
 const WIDTH = 180;
@@ -20,7 +21,7 @@ export function snapshot(cy: Core): Snapshot {
   const graph = cy.elements().boundingBox();
   const bounds = cy.nodes().length > 0 ? union(graph, view) : view;
   return {
-    nodes: cy.nodes().map((n) => ({ id: n.id(), ...n.position(), color: n.data("color") ?? "#a8a29e", selected: n.selected() })),
+    nodes: cy.nodes().map((n) => ({ id: n.id(), ...n.position(), color: n.data("color") ?? COLOR.faint, selected: n.selected() })),
     edges: cy.edges().map((e) => ({ id: e.id(), x1: e.source().position().x, y1: e.source().position().y, x2: e.target().position().x, y2: e.target().position().y })),
     view,
     bounds,
@@ -69,13 +70,13 @@ export function MiniMap(props: { cy: Core }) {
       {snap.edges.map((e) => {
         const a = toMini(t, { x: e.x1, y: e.y1 });
         const b = toMini(t, { x: e.x2, y: e.y2 });
-        return <line key={e.id} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#d6d3d1" strokeWidth={0.8} />;
+        return <line key={e.id} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={COLOR.rule} strokeWidth={0.8} />;
       })}
       {snap.nodes.map((n) => {
         const p = toMini(t, n);
-        return <circle key={n.id} cx={p.x} cy={p.y} r={n.selected ? 3.5 : 2.5} fill={n.color} stroke={n.selected ? "#1c1917" : "none"} />;
+        return <circle key={n.id} cx={p.x} cy={p.y} r={n.selected ? 3.5 : 2.5} fill={n.color} stroke={n.selected ? COLOR.deep : "none"} />;
       })}
-      <rect x={v1.x} y={v1.y} width={Math.max(v2.x - v1.x, 2)} height={Math.max(v2.y - v1.y, 2)} fill="#1c1917" fillOpacity={0.05} stroke="#57534e" strokeWidth={1} />
+      <rect x={v1.x} y={v1.y} width={Math.max(v2.x - v1.x, 2)} height={Math.max(v2.y - v1.y, 2)} fill={COLOR.deep} fillOpacity={0.05} stroke={COLOR.strong} strokeWidth={1} />
     </svg>
   );
 }

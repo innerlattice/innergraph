@@ -6,6 +6,7 @@ import { nodeLookOf } from "../design/graph";
 import { useItems } from "../lib/items";
 import { Chip, type ChipProps, EdgeLabel, ItemLabel } from "./Chip";
 import { NodeGlyph } from "./GraphGlyph";
+import { ICON } from "../design/tokens";
 
 export interface ItemChipProps extends Omit<ChipProps, "children" | "lead"> {
   id: string;
@@ -15,7 +16,7 @@ export interface ItemChipProps extends Omit<ChipProps, "children" | "lead"> {
 function useItemFace(id: string, label: string | undefined) {
   const { view, schema } = useItems();
   const node = view?.nodes[id];
-  if (node) return { lead: <NodeGlyph look={nodeLookOf(schema, node.type)} size={10} />, text: node.label, body: <>{node.label}</> };
+  if (node) return { lead: <NodeGlyph look={nodeLookOf(schema, node.type)} size={ICON.xs} />, text: node.label, body: <>{node.label}</> };
   const edge = view?.edges[id];
   const name = (n: string) => view?.nodes[n]?.label ?? n;
   if (edge) return { text: `${name(edge.from)} ${humanise(edge.type)} ${name(edge.to)}`, body: <EdgeLabel from={name(edge.from)} verb={humanise(edge.type)} to={name(edge.to)} /> };

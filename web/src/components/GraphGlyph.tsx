@@ -4,6 +4,7 @@ import type { LabelStyle } from "../../../src/core/types";
 import type { EdgeLook, NodeLook } from "../design/graph";
 import { nodeGem } from "../design/graph";
 import { aspectOf } from "../design/shapes";
+import { ICON } from "../design/tokens";
 
 /** A node type's label as the map sets it: statements in serif, names bold, titles plain. */
 export const LABEL_FONT: Record<LabelStyle, string> = { statement: "font-serif", name: "font-semibold", title: "" };
@@ -16,9 +17,9 @@ function glyphSize(look: NodeLook, size: number): { w: number; h: number } {
 
 /** A node type's gem at icon size. Its shadow spills into the surrounding space, not the layout. */
 export function NodeGlyph(props: { look: NodeLook; size?: number }) {
-  const { w, h } = glyphSize(props.look, props.size ?? 14);
+  const { w, h } = glyphSize(props.look, props.size ?? ICON.md);
   const g = nodeGem(props.look, { w, h });
-  return <img src={g.uri} alt="" aria-hidden="true" width={g.width} height={g.height} className="shrink-0" style={{ margin: `${-(g.height - h) / 2}px ${-(g.width - w) / 2}px` }} />;
+  return <img src={g.uri} alt="" aria-hidden="true" width={g.width} height={g.height} className="shrink-0" style={{ marginBlock: -(g.height - h) / 2, marginInline: -(g.width - w) / 2 }} />;
 }
 
 const DASH = { solid: undefined, double: undefined, dashed: "5 3", dotted: "0.1 3.4" };
