@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Chip, ItemLabel } from "../components/Chip";
 import type { Navigate } from "../App";
 import { type EntryView, type RevisionResult, api } from "../api";
-import { Button, Card, Empty, ErrorNote, Page } from "../components/ui";
+import { Button, Card, Empty, ErrorNote, Page, passageClass } from "../components/ui";
 import { formatHlc, citedRuns, parseEntryFocus } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 import { useJob } from "../lib/useJob";
@@ -10,11 +10,6 @@ import { useJob } from "../lib/useJob";
 const FOCUS = "\u0000focus";
 
 type Span = { start: number; end: number };
-
-function markClass(focused: boolean): string {
-  const base = "cursor-pointer rounded text-inherit focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500";
-  return `${base} ${focused ? "bg-amber-300 ring-2 ring-amber-400" : "bg-amber-100/70 hover:bg-amber-200"}`;
-}
 
 export function EntryText(props: { view: EntryView; focus?: Span; onOpen: (id: string) => void }) {
   const { view, focus, onOpen } = props;
@@ -41,7 +36,7 @@ export function EntryText(props: { view: EntryView; focus?: Span; onOpen: (id: s
             data-focus={focused || undefined}
             aria-label={`${s.text} — supports ${cited.map((id) => labels[id]).join(", ")}`}
             title={cited.map((id) => labels[id]).join(", ")}
-            className={markClass(focused)}
+            className={passageClass(focused ? "focused" : "rest")}
             onClick={() => cited[0] && onOpen(cited[0])}
             onKeyDown={(e) => e.key === "Enter" && cited[0] && onOpen(cited[0])}
           >

@@ -67,3 +67,22 @@ export function Quote(props: { children: ReactNode; source?: string }) {
     </blockquote>
   );
 }
+
+// A passage of someone's words that is on the map. The chat, the entries and the evidence in a
+// panel all mark it the same way: a clay wash that deepens and underlines under the pointer.
+//   rest:    on the map, click to see what it supports
+//   focused: the passage you came here to see
+//   pending: the assistant is still adding it
+//   inert:   inside something else that is clickable, which carries the hover
+type Passage = "rest" | "focused" | "pending" | "inert";
+
+const PASSAGES: Record<Passage, string> = {
+  rest: "cursor-pointer bg-clay-200/60 hover:bg-clay-200 hover:underline",
+  focused: "cursor-pointer bg-clay-300/80 underline",
+  pending: "animate-pulse bg-sage-100",
+  inert: "bg-clay-200/60 group-hover:bg-clay-200 group-hover:underline",
+};
+
+export function passageClass(state: Passage): string {
+  return `rounded-sm box-decoration-clone text-inherit decoration-clay-400 underline-offset-4 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-400 ${PASSAGES[state]}`;
+}

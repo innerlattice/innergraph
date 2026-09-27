@@ -5,6 +5,7 @@ import { Component, type ReactNode } from "react";
 import { Streamdown } from "streamdown";
 import type { ChatMessage } from "../api";
 import { ToolCard } from "./ToolCard";
+import { passageClass } from "../components/ui";
 import { type MarkedRun, isToolPart, marksFor, recordedEntry, markedRuns, textOf } from "./parts";
 
 export interface MessageActions {
@@ -23,7 +24,7 @@ function Highlight(props: { segment: MarkedRun; onSelect: (ids: string[]) => voi
       title={title}
       onClick={() => !pending && props.onSelect(segment.ids)}
       onKeyDown={(e) => e.key === "Enter" && !pending && props.onSelect(segment.ids)}
-      className={`rounded-sm box-decoration-clone text-inherit transition ${pending ? "animate-pulse bg-sage-100" : "bg-clay-200/60 decoration-clay-400 underline-offset-4 hover:bg-clay-200 hover:underline"}`}
+      className={passageClass(pending ? "pending" : "rest")}
     >
       {segment.text}
     </mark>

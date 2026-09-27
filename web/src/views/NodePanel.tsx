@@ -2,7 +2,7 @@ import { type ReactNode, useState } from "react";
 import { EdgeLabel } from "../components/Chip";
 import type { Navigate } from "../App";
 import { type NodeView, type RelatedItem, type RootTrace, type ViewStatus, api } from "../api";
-import { Button, ErrorNote, StatusPill } from "../components/ui";
+import { Button, ErrorNote, StatusPill, passageClass } from "../components/ui";
 import { humanise } from "../../../src/core/edgeText";
 import { actorLabel, entryFocus, pct } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
@@ -46,12 +46,12 @@ export function EvidenceCard(props: { evidence: NodeView["evidence"][number]; on
       type="button"
       onClick={onOpen}
       aria-label={`Open “${e.entryTitle}” at this passage`}
-      className="group block w-full rounded-lg bg-stone-50 p-3 text-left transition hover:bg-white hover:shadow-floating focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+      className="group block w-full rounded-lg bg-stone-50 p-3 text-left transition hover:bg-white hover:shadow-floating focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-400"
     >
       <p className="font-serif text-sm leading-relaxed text-stone-500">
         {e.before ? "…" : ""}
         {e.before}
-        <mark className="rounded bg-amber-100 px-0.5 text-stone-900">{e.text}</mark>
+        <mark className={`${passageClass("inert")} text-stone-900`}>{e.text}</mark>
         {e.after}
         {e.after ? "…" : ""}
       </p>
