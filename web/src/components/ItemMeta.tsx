@@ -28,11 +28,7 @@ export function Eyebrow(props: { mark: ReactNode; kind: string; confidence: numb
   );
 }
 
-export function AddedBy(props: { actor: string; children?: ReactNode }) {
-  return (
-    <p className="flex items-center gap-2 text-xs text-stone-400">
-      Added by {actorLabel(props.actor)}
-      {props.children}
-    </p>
-  );
+/** Who put it on the map: provenance, so it closes the card rather than leading it. */
+export function AddedBy(props: { actor: string }) {
+  return <footer className="text-xs text-stone-400">Added by {actorLabel(props.actor)}</footer>;
 }

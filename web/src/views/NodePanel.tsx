@@ -178,9 +178,7 @@ export function NodePanel(props: NodePanelProps) {
       <header className="space-y-1">
         <Eyebrow mark={<NodeGlyph look={nodeLookOf(props.schema ?? null, node.type)} />} kind={humanise(node.type)} confidence={node.confidence} />
         <EditableTitle value={node.label} readOnly={readOnly} onSave={(label) => run(() => api.rename(node.id, label))} />
-        <AddedBy actor={node.assertedBy}>
-          <StatusPill status={node.status} />
-        </AddedBy>
+        <StatusPill status={node.status} />
       </header>
       <ErrorNote error={error} />
       <StatusSection view={view.data} readOnly={readOnly} onDone={(done) => (view.reload(), onDone(done))} />
@@ -209,6 +207,7 @@ export function NodePanel(props: NodePanelProps) {
         <RootsList trace={trace} labels={labels} />
         {related ? <Related items={related} /> : null}
       </Section>
+      <AddedBy actor={node.assertedBy} />
     </div>
   );
 }

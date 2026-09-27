@@ -52,9 +52,7 @@ export function EdgePanel(props: EdgePanelProps) {
             {toLabel}
           </button>
         </h3>
-        <AddedBy actor={edge.assertedBy}>
-          <StatusPill status={edge.status} />
-        </AddedBy>
+        <StatusPill status={edge.status} />
       </header>
       {edge.status === "removed" ? <p className="text-sm text-stone-500">Removed. Restore puts it back as it was.</p> : null}
       {props.readOnly ? null : <ItemActions ids={[edge.id]} items={[edge]} onDone={done} />}
@@ -65,6 +63,7 @@ export function EdgePanel(props: EdgePanelProps) {
         ))}
         <StaleNote count={edge.staleEvidence} />
       </section>
+      <AddedBy actor={edge.assertedBy} />
     </div>
   );
 }
