@@ -29,7 +29,8 @@ type Handler = (c: Context) => unknown;
 function route(handler: Handler) {
   return async (c: Context) => {
     try {
-      return c.json((await handler(c)) ?? { ok: true });
+      const result = await handler(c);
+      return c.json(result === undefined ? { ok: true } : result);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return c.json({ error: message }, statusFor(error));
@@ -62,7 +63,6 @@ function streamPositions(c: Context, vault: Vault, intervalMs = STREAM_INTERVAL_
 
 function registerReads(app: Hono, vault: Vault): void {
   const { explore, map, ingest } = vault;
-  app.get("/api/status", route(() => ({ model: vault.gateway.name, hosted: vault.gateway.hosted, schema: explore.schema() })));
   app.get("/api/schema", route(() => explore.schema()));
   app.get("/api/graph", route((c) => explore.graph({ includeSuperseded: c.req.query("superseded") === "1" })));
   app.get("/api/graph/at", route((c) => map.graphAt(c.req.query("t") ?? "")));

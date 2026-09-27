@@ -2,7 +2,7 @@ import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { InvariantError } from "../src/access/invariants.js";
 import { formatFor, runCli, spawnInForeground } from "../src/clients/cli.js";
 import type { LaunchPlan } from "../src/clients/launcher.js";
@@ -33,9 +33,14 @@ describe("HTTP client", () => {
     expect(statusFor("weird")).toBe(400);
   });
 
+  it("sends null as null, not as { ok: true }", async () => {
+    vi.spyOn(t.vault.explore, "schema").mockReturnValue(null);
+    expect((await call(createApp(t.vault), "/api/schema")).json).toBeNull();
+  });
+
   it("serves the ingest, change and explore workflow", async () => {
     const app = createApp(t.vault);
-    expect((await call(app, "/api/status")).json).toMatchObject({ model: "scripted", hosted: false });
+    expect((await call(app, "/api/schema")).json).toHaveProperty("nodeTypes");
     const added = await call(app, "/api/entries", { content: ENTRY_1, format: "markdown" });
     expect(added.status).toBe(200);
     await t.vault.queue.idle();
@@ -222,7 +227,7 @@ describe("CLI client", () => {
     const plans: LaunchPlan[] = [];
     const spawnFake = async (plan: LaunchPlan) => {
       plans.push(plan);
-      const res = await fetch("http://127.0.0.1:43918/api/status");
+      const res = await fetch("http://127.0.0.1:43918/api/schema");
       expect(res.status).toBe(200);
       return 0;
     };
@@ -230,7 +235,7 @@ describe("CLI client", () => {
     expect(plans[0]).toMatchObject({ command: "my-agent", args: ["--flag"], env: { INNER_GRAPH_VAULT: dir, INNER_GRAPH_VIEW: "http://127.0.0.1:43918" } });
     const config = JSON.parse(readFileSync(join(dir, "agent", "mcp.json"), "utf8"));
     expect(config.mcpServers["inner-graph"].args).toEqual(expect.arrayContaining(["mcp", "--tier", "write", "--agent", "my-agent --flag"]));
-    await expect(fetch("http://127.0.0.1:43918/api/status")).rejects.toThrow();
+    await expect(fetch("http://127.0.0.1:43918/api/schema")).rejects.toThrow();
     rmSync(dir, { recursive: true });
   });
 

@@ -54,7 +54,7 @@ const LOOP = {
 };
 
 const routes: Record<string, unknown> = {
-  "/api/status": { model: "gemma", hosted: true, schema: { name: "author", version: 1, nodeTypes: {}, edgeTypes: {} } },
+  "/api/schema": { name: "author", version: 1, nodeTypes: {}, edgeTypes: {} },
   "/api/view": graph,
   "/api/graph": graph,
   "/api/duplicates": [],

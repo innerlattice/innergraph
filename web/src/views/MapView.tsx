@@ -22,11 +22,11 @@ const statusesFor = (showRemoved: boolean): ViewStatus[] => (showRemoved ? ["act
 function useMapData(index: number | undefined, filter: ViewStatus[]) {
   const [version, setVersion] = useState("");
   const positions = useAsync(api.positions);
-  const status = useAsync(api.status);
+  const schemaState = useAsync(api.schema);
   const position = index === undefined ? undefined : positions.data?.[index];
   const view = useAsync(() => api.view(filter, position), [position, filter.join()]);
   const duplicates = useAsync(api.duplicates);
-  const schema = status.data?.schema ?? null;
+  const schema = schemaState.data ?? null;
   const elements = useMemo(() => (view.data ? toElements(view.data, schema) : []), [view.data, schema]);
   const labels = useMemo(() => (view.data ? labelsFrom(view.data) : {}), [view.data]);
   const refresh = () => {

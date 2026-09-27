@@ -36,12 +36,6 @@ export interface ChatDetail {
 
 export type ChatSettingsPatch = Partial<ChatSettings>;
 
-export interface VaultStatus {
-  model: string;
-  hosted: boolean;
-  schema: Schema | null;
-}
-
 export class ApiError extends Error {}
 
 export async function request<T>(path: string, body?: unknown, fetchImpl: typeof fetch = fetch, method = "POST"): Promise<T> {
@@ -55,7 +49,7 @@ export async function request<T>(path: string, body?: unknown, fetchImpl: typeof
 const enc = encodeURIComponent;
 
 export const api = {
-  status: () => request<VaultStatus>("/status"),
+  schema: () => request<Schema | null>("/schema"),
   graph: (withRemoved = false) => request<Graph>(withRemoved ? "/graph?superseded=1" : "/graph"),
   edge: (id: string) => request<EdgeView>(`/edges/${enc(id)}`),
   duplicates: () => request<DuplicateGroup[]>("/duplicates"),

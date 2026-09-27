@@ -28,11 +28,7 @@ const now = { nodes, edges: {}, counts: { active: 3, removed: 1 }, position: HLC
 const past = { ...now, nodes: {}, counts: { active: 0, removed: 0 }, position: HLC1 };
 const routes: Record<string, unknown> = {
   "/api/positions": [HLC1, HLC2],
-  "/api/status": {
-    model: "m",
-    hosted: false,
-    schema: { name: "s", version: 1, edgeTypes: {}, nodeTypes: { t: { attributes: {}, display: { shape: "round-rectangle", color: "#111111" } }, u: { attributes: {}, display: { shape: "barrel" } }, v: { attributes: {} } } },
-  },
+  "/api/schema": { name: "s", version: 1, edgeTypes: {}, nodeTypes: { t: { attributes: {}, display: { shape: "round-rectangle", color: "#111111" } }, u: { attributes: {}, display: { shape: "barrel" } }, v: { attributes: {} } } },
   "/api/view": now,
   "/api/duplicates": [],
   "/api/nodes/n1": { node: nodes.n1, evidence: [], outgoing: [], incoming: [], derivedFrom: [], derivedInto: [] },
