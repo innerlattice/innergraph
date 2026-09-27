@@ -60,7 +60,7 @@ interface PanelProps {
   schema: Schema | null;
 }
 
-/** What changed, one Node, one Edge, or the selection: exactly one card at a time, floating over
+/** History, one Node, one Edge, or the selection: exactly one card at a time, floating over
  *  the map so the conversation keeps its room. */
 function SidePanel(props: PanelProps) {
   const content = panelFor(props);

@@ -76,7 +76,7 @@ describe("undo bar", () => {
   });
 });
 
-describe("what changed", () => {
+describe("history", () => {
   it("lists sessions with their rows, focuses items, undoes a session and merges duplicates", async () => {
     const onFocus = vi.fn();
     const onChanged = vi.fn();
@@ -115,7 +115,7 @@ describe("what changed", () => {
 });
 
 describe("status bar", () => {
-  it("opens what changed, counts duplicates, tidies and toggles removed items", () => {
+  it("opens history, counts duplicates, tidies and toggles removed items", () => {
     const onChanges = vi.fn();
     const onTidy = vi.fn();
     const onShowRemoved = vi.fn();
@@ -124,7 +124,7 @@ describe("status bar", () => {
     );
     fireEvent.click(screen.getByText("Tidy up"));
     expect(onTidy).toHaveBeenCalled();
-    fireEvent.click(screen.getByText("What changed"));
+    fireEvent.click(screen.getByText("History"));
     expect(onChanges).toHaveBeenCalled();
     expect(screen.getByText("2 duplicates")).toBeTruthy();
     fireEvent.click(screen.getByLabelText("Show removed (2)"));

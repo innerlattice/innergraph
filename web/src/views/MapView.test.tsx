@@ -125,10 +125,10 @@ it("lists node types from the Schema in the legend", async () => {
   expect(screen.getByText("u")).toBeTruthy();
 });
 
-it("opens what changed from the status bar and shows removed items on request", async () => {
+it("opens history from the status bar and shows removed items on request", async () => {
   const calls = fakeServer(respond);
   render(<Harness />);
-  fireEvent.click(await screen.findByText("What changed"));
+  fireEvent.click(await screen.findByText("History"));
   expect(await screen.findByText("New entry")).toBeTruthy();
   fireEvent.click(screen.getByText("Ghost"));
   expect(await screen.findByText("Ghost", { selector: "h3" })).toBeTruthy();

@@ -1,4 +1,4 @@
-// "What changed": recent Sessions (an entry decomposed, a rename, a merge…), newest first, each
+// "History": recent Sessions (an entry decomposed, a rename, a merge…), newest first, each
 // undoable as a whole, plus duplicates worth merging. Opened from the status bar.
 import { BookOpen, Check, FilePen, type LucideIcon, Merge, Minus, PenLine, Plus, Quote, RotateCcw, Split } from "lucide-react";
 import { useState } from "react";
@@ -142,7 +142,7 @@ export function ChangesPanel(props: ChangesPanelProps) {
   return (
     <div className="space-y-5 p-5">
       <header className="flex items-center justify-between">
-        <h3 className="font-serif text-xl text-stone-800">What changed</h3>
+        <h3 className="font-serif text-xl text-stone-800">History</h3>
         <Button onClick={props.onClose}>Close</Button>
       </header>
       <Duplicates groups={props.duplicates ?? []} labels={props.labels} onFocus={props.onFocus} onDone={done} />

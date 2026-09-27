@@ -1,7 +1,7 @@
 import { History, Sparkles } from "lucide-react";
 import { ICON } from "../design/tokens";
 
-// One quiet bar over the map: what changed recently, and whether removed items are shown.
+// One quiet bar over the map: its history, and whether removed items are shown.
 export interface StatusBarProps {
   /** How many removed items the toggle would bring back. */
   removed?: number;
@@ -31,7 +31,7 @@ export function StatusBar(props: StatusBarProps) {
         className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 transition ${props.changesOpen ? CHANGES.open : CHANGES.closed}`}
       >
         <History size={ICON.md} aria-hidden="true" />
-        What changed
+        History
         {props.duplicates > 0 ? (
           <span className="ml-1.5 rounded-full bg-clay-100 px-1.5 text-xs text-clay-700">
             {props.duplicates} duplicate{props.duplicates === 1 ? "" : "s"}

@@ -38,7 +38,7 @@ server and skill, with the app alongside:
 - Chat connections use the `write` tier; pass `--tier read` for a look-only agent.
 
 The map updates live as any agent works. Select with click, shift-click or a drag
-box; the agent sees the selection through `get_selection`. "What changed" lists recent
+box; the agent sees the selection through `get_selection`. "History" lists recent
 changes, each undoable as a whole; the side panel can confirm ("Looks right"), remove,
 restore and rename (double-click the title).
 
@@ -128,7 +128,7 @@ the graph before appending:
   noted as `similarTo`.
 - Edges are identified by (from, type, to); re-asserting one merges evidence.
 - Existing duplicates can be found and cleaned up (`find_duplicates`, `merge_duplicates`, or
-  "What changed" → Merge in the graph view).
+  "History" → Merge in the graph view).
 
 ## Undo
 
