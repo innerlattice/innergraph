@@ -1,6 +1,6 @@
 import cytoscape, { type Core, type ElementDefinition } from "cytoscape";
 import { useEffect, useRef, useState } from "react";
-import { applyHighlight, applySelection, onKeyDown, onKeyUp, pointerOnHover, remember, render, selectedIds, wheelToViewport } from "../lib/canvasController";
+import { applyHighlight, applySelection, onKeyDown, onKeyUp, pointerOnHover, remember, render, selectedIds, tidy, wheelToViewport } from "../lib/canvasController";
 import { GRAPH_STYLE } from "../design/graph";
 import { type Positions, loadPositions } from "../lib/layoutCache";
 import { MiniMap } from "./MiniMap";
@@ -10,6 +10,8 @@ export interface GraphCanvasProps {
   selection: string[];
   highlight?: string[];
   onSelectionChange: (ids: string[]) => void;
+  /** Counts requests to lay the whole map out afresh. */
+  tidied?: number;
 }
 
 /** Keyboard: Space pans while held, Escape clears the selection. */
@@ -31,7 +33,7 @@ function useKeys(cy: Core | undefined): void {
  * Owns one Cytoscape instance. Click selects; Shift/Cmd/Ctrl-click adds; dragging on the
  * background draws a selection box. Node positions stay put across changes and time travel.
  */
-export function GraphCanvas({ elements, selection, highlight = [], onSelectionChange }: GraphCanvasProps) {
+export function GraphCanvas({ elements, selection, highlight = [], onSelectionChange, tidied = 0 }: GraphCanvasProps) {
   const container = useRef<HTMLDivElement>(null);
   const [cy, setCy] = useState<Core>();
   const report = useRef(onSelectionChange);
@@ -76,6 +78,7 @@ export function GraphCanvas({ elements, selection, highlight = [], onSelectionCh
     redrawing.current = false;
   }, [cy, elements]);
 
+  useEffect(() => void (cy && tidied > 0 && tidy(cy, positions.current)), [cy, tidied]);
   useEffect(() => applySelection(cy, selection), [cy, selection, elements]);
   useEffect(() => applyHighlight(cy, highlight), [cy, highlight, elements]);
 

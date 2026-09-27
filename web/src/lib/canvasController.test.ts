@@ -1,6 +1,6 @@
 import cytoscape from "cytoscape";
 import { describe, expect, it } from "vitest";
-import { applyHighlight, applySelection, isTyping, onKeyDown, onKeyUp, render, selectedIds, setPanMode, wheelToViewport } from "./canvasController";
+import { applyHighlight, applySelection, isTyping, onKeyDown, onKeyUp, render, selectedIds, setPanMode, tidy, wheelToViewport } from "./canvasController";
 import type { Positions } from "./layoutCache";
 
 const node = (id: string) => ({ data: { id } });
@@ -72,5 +72,32 @@ describe("keyboard", () => {
     onKeyUp(cy, { code: "Space", key: " ", target: null });
     expect(cy.userPanningEnabled()).toBe(false);
     expect(isTyping({ isContentEditable: true } as never)).toBe(true);
+  });
+});
+
+describe("layout", () => {
+  const sized = (id: string) => ({ data: { id }, style: { width: 60, height: 40 } });
+  const overlapping = (cy: cytoscape.Core) =>
+    cy.nodes().some((p) => cy.nodes().some((q) => {
+      if (p === q) return false;
+      const [a, b] = [p.boundingBox({}), q.boundingBox({})];
+      return a.x1 < b.x2 && b.x1 < a.x2 && a.y1 < b.y2 && b.y1 < a.y2;
+    }));
+
+  it("places new nodes clear of the ones already there, without moving those", () => {
+    const cy = cytoscape({ headless: true });
+    const positions: Positions = new Map([["a", { x: 0, y: 0 }], ["b", { x: 70, y: 0 }]]);
+    render(cy, [sized("a"), sized("b"), sized("c"), sized("d"), edge("ac", "a", "c"), edge("bd", "b", "d")], positions, new Set(["a", "b"]));
+    expect(cy.getElementById("a").position()).toEqual({ x: 0, y: 0 });
+    expect(overlapping(cy)).toBe(false);
+  });
+
+  it("tidies the whole map afresh", () => {
+    const cy = cytoscape({ headless: true, elements: [sized("a"), sized("b"), sized("c")] });
+    cy.nodes().positions({ x: 5, y: 5 });
+    const positions: Positions = new Map();
+    tidy(cy, positions);
+    expect(overlapping(cy)).toBe(false);
+    expect(positions.size).toBe(3);
   });
 });

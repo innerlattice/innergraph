@@ -102,6 +102,7 @@ export function MapView(props: MapViewProps) {
   const filter = statusesFor(showRemoved);
   const [mode, setMode] = useState<"items" | "changes">("items");
   const [done, setDone] = useState<Done>();
+  const [tidied, setTidied] = useState(0);
   const { version, positions, view, error, duplicates, schema, elements, labels, refresh } = useMapData(index, filter);
   const empty = view && Object.keys(view.nodes).length === 0;
 
@@ -130,12 +131,12 @@ export function MapView(props: MapViewProps) {
   return (
     <div className="flex h-full flex-col">
       <TimeBar positions={positions.data ?? []} index={index} onChange={setIndex} onReverted={refresh} />
-      <StatusBar removed={view?.counts.removed} showRemoved={showRemoved} onShowRemoved={setShowRemoved} changesOpen={mode === "changes"} onChanges={() => setMode(mode === "changes" ? "items" : "changes")} duplicates={duplicates?.length ?? 0} />
+      <StatusBar removed={view?.counts.removed} showRemoved={showRemoved} onShowRemoved={setShowRemoved} changesOpen={mode === "changes"} onChanges={() => setMode(mode === "changes" ? "items" : "changes")} duplicates={duplicates?.length ?? 0} onTidy={() => setTidied(tidied + 1)} />
       <ErrorNote error={error} />
       <div className="relative min-h-0 flex-1">
         <div className="absolute inset-0">
           {empty ? <div className="absolute inset-x-0 top-0 z-10 p-8"><Empty>Nothing on the map here yet. Add an entry to begin.</Empty></div> : null}
-          <GraphCanvas elements={elements} selection={selection} highlight={highlight} onSelectionChange={changeSelection} />
+          <GraphCanvas elements={elements} selection={selection} highlight={highlight} onSelectionChange={changeSelection} tidied={tidied} />
           <GraphKey schema={schema} />
           <UndoBar done={done} onUndo={undoRemove} onClose={() => setDone(undefined)} />
         </div>

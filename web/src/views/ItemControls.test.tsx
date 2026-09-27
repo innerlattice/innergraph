@@ -101,16 +101,19 @@ describe("what changed", () => {
 });
 
 describe("status bar", () => {
-  it("opens what changed, counts duplicates and toggles removed items", () => {
+  it("opens what changed, counts duplicates, tidies and toggles removed items", () => {
     const onChanges = vi.fn();
+    const onTidy = vi.fn();
     const onShowRemoved = vi.fn();
-    const { rerender } = render(<StatusBar removed={2} showRemoved={false} onShowRemoved={onShowRemoved} changesOpen={false} onChanges={onChanges} duplicates={2} />);
+    const { rerender } = render(<StatusBar removed={2} showRemoved={false} onShowRemoved={onShowRemoved} changesOpen={false} onChanges={onChanges} duplicates={2} onTidy={onTidy} />);
+    fireEvent.click(screen.getByText("Tidy up"));
+    expect(onTidy).toHaveBeenCalled();
     fireEvent.click(screen.getByText("What changed"));
     expect(onChanges).toHaveBeenCalled();
     expect(screen.getByText("2 duplicates")).toBeTruthy();
     fireEvent.click(screen.getByLabelText("Show removed (2)"));
     expect(onShowRemoved).toHaveBeenCalledWith(true);
-    rerender(<StatusBar showRemoved changesOpen onShowRemoved={onShowRemoved} onChanges={onChanges} duplicates={1} />);
+    rerender(<StatusBar showRemoved changesOpen onShowRemoved={onShowRemoved} onChanges={onChanges} duplicates={1} onTidy={onTidy} />);
     expect(screen.getByText("1 duplicate")).toBeTruthy();
     expect(screen.getByLabelText("Show removed (0)")).toBeTruthy();
   });

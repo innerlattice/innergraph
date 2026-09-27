@@ -1,4 +1,4 @@
-import { History } from "lucide-react";
+import { History, Sparkles } from "lucide-react";
 import { ICON } from "../design/tokens";
 
 // One quiet bar over the map: what changed recently, and whether removed items are shown.
@@ -10,6 +10,8 @@ export interface StatusBarProps {
   changesOpen: boolean;
   onChanges: () => void;
   duplicates: number;
+  /** Lays the whole map out afresh, clear of overlaps. */
+  onTidy: () => void;
 }
 
 // A toggle that looks like the buttons it sits among: raised while closed, pressed in while open.
@@ -32,7 +34,11 @@ export function StatusBar(props: StatusBarProps) {
         What changed
         {props.duplicates > 0 ? <span className="ml-1.5 rounded-full bg-clay-100 px-1.5 text-xs text-clay-700">{props.duplicates} duplicate{props.duplicates === 1 ? "" : "s"}</span> : null}
       </button>
-      <label className="ml-auto flex items-center gap-1.5 text-xs text-stone-500">
+      <button type="button" onClick={props.onTidy} title="Lay the map out afresh so nothing overlaps" className="ml-auto inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs text-stone-500 transition hover:bg-stone-200/70 hover:text-stone-800">
+        <Sparkles size={ICON.sm} aria-hidden="true" />
+        Tidy up
+      </button>
+      <label className=" flex items-center gap-1.5 text-xs text-stone-500">
         <input type="checkbox" checked={props.showRemoved} onChange={(e) => props.onShowRemoved(e.target.checked)} />
         Show removed ({removed})
       </label>

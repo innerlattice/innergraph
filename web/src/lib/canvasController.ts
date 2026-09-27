@@ -2,6 +2,7 @@
 import cytoscape, { type Core, type ElementDefinition } from "cytoscape";
 import fcose from "cytoscape-fcose";
 import { type Positions, appeared, partition, savePositions } from "./layoutCache";
+import { type Box, seed, separate } from "./placement";
 
 cytoscape.use(fcose);
 
@@ -10,25 +11,57 @@ export function remember(cy: Core, positions: Positions): void {
   savePositions(positions);
 }
 
-/** Places remembered nodes, then lays out only the new ones around them (pinned). */
+/** Runs the force layout, from scratch or settling only the nodes not in `pinned`. Sizes include labels. */
+function settle(cy: Core, pinned: string[], positions: Positions): void {
+  const options = {
+    name: "fcose",
+    animate: false,
+    fit: false,
+    randomize: pinned.length === 0,
+    quality: "proof",
+    nodeDimensionsIncludeLabels: true,
+    fixedNodeConstraint: pinned.map((nodeId) => ({ nodeId, position: positions.get(nodeId) })),
+    nodeSeparation: 90,
+    idealEdgeLength: () => 110,
+    nodeRepulsion: () => 12000,
+  };
+  cy.layout(options as cytoscape.LayoutOptions).run();
+}
+
+/** Nudges the `movable` nodes until no two nodes' footprints, labels included, overlap. */
+function unclutter(cy: Core, movable: ReadonlySet<string>): void {
+  const boxes: Box[] = cy.nodes().map((n) => {
+    const b = n.boundingBox({ includeLabels: true, includeOverlays: false });
+    return { id: n.id(), x: (b.x1 + b.x2) / 2, y: (b.y1 + b.y2) / 2, w: b.w, h: b.h };
+  });
+  const before = new Map(boxes.map((b) => [b.id, b]));
+  for (const [id, to] of separate(boxes, movable)) {
+    const node = cy.getElementById(id);
+    const from = before.get(id) as Box;
+    node.position({ x: node.position().x + to.x - from.x, y: node.position().y + to.y - from.y });
+  }
+}
+
+/** Places remembered nodes, then lays out only the new ones: each starts beside what it links to,
+ *  settles with the rest pinned, and is nudged clear of anything it overlaps. */
 function place(cy: Core, positions: Positions): void {
   const { known, unknown } = partition(cy.nodes().map((n) => n.id()), positions);
   for (const id of known) cy.getElementById(id).position(positions.get(id) as { x: number; y: number });
   if (unknown.length > 0) {
-    const fixedNodeConstraint = known.map((nodeId) => ({ nodeId, position: positions.get(nodeId) }));
-    const options = {
-      name: "fcose",
-      animate: false,
-      fit: false,
-      randomize: known.length === 0,
-      fixedNodeConstraint,
-      nodeSeparation: 90,
-      idealEdgeLength: () => 110,
-      nodeRepulsion: () => 12000,
-    };
-    cy.layout(options as cytoscape.LayoutOptions).run();
+    const neighbours = (id: string) => cy.getElementById(id).neighborhood("node").map((n) => n.id());
+    for (const [id, start] of seed(unknown, neighbours, new Map(known.map((id) => [id, positions.get(id) as { x: number; y: number }])))) cy.getElementById(id).position(start);
+    settle(cy, known, positions);
+    unclutter(cy, new Set(unknown));
   }
   remember(cy, positions);
+}
+
+/** Lays the whole map out afresh, clear of overlaps, and remembers it. */
+export function tidy(cy: Core, positions: Positions): void {
+  settle(cy, [], positions);
+  unclutter(cy, new Set(cy.nodes().map((n) => n.id())));
+  remember(cy, positions);
+  cy.fit(undefined, 48);
 }
 
 /** Replaces the elements, keeps positions stable and marks nodes that just appeared. Returns the shown ids. */
