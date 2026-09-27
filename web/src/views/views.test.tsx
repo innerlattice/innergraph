@@ -119,13 +119,11 @@ describe("SupportedItems", () => {
 });
 
 describe("Related and useJob", () => {
-  it("folds related material away until asked for", () => {
-    const { container } = render(<Related items={[]} />);
-    expect(container.innerHTML).toBe("");
+  it("shows related material straight away, or says there is none", () => {
+    render(<Related items={[]} />);
+    expect(screen.getByText("Nothing from before looks related.")).toBeTruthy();
     render(<Related items={[{ id: "h", kind: "entry", score: 0.4, terms: [], title: "Tuesday", snippet: "old words" }]} />);
-    fireEvent.click(screen.getByText(/may be related \(1\)/));
     expect(screen.getByText("old words")).toBeTruthy();
-    fireEvent.click(screen.getByText("Hide related material"));
   });
 
   it("keeps polling running jobs and reports failures", async () => {
@@ -229,7 +227,7 @@ describe("NodePanel", () => {
     fireEvent.click(screen.getByText("Trace roots"));
     expect(await screen.findByText(/supports 1 downstream/)).toBeTruthy();
     fireEvent.click(screen.getByText("Related"));
-    expect(await screen.findByText(/may be related/)).toBeTruthy();
+    expect(await screen.findByText("needing")).toBeTruthy();
     fireEvent.doubleClick(screen.getByText("Needing is unsafe", { selector: "h3" }));
     fireEvent.keyDown(screen.getByLabelText("Rename"), { key: "Escape" });
     fireEvent.doubleClick(screen.getByText("Needing is unsafe", { selector: "h3" }));
