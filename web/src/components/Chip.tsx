@@ -2,7 +2,6 @@
 // context. Tones carry meaning, not decoration:
 //   neutral  — an item you can open (tool cards, an entry's items)
 //   context  — something the assistant is being told about (the selection)
-//   accent   — the one primary action in a row of chips ("Show all")
 // A chip is a button when it does something, and gains a remove control with `onRemove`.
 // Labels go through ItemLabel, so Edges read as "from  link  to" everywhere.
 import { X } from "lucide-react";
@@ -11,12 +10,11 @@ import { parseEdgeText } from "../../../src/core/edgeText";
 import { ICON } from "../design/tokens";
 import { LinkMark } from "./ItemMarks";
 
-type ChipTone = "neutral" | "context" | "accent";
+type ChipTone = "neutral" | "context";
 
 const TONES: Record<ChipTone, string> = {
   neutral: "bg-stone-100 text-stone-700 enabled:hover:bg-clay-50",
   context: "bg-sage-50 text-sage-700 enabled:hover:bg-sage-100",
-  accent: "bg-clay-500 text-white enabled:hover:bg-clay-600",
 };
 
 /** A chip answering to something under the pointer: lifted and warmed. */

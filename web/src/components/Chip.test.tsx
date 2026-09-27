@@ -35,7 +35,7 @@ it("chips act, remove, carry their tone, and go inert when struck", () => {
       <Chip struck onClick={onClick}>
         gone
       </Chip>
-      <Chip tone="accent">static</Chip>
+      <Chip>static</Chip>
     </>,
   );
   fireEvent.click(screen.getByText("open"));

@@ -1,8 +1,7 @@
-import { Pencil } from "lucide-react";
+import { Map as MapIcon, Pencil } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ExploreButton } from "../components/ExploreButton";
 import { IconButton } from "../components/IconButton";
-import { Chip } from "../components/Chip";
 import { ItemChip } from "../components/ItemChip";
 import type { Navigate } from "../App";
 import { type EntryView, type RevisionResult, api } from "../api";
@@ -105,16 +104,18 @@ export function EntryEditor(props: { view: EntryView; onSaved: (result: Revision
   );
 }
 
-/** Everything this entry is evidence for, each one clickable, plus all of them at once. */
+/** Each item this entry is evidence for, once, with its label. */
+function supported(view: EntryView): [string, string][] {
+  return [...new Map(view.citations.map((c) => [c.target, c.label])).entries()];
+}
+
+/** Everything this entry is evidence for, each one clickable. */
 export function SupportedItems(props: { view: EntryView; onOpen: (ids: string) => void; hover?: Hover }) {
   const { hover = NO_HOVER } = props;
-  const items = [...new Map(props.view.citations.map((c) => [c.target, c.label])).entries()];
+  const items = supported(props.view);
   if (items.length === 0) return <p className="text-xs text-stone-400">Nothing on the map cites this entry yet.</p>;
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <Chip tone="accent" onClick={() => props.onOpen(items.map(([id]) => id).join(","))}>
-        Show all {items.length} on the map
-      </Chip>
       {items.map(([id, label]) => (
         // biome-ignore lint/a11y/noStaticElementInteractions: hovering only lights the passages; the chip inside is the control
         <span key={id} className="inline-flex min-w-0 max-w-full" onMouseEnter={() => hover.onHover([id])} onMouseLeave={() => hover.onHover([])}>
@@ -140,6 +141,7 @@ function EntryCard(props: { view: EntryView; focus?: Span; navigate: Navigate; r
   const [lit, setLit] = useState<string[]>([]);
   const hover: Hover = { lit, onHover: setLit };
   const result = props.revision?.entry === props.view.entry.id ? props.revision : undefined;
+  const cited = supported(props.view).map(([id]) => id);
   const saved = (r: RevisionResult) => {
     setEditing(false);
     props.onRevised(r);
@@ -152,6 +154,9 @@ function EntryCard(props: { view: EntryView; focus?: Span; navigate: Navigate; r
           <div className="flex gap-2">
             <ExploreButton subject="entry" kind="Entry" name={props.view.entry.title} target={props.view.entry.id} />
             <IconButton label="Edit" hint="Change what you wrote; the map follows" icon={Pencil} onClick={() => setEditing(true)} />
+            {cited.length > 0 ? (
+              <IconButton label="Show on map" hint={`Light up all ${cited.length} things it supports`} icon={MapIcon} onClick={() => props.navigate("map", cited.join(","))} />
+            ) : null}
           </div>
         )}
       </header>

@@ -131,13 +131,12 @@ describe("ui primitives", () => {
 });
 
 describe("SupportedItems", () => {
-  it("lists what an entry supports and opens one or all of them", () => {
+  it("lists what an entry supports and opens each", () => {
     const onOpen = vi.fn();
     const citations = [...entryView.citations, { target: "e1", label: "An edge", evidence: { entry: "h", start: 0, end: 3 } }, entryView.citations[0]];
     render(<SupportedItems view={{ ...entryView, citations }} onOpen={onOpen} />);
-    fireEvent.click(screen.getByText("Show all 2 on the map"));
     fireEvent.click(screen.getByText("An edge"));
-    expect(onOpen.mock.calls).toEqual([["n1,e1"], ["e1"]]);
+    expect(onOpen.mock.calls).toEqual([["e1"]]);
     render(<SupportedItems view={{ ...entryView, citations: [] }} onOpen={onOpen} />);
     expect(screen.getByText(/Nothing on the map cites/)).toBeTruthy();
   });
@@ -219,6 +218,8 @@ describe("EntriesView", () => {
     fireEvent.click(mark);
     fireEvent.keyDown(mark, { key: "Enter" });
     expect(navigate).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByRole("button", { name: "Show on map" }));
+    expect(navigate).toHaveBeenLastCalledWith("map", "n1");
     fireEvent.click(screen.getByText("Tuesday"));
   });
 
