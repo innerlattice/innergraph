@@ -124,9 +124,9 @@ function EntryCard(props: { view: EntryView; focus?: Span; navigate: Navigate; r
         <p className="text-xs text-stone-400">{props.view.entry.revises ? "Revised version. Earlier versions stay in history." : formatHlc(props.view.entry.addedAt)}</p>
         {editing ? null : <Button onClick={() => setEditing(true)}>Edit</Button>}
       </header>
-      <SupportedItems view={props.view} onOpen={(ids) => props.navigate("map", ids)} />
       {result ? <RevisionNote result={result} /> : null}
       {editing ? <EntryEditor view={props.view} onSaved={saved} onCancel={() => setEditing(false)} /> : <EntryText view={props.view} focus={props.focus} onOpen={(id) => props.navigate("map", id)} />}
+      <SupportedItems view={props.view} onOpen={(ids) => props.navigate("map", ids)} />
     </Card>
   );
 }
