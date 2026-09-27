@@ -6,6 +6,7 @@ import { InvariantError } from "../access/invariants.js";
 import { SchemaError } from "../access/schemaAccess.js";
 import { VIEW_STATUSES, type ViewStatus } from "../access/view.js";
 import { ChatFullError } from "../managers/chatManager.js";
+import { ChatGptNotConnected } from "../managers/chatgptLink.js";
 import { ForbiddenError, NotFoundError, requireFound } from "../managers/sessions.js";
 import type { Vault } from "../vault.js";
 import { respondToChat } from "./chat.js";
@@ -13,6 +14,7 @@ import { respondToChat } from "./chat.js";
 const ERROR_STATUS: [new (...args: never[]) => Error, ContentfulStatusCode][] = [
   [NotFoundError, 404],
   [ChatFullError, 409],
+  [ChatGptNotConnected, 400],
   [ForbiddenError, 403],
   [SchemaError, 400],
   [InvariantError, 400],
@@ -123,6 +125,9 @@ function registerChat(app: Hono, vault: Vault): void {
   app.delete("/api/chats/:id", route((c) => chat.remove(id(c))));
   app.get("/api/chat/settings", route(() => chat.publicSettings()));
   app.put("/api/chat/settings", route(async (c) => chat.updateSettings(await body(c))));
+  app.get("/api/chat/chatgpt", route(() => chat.chatgpt.status()));
+  app.post("/api/chat/chatgpt", route(() => chat.chatgpt.connect()));
+  app.delete("/api/chat/chatgpt", route(() => chat.chatgpt.disconnect()));
   app.post("/api/chat", async (c) => {
     try {
       return await respondToChat(vault, await body(c));

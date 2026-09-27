@@ -14,10 +14,13 @@ import type { AmendResult, ProposeResult, WrittenItem } from "../../src/managers
 import type { BudgetLevel, ChatBudget, ChatProvider, ChatSettings, PublicChatSettings } from "../../src/managers/chatManager";
 import type { ChatMessage, ChatMetadata } from "../../src/clients/chat";
 import type { SelectionItem } from "../../src/managers/exploreManager";
+import type { LinkStatus } from "../../src/managers/chatgptLink";
 
 export type { ChangeAction, ChangeRow, DuplicateGroup, EdgeView, GraphView, LoopStepView, LoopView, SessionChanges, UndoResult, ViewEdge, ViewNode, ViewStatus };
 export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, GraphEdge, GraphNode, IngestResult, Job, Loop, NodeView, RelatedItem, RevisionResult, RootTrace, Schema, Selection, Status };
 
+export { PLAN_MODELS, type PlanModel } from "../../src/utilities/planModels";
+export type { LinkStatus };
 export type { AmendResult, BudgetLevel, ChatBudget, ChatMessage, ChatMetadata, ChatProvider, ChatSummary, ProposeResult, PublicChatSettings, SelectionItem, WrittenItem };
 
 export interface ChatListItem extends ChatSummary {
@@ -87,5 +90,8 @@ export const api = {
   deleteChat: (id: string) => request<{ removed: boolean }>(`/chats/${enc(id)}`, {}, fetch, "DELETE"),
   chatSettings: () => request<PublicChatSettings>("/chat/settings"),
   saveChatSettings: (patch: ChatSettingsPatch) => request<PublicChatSettings>("/chat/settings", patch, fetch, "PUT"),
+  chatgptStatus: () => request<LinkStatus>("/chat/chatgpt"),
+  connectChatgpt: () => request<LinkStatus>("/chat/chatgpt", {}),
+  disconnectChatgpt: () => request<LinkStatus>("/chat/chatgpt", {}, fetch, "DELETE"),
   merge: (sources: string[], label: string) => request<ChangeResult>("/merge", { sources, into: { label } }),
 };

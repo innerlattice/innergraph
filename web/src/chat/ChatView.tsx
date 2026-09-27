@@ -47,7 +47,8 @@ function Greeting(props: { onPick: (text: string) => void }) {
 export function footerFor(settings?: PublicChatSettings): string {
   if (!settings) return "";
   if (!settings.hosted) return `Private to this device · ${settings.model}`;
-  return settings.provider === "openrouter" ? `Your messages go to ${settings.model} through OpenRouter` : `Your messages go to ${settings.model} off this device`;
+  const via: Record<string, string> = { openrouter: " through OpenRouter", chatgpt: " through your ChatGPT plan" };
+  return `Your messages go to ${settings.model}${via[settings.provider] ?? " off this device"}`;
 }
 
 function KeyNotice(props: { settings?: PublicChatSettings; onOpenSettings: () => void }) {

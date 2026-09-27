@@ -2,11 +2,13 @@
 // left in the model's context. A full conversation ends; compaction is not built yet.
 import type { ChatAccess, ChatRecord, ChatSummary } from "../access/chatAccess.js";
 import type { VaultAccess } from "../access/vaultAccess.js";
+import type { Fetch } from "../utilities/chatgpt.js";
 import { newId } from "../utilities/crypto.js";
 import { isLocalUrl } from "../utilities/modelGateway.js";
+import { ChatGptLink } from "./chatgptLink.js";
 import { requireFound } from "./sessions.js";
 
-export type ChatProvider = "openrouter" | "local";
+export type ChatProvider = "openrouter" | "chatgpt" | "local";
 
 export interface ChatSettings {
   provider: ChatProvider;
@@ -17,6 +19,8 @@ export interface ChatSettings {
   baseUrl: string;
   /** Token budget for one conversation; it ends as it nears this. */
   contextWindow: number;
+  /** Reasoning effort, for models that take one (the ChatGPT plan's). */
+  effort?: string;
 }
 
 export interface PublicChatSettings extends Omit<ChatSettings, "apiKey"> {
@@ -43,6 +47,7 @@ export const WARN_AT = 0.7;
 export const FULL_AT = 0.9;
 
 export const OPENROUTER_DEFAULTS = { model: "anthropic/claude-sonnet-5", contextWindow: 200_000 };
+export const CHATGPT_DEFAULTS = { model: "gpt-6-sol", effort: "medium", contextWindow: 200_000 };
 export const LOCAL_DEFAULTS = { model: "gemma4:latest", baseUrl: "http://127.0.0.1:11434/v1", contextWindow: 32_000 };
 
 const NEW_TITLE = "New conversation";
@@ -74,15 +79,21 @@ export interface ChatDeps {
   vault: VaultAccess;
   now?: () => Date;
   env?: Record<string, string | undefined>;
+  http?: Fetch;
 }
+
+const DEFAULTS: Record<ChatProvider, Partial<ChatSettings>> = { openrouter: OPENROUTER_DEFAULTS, chatgpt: CHATGPT_DEFAULTS, local: LOCAL_DEFAULTS };
 
 export class ChatManager {
   private readonly now: () => Date;
   private readonly env: Record<string, string | undefined>;
+  /** The person's ChatGPT plan, signed in with a device code. */
+  readonly chatgpt: ChatGptLink;
 
   constructor(private readonly deps: ChatDeps) {
     this.now = deps.now ?? (() => new Date());
     this.env = deps.env ?? process.env;
+    this.chatgpt = new ChatGptLink({ vault: deps.vault, http: deps.http, now: () => this.now().getTime() });
   }
 
   list(): (ChatSummary & { budget: ChatBudget })[] {
@@ -140,13 +151,12 @@ export class ChatManager {
     const stored = this.deps.vault.readSetting<Partial<ChatSettings>>(SETTINGS_KEY) ?? {};
     const apiKey = stored.apiKey ?? this.env.OPENROUTER_API_KEY;
     const provider = stored.provider ?? (apiKey ? "openrouter" : "local");
-    const defaults = provider === "openrouter" ? OPENROUTER_DEFAULTS : LOCAL_DEFAULTS;
-    return { baseUrl: LOCAL_DEFAULTS.baseUrl, ...defaults, ...stored, provider, apiKey };
+    return { baseUrl: LOCAL_DEFAULTS.baseUrl, ...DEFAULTS[provider], ...stored, provider, apiKey } as ChatSettings;
   }
 
   publicSettings(): PublicChatSettings {
     const { apiKey, ...rest } = this.settings();
-    return { ...rest, hasKey: Boolean(apiKey), hosted: rest.provider === "openrouter" || !isLocalUrl(rest.baseUrl) };
+    return { ...rest, hasKey: Boolean(apiKey), hosted: rest.provider !== "local" || !isLocalUrl(rest.baseUrl) };
   }
 
   /** Switching provider resets model and budget to that provider's defaults unless given. */
@@ -154,6 +164,7 @@ export class ChatManager {
     const stored = this.deps.vault.readSetting<Partial<ChatSettings>>(SETTINGS_KEY) ?? {};
     const switching = patch.provider !== undefined && patch.provider !== this.settings().provider;
     const base = switching ? { apiKey: stored.apiKey, baseUrl: stored.baseUrl } : stored;
+    // A new provider starts from its own defaults for model, effort and budget.
     const next = Object.fromEntries(Object.entries({ ...base, ...patch }).filter(([, v]) => v !== undefined && v !== ""));
     this.deps.vault.writeSetting(SETTINGS_KEY, next);
     return this.publicSettings();
