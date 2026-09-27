@@ -6,6 +6,7 @@ import { type Selection, api } from "./api";
 import { ChatRail } from "./chat/ChatRail";
 import { ChatView } from "./chat/ChatView";
 import { SettingsDialog } from "./chat/SettingsDialog";
+import { Divider, usePaneWidth } from "./components/Divider";
 import { type PaneName, ViewRail } from "./components/ViewRail";
 import { labelsFrom } from "./lib/format";
 import { useAsync } from "./lib/useAsync";
@@ -65,6 +66,7 @@ export function App() {
   const { selection, select } = useSelection();
   const labels = useLabels();
   const chats = useChats();
+  const width = usePaneWidth();
 
   const navigate: Navigate = (next, focusId) => {
     if (next === "map" && focusId) select(focusId.split(","));
@@ -94,11 +96,14 @@ export function App() {
         />
       </main>
       {pane ? (
-        <section aria-label="View" className="min-w-0 basis-[56%] overflow-hidden border-l border-stone-200/70 bg-stone-50">
-          <div className="h-full overflow-auto">
-            <CurrentView view={pane} focus={focus} selection={selection} onSelect={select} navigate={navigate} />
-          </div>
-        </section>
+        <>
+          <Divider share={width.share} onChange={width.set} />
+          <section aria-label="View" style={{ flexBasis: `calc(${width.share} * (100vw - 104px))` }} className="min-w-0 shrink-0 overflow-hidden bg-stone-50">
+            <div className="h-full overflow-auto">
+              <CurrentView view={pane} focus={focus} selection={selection} onSelect={select} navigate={navigate} />
+            </div>
+          </section>
+        </>
       ) : null}
       <ViewRail active={pane} onToggle={(v) => setPane(v === pane ? undefined : v)} />
       {settingsOpen && settings.data ? (
