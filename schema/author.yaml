@@ -71,7 +71,7 @@ nodeTypes:
     description: An expectation about how others respond.
     label: statement
     labelHint: an if-then, e.g. "If I need, I get punished"
-    display: { shape: round-rectangle, color: "#6d8a96" }
+    display: { shape: barrel, color: "#6d8a96" }
     attributes: {}
   event:
     description: Something that happened in time.

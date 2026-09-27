@@ -103,7 +103,7 @@ describe("graph elements", () => {
     expect(n1?.classes).toBe("active style-statement");
     expect(n1?.data).toMatchObject({ shape: "round-rectangle", color: "#123456" });
     const n2 = elements.find((e) => e.data.id === "n2");
-    expect(n2?.classes).toBe("active confirmed style-name");
+    expect(n2?.classes).toBe("active style-name");
     expect(n2?.data.shape).toBe("ellipse");
     expect(n2?.data.image).toMatch(/^data:image\/svg\+xml/);
     expect(n2?.data.imageW).toBeGreaterThan(n2?.data.w);
@@ -112,7 +112,7 @@ describe("graph elements", () => {
 
   it("classes edges by role and sign, labelling causal edges by sign", () => {
     const elements = toElements(graph, schema);
-    expect(elements.find((e) => e.data.id === "e1")).toMatchObject({ classes: "look-decreases active confirmed", data: { label: "−" } });
+    expect(elements.find((e) => e.data.id === "e1")).toMatchObject({ classes: "look-decreases active", data: { label: "−" } });
     expect(elements.find((e) => e.data.id === "e2")?.classes).toBe("look-builds-on active");
     expect(elements.find((e) => e.data.id === "e3")?.classes).toBe("look-plain active");
     expect(edgeLookOf("causal", 1)).toBe("increases");

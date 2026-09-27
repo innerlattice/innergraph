@@ -15,13 +15,6 @@ export function clip(text: string, max = MAX_LABEL): string {
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
-type ViewItem = { status: string; confirmed: boolean };
-
-/** One class per View status, plus `confirmed` once the person has said it is right. */
-function statusClasses(item: ViewItem): string {
-  return item.confirmed ? `${item.status} confirmed` : item.status;
-}
-
 function nodeElement(n: ViewNode, schema: Schema | null): ElementDefinition {
   const look = nodeLookOf(schema, n.type);
   const label = clip(n.label);
@@ -29,7 +22,7 @@ function nodeElement(n: ViewNode, schema: Schema | null): ElementDefinition {
   const image = nodeGem(look, size);
   return {
     data: { id: n.id, label, color: look.color, shape: look.shape, ...size, image: image.uri, imageW: image.width, imageH: image.height },
-    classes: `${statusClasses(n)} style-${look.style}`,
+    classes: `${n.status} style-${look.style}`,
   };
 }
 
@@ -41,7 +34,7 @@ export function edgeLabel(e: { type: string; sign?: number }, schema: Schema | n
 function edgeElement(e: ViewEdge, schema: Schema | null): ElementDefinition {
   return {
     data: { id: e.id, source: e.from, target: e.to, label: edgeLabel(e, schema) },
-    classes: `look-${edgeLookOf(roleOf(schema, e.type), e.sign)} ${statusClasses(e)}`,
+    classes: `look-${edgeLookOf(roleOf(schema, e.type), e.sign)} ${e.status}`,
   };
 }
 

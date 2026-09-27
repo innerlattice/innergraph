@@ -1,12 +1,22 @@
 // The graph's pieces as small page elements, drawn from the same design system as the canvas so
 // the key and panels always match the map.
+import type { LabelStyle } from "../../../src/core/types";
 import type { EdgeLook, NodeLook } from "../design/graph";
 import { nodeGem } from "../design/graph";
+import { aspectOf } from "../design/shapes";
+
+/** A node type's label as the map sets it: statements in serif, names bold, titles plain. */
+export const LABEL_FONT: Record<LabelStyle, string> = { statement: "font-serif", name: "font-semibold", title: "" };
+
+/** The glyph's size: statements are wide boxes, the rest keep their shape's own proportions. */
+function glyphSize(look: NodeLook, size: number): { w: number; h: number } {
+  if (look.style === "statement") return { w: Math.round(size * 1.6), h: size };
+  return { w: size, h: Math.round(size * aspectOf(look.shape)) };
+}
 
 /** A node type's gem at icon size. Its shadow spills into the surrounding space, not the layout. */
 export function NodeGlyph(props: { look: NodeLook; size?: number }) {
-  const h = props.size ?? 14;
-  const w = props.look.style === "statement" ? Math.round(h * 1.5) : h;
+  const { w, h } = glyphSize(props.look, props.size ?? 14);
   const g = nodeGem(props.look, { w, h });
   return <img src={g.uri} alt="" aria-hidden="true" width={g.width} height={g.height} className="shrink-0" style={{ margin: `${-(g.height - h) / 2}px ${-(g.width - w) / 2}px` }} />;
 }

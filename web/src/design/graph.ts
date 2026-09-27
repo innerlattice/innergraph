@@ -6,6 +6,7 @@ import type { LabelStyle } from "../../../src/core/types";
 import type { Schema } from "../api";
 import { colorFor } from "../lib/format";
 import { type Gem, gem } from "./gem";
+import { RHOMBOID_LEAN, aspectOf } from "./shapes";
 
 const PAPER = "#f8f4ee";
 const INK = "#3b332b";
@@ -42,16 +43,21 @@ export function boxSize(label: string): { w: number; h: number } {
   return { w: Math.min(BOX_TEXT_WIDTH, textWidth) + 22, h: lines * 15 + 18 };
 }
 
-/** Slanted and pointed shapes narrow towards their edges, so a text box inside them needs more width. */
+/** Pointed shapes narrow towards their edges, so a text box inside them needs more width. */
 const BOX_SHAPES = new Set(["round-rectangle", "barrel", "ellipse"]);
 
+function statementSize(shape: string, label: string): { w: number; h: number } {
+  const box = boxSize(label);
+  if (BOX_SHAPES.has(shape)) return box;
+  // A rhomboid only loses its lean, which depends on its height, not its width.
+  if (shape === "rhomboid") return { w: Math.round(box.w + box.h * RHOMBOID_LEAN), h: box.h };
+  return { w: Math.round(box.w * 1.5), h: box.h + 6 };
+}
+
 export function nodeSize(look: NodeLook, label: string): { w: number; h: number } {
-  if (look.style === "statement") {
-    const box = boxSize(label);
-    return BOX_SHAPES.has(look.shape) ? box : { w: Math.round(box.w * 1.5), h: box.h + 6 };
-  }
+  if (look.style === "statement") return statementSize(look.shape, label);
   const side = look.style === "title" ? TITLE_SIZE : NAME_SIZE;
-  return { w: side, h: side };
+  return { w: side, h: Math.round(side * aspectOf(look.shape)) };
 }
 
 export function nodeGem(look: NodeLook, size: { w: number; h: number }): Gem {
@@ -119,13 +125,11 @@ const nodeRules: StylesheetJson = [
     },
   },
   { selector: "node.style-name", style: { "font-weight": 600 } },
-  { selector: "node.style-title", style: { "font-style": "italic" } },
   {
     selector: "node.style-statement",
-    style: { "text-valign": "center", "text-margin-y": 0, "text-max-width": `${BOX_TEXT_WIDTH}px`, "font-family": "ui-serif, Georgia, serif", "font-size": 11.5, "text-outline-width": 0 },
+    style: { "text-valign": "center", "text-margin-y": 0, "text-max-width": `${BOX_TEXT_WIDTH}px`, "font-family": 'ui-serif, "New York", "Iowan Old Style", Georgia, serif', "font-size": 11.5, "text-outline-width": 0 },
   },
-  // Confirmed by the person: a ring around the stone. Removed (shown on request): faded, with a dashed ring.
-  { selector: "node.confirmed", style: { "outline-width": 1.5, "outline-color": "data(color)", "outline-offset": 3, "outline-opacity": 0.8 } },
+  // Removed (shown on request): faded, with a dashed ring. Confirmed is the norm, so it looks like nothing.
   { selector: "node.removed", style: { "background-image-opacity": 0.35, color: MUTED, "outline-width": 1, "outline-style": "dashed", "outline-color": MUTED, "outline-offset": 3, "outline-opacity": 0.8 } },
   { selector: "node.appeared", style: { "underlay-color": "#8ea27f", "underlay-opacity": 0.3, "underlay-padding": 8, "underlay-shape": "ellipse" } },
   { selector: "node:selected", style: { "underlay-color": "#2a241f", "underlay-opacity": 0.16, "underlay-padding": 8, "underlay-shape": "ellipse" } },

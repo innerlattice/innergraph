@@ -7,9 +7,15 @@ These principles hold across the app. When a change breaks one, change the princ
 
 Every semantic difference that colour carries is carried a second way too: shape, line style,
 an icon, a word or position. Node types have both a colour and a shape. An increase and a
-decrease differ in colour, arrowhead and line. A confirmed item gains a ring as well as a tint. This keeps
-the app readable for colour-blind people, in greyscale and at a glance, and the shapes give the
-map much of its character.
+decrease differ in colour, arrowhead and line. This keeps the app readable for colour-blind
+people, in greyscale and at a glance, and the shapes give the map much of its character. No two
+node types share a shape.
+
+## The expected case looks like nothing
+
+Mark the exception, not the norm. Most things on the map will be confirmed, so confirmed looks
+like nothing at all; only a removed item, a fresh change or a highlight earns a mark. Every ring,
+badge and pill has to earn its place against the clutter it adds.
 
 ## No `·` separators
 
@@ -40,10 +46,18 @@ Shadow scale (Tailwind tokens in `index.css`):
 
 ## The graph looks like gems
 
-Nodes are small cut stones: a lit top, a deeper base, a soft highlight and a shadow on the paper
-beneath. Statement nodes are panes of tinted glass holding their text. It should look a little like
-candy or a jewel box, but restrained: the gloss is subtle and the colours are the warm, muted
-palette, not saturated primaries. The aim is that adding to the map feels rewarding.
+Nodes are small cut stones seen from above: a flat table in the middle and a ring of crown facets
+sloping down to the girdle, each facet flat-shaded by a light from the upper left, with a warm
+shadow on the paper beneath. The faceting is what makes them read as stone rather than as glossy
+buttons, so keep it crisp: flat facets and a fine dark edge, no blurred gloss or white rims.
+Statement nodes are cut from pale tinted glass with a wide table that holds their text. Colours
+stay in the warm, muted palette, not saturated primaries. Adding to the map should feel rewarding.
+
+Shapes are true to their geometry: a hexagon or triangle is regular, not stretched to a square,
+and a slanted shape leans gently whatever its width.
+
+Labels use two faces: the sans for names and titles (names bold, titles plain) and the serif for
+statements, which read as something said. The key sets each type's name in its map face.
 
 Edges get their meaning from line type as well as colour:
 
