@@ -1,0 +1,26 @@
+{
+  "fixture": "entry-3-asking-for-help.txt",
+  "author": "claude-opus-5.5",
+  "nodes": [
+    { "ref": "homework", "type": "core_memory", "label": "Laughed at over homework (7)", "attributes": { "episodic": "asked dad for help with homework; he laughed and said I should already know it", "somatic_signature": "heat in the face", "age": "7" }, "confidence": 0.9, "quotes": ["When I was seven I asked my dad for help with my homework and he laughed and said I should already know it"] },
+    { "ref": "heat", "type": "interoceptive", "label": "Heat in my face", "attributes": { "location": "face", "quality": "heat" }, "confidence": 0.85, "quotes": ["I still feel that as a heat in my face"] },
+    { "ref": "burden", "type": "belief", "label": "Needing help makes me a burden", "attributes": { "depth": "core", "precision": 0.8 }, "confidence": 0.85, "quotes": ["needing help makes me a burden"] },
+    { "ref": "annoyed", "type": "relational_prediction", "label": "If I ask, people get annoyed", "attributes": {}, "confidence": 0.8, "quotes": ["if I ask for something, people will be annoyed with me"] },
+    { "ref": "manager", "type": "event", "label": "Manager asked about the project", "attributes": { "time": "today", "context": "work" }, "confidence": 0.95, "quotes": ["my manager asked how the project was going"] },
+    { "ref": "found_out", "type": "appraisal", "label": "Being asked = being found out", "attributes": { "implication": "exposure", "coping": "freeze" }, "confidence": 0.75, "quotes": ["being asked felt like being found out"] },
+    { "ref": "rumination", "type": "process_node", "label": "Rumination", "attributes": {}, "confidence": 0.85, "quotes": ["I lay awake ruminating"] },
+    { "ref": "chest", "type": "interoceptive", "label": "Tight chest", "attributes": { "location": "chest", "quality": "tight" }, "confidence": 0.85, "quotes": ["the tighter my chest got"] },
+    { "ref": "walk", "type": "policy", "label": "Go for a walk", "attributes": { "kind": "other" }, "confidence": 0.8, "quotes": ["I go for a walk"] }
+  ],
+  "edges": [
+    { "from": "homework", "to": "burden", "type": "abduces", "confidence": 0.7, "quotes": ["Somewhere back then I decided that needing help makes me a burden"] },
+    { "from": "homework", "to": "heat", "type": "stored_as", "confidence": 0.8, "quotes": ["I still feel that as a heat in my face"] },
+    { "from": "burden", "to": "annoyed", "type": "scaffolds", "confidence": 0.7, "quotes": ["so now I expect that if I ask for something, people will be annoyed with me"] },
+    { "from": "annoyed", "to": "found_out", "type": "constrains", "confidence": 0.6, "quotes": ["being asked felt like being found out"] },
+    { "from": "manager", "to": "found_out", "type": "triggers", "confidence": 0.85, "quotes": ["my manager asked how the project was going and I froze"] },
+    { "from": "found_out", "to": "rumination", "type": "reinforces", "sign": "+", "confidence": 0.65, "quotes": ["Afterwards I lay awake ruminating"] },
+    { "from": "rumination", "to": "chest", "type": "reinforces", "sign": "+", "confidence": 0.85, "quotes": ["the more I ruminated the tighter my chest got"] },
+    { "from": "chest", "to": "walk", "type": "reinforces", "sign": "+", "confidence": 0.8, "quotes": ["When my chest gets that tight I go for a walk"] },
+    { "from": "walk", "to": "rumination", "type": "reinforces", "sign": "-", "confidence": 0.8, "quotes": ["walking quiets the rumination for a while"] }
+  ]
+}

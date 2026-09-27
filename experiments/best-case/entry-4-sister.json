@@ -1,0 +1,21 @@
+{
+  "fixture": "entry-4-sister.txt",
+  "author": "claude-opus-5.5",
+  "nodes": [
+    { "ref": "sister", "type": "event", "label": "Sister asked about last year", "attributes": { "context": "family" }, "confidence": 0.95, "quotes": ["My sister asked about last year"] },
+    { "ref": "blank", "type": "policy", "label": "Go blank", "attributes": { "kind": "avoid" }, "confidence": 0.8, "quotes": ["I went blank"] },
+    { "ref": "hider", "existing": true, "type": "part", "label": "The Hider", "confidence": 0.85, "quotes": ["the way the part that hides does"] },
+    { "ref": "hide", "existing": true, "type": "policy", "label": "Hide and forget", "confidence": 0.7, "quotes": ["the way the part that hides does"] },
+    { "ref": "controller", "existing": true, "type": "part", "label": "The Controller", "confidence": 0.85, "quotes": ["The part that controls hates that"] },
+    { "ref": "scrolling", "existing": true, "type": "policy", "label": "Keep scrolling", "confidence": 0.85, "quotes": ["I picked up my phone and kept scrolling for an hour"] },
+    { "ref": "chest", "existing": true, "type": "interoceptive", "label": "Tight chest", "confidence": 0.8, "quotes": ["the same tight chest again"] }
+  ],
+  "edges": [
+    { "from": "sister", "to": "hider", "type": "triggers", "confidence": 0.8, "quotes": ["My sister asked about last year and I went blank"] },
+    { "from": "hider", "to": "blank", "type": "enacts", "confidence": 0.75, "quotes": ["I went blank, the way the part that hides does"] },
+    { "from": "blank", "to": "hide", "type": "aspect_of", "confidence": 0.7, "quotes": ["I went blank, the way the part that hides does"] },
+    { "from": "scrolling", "to": "controller", "type": "reinforces", "sign": "+", "confidence": 0.8, "quotes": ["the more I scroll, the stricter it gets"] },
+    { "from": "controller", "to": "scrolling", "type": "reinforces", "sign": "+", "confidence": 0.75, "quotes": ["the stricter it gets, the more I want to disappear into my phone"] },
+    { "from": "scrolling", "to": "chest", "type": "felt_as", "confidence": 0.55, "quotes": ["By the evening I had the same tight chest again"] }
+  ]
+}
