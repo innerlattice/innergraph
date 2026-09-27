@@ -1,25 +1,61 @@
 // "What changed": recent Sessions (an entry decomposed, a rename, a merge…), newest first, each
 // undoable as a whole, plus duplicates worth merging. Opened from the status bar.
-import { ItemLabel } from "../components/Chip";
+import { BookOpen, Check, FilePen, type LucideIcon, Merge, Minus, PenLine, Plus, Quote, RotateCcw, Split } from "lucide-react";
 import { useState } from "react";
+import { Chip } from "../components/Chip";
+import { ItemChip } from "../components/ItemChip";
 import { type ChangeAction, type DuplicateGroup, type SessionChanges, api } from "../api";
 import { Button, ErrorNote } from "../components/ui";
 import { actorLabel, formatHlc } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 
-/** `joiner` links the item to the row's detail: "renamed A to B", "merged A from B, C". */
-const VERB: Record<ChangeAction, { text: string; tone: string; joiner?: string }> = {
-  added: { text: "added", tone: "text-emerald-700" },
-  updated: { text: "more evidence", tone: "text-stone-500" },
-  renamed: { text: "renamed", tone: "text-sky-700", joiner: "to" },
-  edited: { text: "edited", tone: "text-sky-700" },
-  removed: { text: "removed", tone: "text-rose-700" },
-  restored: { text: "restored", tone: "text-emerald-700" },
-  confirmed: { text: "confirmed", tone: "text-emerald-700" },
-  merged: { text: "merged", tone: "text-violet-700", joiner: "from" },
-  split: { text: "split", tone: "text-violet-700", joiner: "into" },
-  revised: { text: "edited entry", tone: "text-sky-700" },
+// Each change is marked like a diff: a green plus for what arrived, a red minus for what went, a
+// pen for what was reworded. The mark carries a word for screen readers and on hover, so colour is
+// never the only signal. `joiner` links the item to the row's detail: "Renamed to B".
+const MARK: Record<ChangeAction, { icon: LucideIcon; word: string; tone: string; joiner?: string }> = {
+  added: { icon: Plus, word: "Added", tone: "text-sage-600" },
+  updated: { icon: Quote, word: "More evidence", tone: "text-stone-400" },
+  renamed: { icon: PenLine, word: "Renamed", tone: "text-clay-500", joiner: "to" },
+  edited: { icon: PenLine, word: "Edited", tone: "text-clay-500" },
+  removed: { icon: Minus, word: "Removed", tone: "text-rose-600" },
+  restored: { icon: RotateCcw, word: "Restored", tone: "text-sage-600" },
+  confirmed: { icon: Check, word: "Confirmed", tone: "text-sage-600" },
+  merged: { icon: Merge, word: "Merged", tone: "text-stone-500", joiner: "from" },
+  split: { icon: Split, word: "Split", tone: "text-stone-500", joiner: "into" },
+  revised: { icon: FilePen, word: "Entry edited", tone: "text-clay-500" },
 };
+
+function Mark(props: { action: ChangeAction }) {
+  const { icon: Icon, word, tone } = MARK[props.action];
+  return (
+    <span title={word} className={`flex h-5 w-4 shrink-0 items-center justify-center ${tone}`}>
+      <Icon size={14} strokeWidth={2.5} aria-hidden />
+      <span className="sr-only">{word}</span>
+    </span>
+  );
+}
+
+function ChangeRowView(props: { row: SessionChanges["rows"][number]; onFocus: (ids: string[]) => void }) {
+  const { row } = props;
+  const mark = MARK[row.action];
+  return (
+    <li className="flex items-start gap-1.5">
+      <Mark action={row.action} />
+      <div className="min-w-0 flex-1">
+        {row.kind === "entry" ? (
+          <Chip lead={<BookOpen size={11} aria-hidden />}>{row.label}</Chip>
+        ) : (
+          <ItemChip id={row.id} label={row.label} onClick={() => props.onFocus([row.id])} />
+        )}
+        {row.detail ? (
+          <p className="mt-0.5 pl-2.5 text-xs text-stone-400">
+            {mark.word} {mark.joiner ?? "with"} {row.detail}
+          </p>
+        ) : null}
+      </div>
+    </li>
+  );
+}
 
 const PURPOSE: Record<string, string> = {
   ingest: "New entry",
@@ -47,24 +83,18 @@ function SessionCard(props: { change: SessionChanges; onFocus: (ids: string[]) =
       <header className="flex items-start justify-between gap-3">
         <button type="button" className="text-left" onClick={() => props.onFocus(focusable.map((r) => r.id))} disabled={focusable.length === 0}>
           <span className="block text-sm font-medium text-stone-800">{PURPOSE[change.purpose] ?? change.purpose}</span>
-          <span className="text-xs text-stone-400">
-            By {actorLabel(change.actor)}, {formatHlc(change.at)}
+          <span className="flex flex-wrap gap-x-2 text-xs text-stone-400">
+            <span>by {actorLabel(change.actor)}</span>
+            <time>{formatHlc(change.at)}</time>
           </span>
         </button>
         <Button onClick={undo} title="Undo everything in this change">
           Undo
         </Button>
       </header>
-      <ul className="space-y-0.5 text-sm">
+      <ul className="space-y-1">
         {change.rows.map((row, i) => (
-          <li key={`${row.id}-${i}`}>
-            <button type="button" disabled={row.kind === "entry"} onClick={() => props.onFocus([row.id])} className="w-full rounded px-1 text-left hover:bg-stone-100 disabled:hover:bg-transparent">
-              <span className={`text-xs ${VERB[row.action].tone}`}>{VERB[row.action].text}</span> <span className="text-stone-700">
-                <ItemLabel label={row.label} />
-              </span>
-              {row.detail ? <span className="text-stone-400"> {VERB[row.action].joiner ?? "with"} {row.detail}</span> : null}
-            </button>
-          </li>
+          <ChangeRowView key={`${row.id}-${i}`} row={row} onFocus={props.onFocus} />
         ))}
       </ul>
       <ErrorNote error={error} />
@@ -79,10 +109,11 @@ function Duplicates(props: { groups: DuplicateGroup[]; labels: Record<string, st
       <h4 className="text-xs font-medium uppercase tracking-wide text-stone-400">Possible duplicates</h4>
       <ul className="space-y-2">
         {props.groups.map((g) => (
-          <li key={g.ids.join()} className="flex items-center justify-between gap-2 rounded-lg bg-amber-50 p-2 text-sm">
-            <button type="button" onClick={() => props.onFocus(g.ids)} className="text-left text-stone-800 hover:underline">
-              “{props.labels[g.ids[0]] ?? g.ids[0]}” is recorded {g.ids.length} times
-            </button>
+          <li key={g.ids.join()} className="flex items-center justify-between gap-2 rounded-lg bg-clay-50 p-2 text-sm">
+            <span className="flex min-w-0 flex-wrap items-center gap-1.5 text-stone-600">
+              <ItemChip id={g.ids[0]} label={props.labels[g.ids[0]]} onClick={() => props.onFocus(g.ids)} />
+              <span>recorded {g.ids.length} times</span>
+            </span>
             <Button onClick={() => api.mergeDuplicates([g]).then(props.onDone)}>Merge</Button>
           </li>
         ))}
