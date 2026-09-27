@@ -3,7 +3,7 @@
 // shadow on the paper beneath. Statement nodes are cut from pale glass with a wide table for their
 // text. Rendered as an SVG data URI so the canvas (as a node background) and the page (as an <img>)
 // show exactly the same thing.
-import { type Point, cornersOf, polygonPath, roundedPath } from "./shapes";
+import { type Point, cornersOf, inradius, inset, polygonPath } from "./shapes";
 
 export interface GemSpec {
   shape: string;
@@ -31,8 +31,8 @@ const LIGHT_ANGLE = 335;
 const LIGHT: Point = [Math.sin((LIGHT_ANGLE * Math.PI) / 180), -Math.cos((LIGHT_ANGLE * Math.PI) / 180)];
 /** How wide the crown is on a glass stone, so the table stays big enough for text. */
 const GLASS_BEVEL = 4;
-/** How much of a small stone's width is table. */
-const TABLE = 0.5;
+/** How much of a small stone's depth, centre to nearest edge, is crown: the rest is table. */
+const CROWN = 0.5;
 
 function mix(hex: string, toward: string, amount: number): string {
   const parse = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
@@ -47,13 +47,10 @@ const shade = (hex: string, amount: number) => (amount >= 0 ? mix(hex, "#ffffff"
 /** The colour a stone is cut from: glass is the tint of its colour on white. */
 const bodyOf = (spec: GemSpec) => (spec.glass ? shade(spec.color, 0.45) : spec.color);
 
-/** The table: the outline shrunk towards its centre, by a fixed bevel for glass or a fraction for stones. */
+/** The table: the outline with every edge brought in by the same distance, so the crown is even all
+ *  round, whatever the shape's slant or proportions. A fixed bevel for glass, a share of the depth for stones. */
 function tableOf(outer: Point[], spec: GemSpec): Point[] {
-  const cx = outer.reduce((s, p) => s + p[0], 0) / outer.length;
-  const cy = outer.reduce((s, p) => s + p[1], 0) / outer.length;
-  const sx = spec.glass ? (spec.w - 2 * GLASS_BEVEL) / spec.w : TABLE;
-  const sy = spec.glass ? (spec.h - 2 * GLASS_BEVEL) / spec.h : TABLE;
-  return outer.map(([x, y]) => [cx + (x - cx) * sx, cy + (y - cy) * sy]);
+  return inset(outer, spec.glass ? GLASS_BEVEL : inradius(outer) * CROWN);
 }
 
 /** 1 if the corners run clockwise on screen, -1 if not: outlines are drawn both ways round. */
@@ -100,7 +97,7 @@ function gemBody(spec: GemSpec, blur: number, drop: number): string {
   const outer = cornersOf(spec.shape, spec.w, spec.h);
   const table = tableOf(outer, spec);
   const body = bodyOf(spec);
-  const outline = roundedPath(outer, Math.min(spec.w, spec.h) / 14);
+  const outline = polygonPath(outer);
   const edge = shade(spec.color, -0.35);
   const hair = Math.max(0.35, Math.min(spec.w, spec.h) / 60);
   return [

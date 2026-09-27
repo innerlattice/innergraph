@@ -1,5 +1,5 @@
 // Node outlines. Each shape is a list of corners (the girdle of a cut stone), used both to draw
-// the stone's facets and, softened, as its silhouette. They fill the node's w × h box the way
+// the stone's facets and as its crisp silhouette. They fill the node's w × h box the way
 // Cytoscape's shapes do, so hit-testing, outlines and underlays line up with the drawing.
 
 export type Point = [number, number];
@@ -62,20 +62,38 @@ export function cornersOf(shape: string, w: number, h: number): Point[] {
 
 const f = (n: number) => Math.round(n * 100) / 100;
 
-/** A closed path through `pts` with each corner softened by a curve of radius `r`. */
-export function roundedPath(pts: Point[], r: number): string {
+/** How far the nearest edge of a convex outline lies from its centre. */
+export function inradius(pts: Point[]): number {
+  const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+  const cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+  return Math.min(
+    ...pts.map((a, i) => {
+      const b = pts[(i + 1) % pts.length];
+      return Math.abs((b[0] - a[0]) * (a[1] - cy) - (a[0] - cx) * (b[1] - a[1])) / Math.hypot(b[0] - a[0], b[1] - a[1]);
+    }),
+  );
+}
+
+/** A convex outline with every edge moved inward by the same distance `d`, so a bevel is even all round. */
+export function inset(pts: Point[], d: number): Point[] {
   const n = pts.length;
-  const toward = (a: Point, b: Point) => {
+  const cx = pts.reduce((s, p) => s + p[0], 0) / n;
+  const cy = pts.reduce((s, p) => s + p[1], 0) / n;
+  // Each edge as a line n·p = c with its normal pointing inward, then pulled in by d.
+  const lines = pts.map((a, i) => {
+    const b = pts[(i + 1) % n];
     const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    const t = Math.min(r, len / 2) / len;
-    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-  };
-  const parts = pts.map((p, i) => {
-    const [ax, ay] = toward(p, pts[(i + n - 1) % n]);
-    const [bx, by] = toward(p, pts[(i + 1) % n]);
-    return `${i === 0 ? "M" : "L"}${f(ax)},${f(ay)} Q${f(p[0])},${f(p[1])} ${f(bx)},${f(by)}`;
+    let [nx, ny] = [(a[1] - b[1]) / len, (b[0] - a[0]) / len];
+    if (nx * (cx - a[0]) + ny * (cy - a[1]) < 0) [nx, ny] = [-nx, -ny];
+    return { nx, ny, c: nx * a[0] + ny * a[1] + d };
   });
-  return `${parts.join(" ")} Z`;
+  // Corner i is where the edge before it meets the edge after it.
+  return pts.map((_, i) => {
+    const p = lines[(i + n - 1) % n];
+    const q = lines[i];
+    const det = p.nx * q.ny - p.ny * q.nx;
+    return [(p.c * q.ny - p.ny * q.c) / det, (p.nx * q.c - p.c * q.nx) / det];
+  });
 }
 
 export function polygonPath(pts: Point[]): string {
