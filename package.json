@@ -60,6 +60,7 @@
     "coverage": "vitest run --coverage",
     "metrics": "tsx scripts/metrics.ts",
     "quality": "npm run typecheck && npm run coverage && npm run metrics",
-    "chat": "tsx src/bin.ts chat"
+    "chat": "tsx src/bin.ts chat",
+    "fixture:reset": "tsx experiments/best-case/decompose.ts --fresh"
   }
 }

@@ -1,8 +1,9 @@
 // Best-case experiment: a larger model (Claude) decomposes the fixtures itself and writes
 // them into a fresh Vault through the MCP server, exactly as any external agent would.
 //
-//   npx tsx experiments/best-case/decompose.ts [vaultDir]
-import { readFileSync, readdirSync } from "node:fs";
+//   npm run fixture:reset          (stop the server on this vault first)
+//   npx tsx experiments/best-case/decompose.ts [vaultDir] [--fresh]
+import { readFileSync, readdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
@@ -10,7 +11,7 @@ import { runCli } from "../../src/clients/cli.js";
 
 const ROOT = resolve(import.meta.dirname, "../..");
 const HERE = import.meta.dirname;
-const vaultDir = resolve(process.argv[2] ?? join(ROOT, ".experiments", "best-case"));
+const vaultDir = resolve(process.argv.slice(2).find((a) => !a.startsWith("--")) ?? join(ROOT, ".experiments", "best-case"));
 
 type ToolResult = { content: { text: string }[]; isError?: boolean };
 
@@ -24,21 +25,16 @@ async function decompose(client: Client, file: string): Promise<void> {
   const plan = JSON.parse(readFileSync(join(HERE, file), "utf8"));
   const content = readFileSync(join(ROOT, "test", "fixtures", plan.fixture), "utf8");
   const entry = (await call(client, "add_entry", { content, interpret: false })) as { entry: string };
-  const proposed = (await call(client, "propose", { entry: entry.entry, nodes: plan.nodes, edges: plan.edges })) as {
-    session: string;
-    accepted: string[];
-    awaitingReview: string[];
-    dropped: string[];
-  };
-  console.log(`${plan.fixture}: ${proposed.accepted.length} auto-accepted, ${proposed.awaitingReview.length} for review, dropped: ${JSON.stringify(proposed.dropped)}`);
-  if (proposed.awaitingReview.length > 0) await call(client, "review", { session: proposed.session, accept: proposed.awaitingReview });
+  const added = (await call(client, "add_to_graph", { entry: entry.entry, nodes: plan.nodes, edges: plan.edges })) as { items: unknown[]; dropped: string[] };
+  console.log(`${plan.fixture}: ${added.items.length} items added, dropped: ${JSON.stringify(added.dropped)}`);
 }
 
 async function main(): Promise<void> {
+  if (process.argv.includes("--fresh")) rmSync(vaultDir, { recursive: true, force: true });
   await runCli(["init", "--vault", vaultDir], { log: console.log });
   const transport = new StdioClientTransport({
     command: "npx",
-    args: ["tsx", join(ROOT, "src", "bin.ts"), "mcp", "--vault", vaultDir, "--tier", "commit", "--agent", "claude-opus-5.5"],
+    args: ["tsx", join(ROOT, "src", "bin.ts"), "mcp", "--vault", vaultDir, "--tier", "write", "--agent", "claude-opus-5.5"],
     stderr: "ignore",
   });
   const client = new Client({ name: "best-case-experiment", version: "1" });
