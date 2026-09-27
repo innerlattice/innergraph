@@ -21,9 +21,9 @@ function settle(cy: Core, pinned: string[], positions: Positions): void {
     quality: "proof",
     nodeDimensionsIncludeLabels: true,
     fixedNodeConstraint: pinned.map((nodeId) => ({ nodeId, position: positions.get(nodeId) })),
-    nodeSeparation: 90,
-    idealEdgeLength: () => 110,
-    nodeRepulsion: () => 12000,
+    nodeSeparation: 63,
+    idealEdgeLength: () => 77,
+    nodeRepulsion: () => 6000,
   };
   cy.layout(options as cytoscape.LayoutOptions).run();
 }

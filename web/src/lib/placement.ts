@@ -15,9 +15,9 @@ export interface Box extends Point {
 }
 
 /** Clear space between two footprints. */
-export const GAP = 20;
+export const GAP = 14;
 /** How far from its neighbours a new node starts. */
-const REACH = 90;
+const REACH = 63;
 /** Turns successive starts round a point so they spread evenly rather than stack. */
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 

@@ -15,14 +15,14 @@ describe("seed", () => {
   it("starts a new node near what it links to, and one linked only to new nodes near them", () => {
     const starts = seed(["m", "n", "lone"], neighbours, placed);
     const n = starts.get("n") as Point;
-    expect(Math.hypot(n.x - 100, n.y)).toBeCloseTo(90);
+    expect(Math.hypot(n.x - 100, n.y)).toBeCloseTo(63);
     const m = starts.get("m") as Point;
-    expect(Math.hypot(m.x - n.x, m.y - n.y)).toBeCloseTo(90);
+    expect(Math.hypot(m.x - n.x, m.y - n.y)).toBeCloseTo(63);
   });
 
   it("starts a node linked to nothing just outside the map", () => {
     const lone = seed(["lone"], neighbours, placed).get("lone") as Point;
-    expect(Math.hypot(lone.x - 100, lone.y)).toBeCloseTo(190);
+    expect(Math.hypot(lone.x - 100, lone.y)).toBeCloseTo(163);
   });
 
   it("leaves a first layout to start from scratch", () => {

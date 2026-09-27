@@ -153,12 +153,18 @@ const nodeRules: StylesheetJson = [
   { selector: "node.highlight", style: { "outline-width": 3, "outline-color": HIGHLIGHT, "outline-style": "solid", "outline-offset": 3, "outline-opacity": 1 } },
 ];
 
+/** Canvas edges can't be drawn double, so a double line is a paper-coloured line over a wider
+ *  outline in the look's colour: the outline shows as two rails either side of the gap. */
+function lineRule(look: EdgeLook) {
+  if (look.line !== "double") return { width: look.width, "line-color": look.color, "line-style": look.line };
+  const gap = look.width / 3;
+  return { width: gap, "line-color": PAPER, "line-style": "solid", "line-outline-width": look.width - gap, "line-outline-color": look.color };
+}
+
 const lookRules: StylesheetJson = EDGE_LOOKS.map((look) => ({
   selector: `edge.look-${look.name}`,
   style: {
-    width: look.width,
-    "line-color": look.color,
-    "line-style": look.line,
+    ...lineRule(look),
     "line-dash-pattern": [6, 4],
     "target-arrow-color": look.color,
     "target-arrow-shape": look.arrow,
@@ -189,6 +195,13 @@ const edgeRules: StylesheetJson = [
   { selector: "edge.removed", style: { opacity: 0.3 } },
   { selector: "edge:selected", style: { "underlay-color": COLOR.deep, "underlay-opacity": 0.14, "underlay-padding": 5 } },
   { selector: "edge.highlight", style: { "line-color": HIGHLIGHT, "target-arrow-color": HIGHLIGHT, width: 3.5 } },
+  { selector: "edge.look-builds-on.highlight", style: { "line-color": PAPER, "line-outline-color": HIGHLIGHT, width: 1.2 } },
 ];
 
-export const GRAPH_STYLE: StylesheetJson = [...nodeRules, ...edgeRules];
+// Pressing on the map or an item shows nothing of its own: selection is what answers a click.
+const pressRules: StylesheetJson = [
+  { selector: "core", style: { "active-bg-opacity": 0 } },
+  { selector: "node:active, edge:active", style: { "overlay-opacity": 0 } },
+];
+
+export const GRAPH_STYLE: StylesheetJson = [...nodeRules, ...edgeRules, ...pressRules];
