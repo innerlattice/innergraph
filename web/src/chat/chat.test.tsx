@@ -10,7 +10,8 @@ import { BudgetNotice, Composer, ContextMeter, FullNotice, SelectionChips } from
 import { MessageBoundary } from "./Message";
 import { SettingsDialog, linkPoll } from "./SettingsDialog";
 import { ToolCard } from "./ToolCard";
-import { describeTool, errorText, friendlyError, isFullError, isSilent, latestTokens, levelOf, marksFor, recordedEntry, repliesTo, segments, textOf } from "./parts";
+import { budgetLevel } from "../../../src/core/budget";
+import { describeTool, errorText, friendlyError, isFullError, isSilent, latestTokens, marksFor, recordedEntry, repliesTo, segments, textOf } from "./parts";
 
 vi.mock("../components/GraphCanvas", () => ({ GraphCanvas: () => <div data-testid="graph-canvas" /> }));
 
@@ -141,7 +142,7 @@ describe("reading a conversation", () => {
     expect([isSilent(messages[1]), isSilent(messages[3]), isSilent(messages[0]), isSilent(undefined)]).toEqual([true, false, false, false]);
     expect(latestTokens(messages, 1)).toBe(5);
     expect(latestTokens([], 1)).toBe(1);
-    expect([levelOf(1, 10), levelOf(7, 10), levelOf(9, 10), levelOf(1, 0)]).toEqual(["ok", "warn", "full", "ok"]);
+    expect([budgetLevel(1, 10), budgetLevel(7, 10), budgetLevel(9, 10), budgetLevel(1, 0)]).toEqual(["ok", "warn", "full", "ok"]);
     expect(isFullError(new Error('{"error":"This conversation is full."}'))).toBe(true);
     expect(isFullError(undefined)).toBe(false);
     expect(errorText(new Error('{"error":"Nope"}'))).toBe("Nope");

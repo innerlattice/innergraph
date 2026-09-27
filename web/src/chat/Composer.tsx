@@ -2,6 +2,7 @@
 // how full the conversation is, and the box itself.
 import { ArrowUp, Square } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { WARN_AT } from "../../../src/core/budget";
 import type { BudgetLevel, SelectionItem } from "../api";
 import { Chip, ItemLabel } from "../components/Chip";
 
@@ -59,7 +60,7 @@ export function FullNotice(props: { onNewChat: () => void }) {
 export function ContextMeter(props: { share: number }) {
   const r = 7;
   const c = 2 * Math.PI * r;
-  const tone = props.share >= 0.7 ? "stroke-clay-500" : "stroke-stone-400";
+  const tone = props.share >= WARN_AT ? "stroke-clay-500" : "stroke-stone-400";
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" role="img" aria-label={`${Math.round(props.share * 100)}% of this conversation's room used`}>
       <title>{`${Math.round(props.share * 100)}% of this conversation's room used`}</title>

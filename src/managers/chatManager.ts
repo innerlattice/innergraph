@@ -2,6 +2,7 @@
 // left in the model's context. A full conversation ends; compaction is not built yet.
 import type { ChatAccess, ChatRecord, ChatSummary } from "../access/chatAccess.js";
 import type { VaultAccess } from "../access/vaultAccess.js";
+import { type BudgetLevel, budgetLevel } from "../core/budget.js";
 import type { Fetch } from "../utilities/chatgpt.js";
 import { newId } from "../utilities/crypto.js";
 import { isLocalUrl } from "../utilities/modelGateway.js";
@@ -29,7 +30,6 @@ export interface PublicChatSettings extends Omit<ChatSettings, "apiKey"> {
   hosted: boolean;
 }
 
-export type BudgetLevel = "ok" | "warn" | "full";
 
 export interface ChatBudget {
   contextTokens: number;
@@ -42,10 +42,6 @@ export interface ChatView {
   budget: ChatBudget;
 }
 
-/** From here on the person is warned; from FULL_AT the conversation takes no more turns. */
-const WARN_AT = 0.7;
-const FULL_AT = 0.9;
-
 const OPENROUTER_DEFAULTS = { model: "anthropic/claude-sonnet-5", contextWindow: 200_000 };
 const CHATGPT_DEFAULTS = { model: "gpt-6-sol", effort: "medium", contextWindow: 200_000 };
 const LOCAL_DEFAULTS = { model: "gemma4:latest", baseUrl: "http://127.0.0.1:11434/v1", contextWindow: 32_000 };
@@ -54,12 +50,6 @@ const NEW_TITLE = "New conversation";
 const SETTINGS_KEY = "chat";
 
 export class ChatFullError extends Error {}
-
-export function budgetLevel(contextTokens: number, contextWindow: number): BudgetLevel {
-  const share = contextTokens / contextWindow;
-  if (share >= FULL_AT) return "full";
-  return share >= WARN_AT ? "warn" : "ok";
-}
 
 interface TextMessage {
   role?: string;

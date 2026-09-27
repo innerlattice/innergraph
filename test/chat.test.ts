@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { chatInstructions, chatTools, contextTokensOf, estimateTokens, messageText, repairInput, respondToChat } from "../src/clients/chat.js";
 import { withoutNulls } from "../src/clients/tools.js";
 import { createApp } from "../src/clients/http.js";
-import { ChatFullError, budgetLevel, titleFrom } from "../src/managers/chatManager.js";
+import { budgetLevel } from "../src/core/budget.js";
+import { ChatFullError, titleFrom } from "../src/managers/chatManager.js";
 import { ChatModelError, chatModel, modelActor } from "../src/utilities/chatModel.js";
 import { type TestVault, makeVault } from "./helpers.js";
 

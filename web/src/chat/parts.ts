@@ -1,6 +1,6 @@
 // Reading a conversation: which tool calls happened, how to say them in plain words, and which
 // passages of the person's message they cite (highlighted in the message). Pure, no React.
-import type { BudgetLevel, ChatMessage, ProposeResult } from "../api";
+import type { ChatMessage, ProposeResult } from "../api";
 
 export interface ToolPart {
   type: string;
@@ -186,13 +186,6 @@ export function repliesTo(messages: ChatMessage[], index: number): ChatMessage[]
 
 export function textOf(message: ChatMessage): string {
   return (message.parts as { type: string; text?: string }[]).map((p) => (p.type === "text" ? p.text : "")).join("");
-}
-
-/** Mirrors ChatManager's thresholds: warn from 70%, end from 90%. */
-export function levelOf(tokens: number, window: number): BudgetLevel {
-  const share = window > 0 ? tokens / window : 0;
-  if (share >= 0.9) return "full";
-  return share >= 0.7 ? "warn" : "ok";
 }
 
 /** The latest context use a reply reported, or the stored figure. */

@@ -11,7 +11,8 @@ import type { AnyEvent, EntryRecord, Graph, Schema } from "../../src/core/types"
 import type { Job } from "../../src/utilities/jobQueue";
 import type { ChatSummary } from "../../src/access/chatAccess";
 import type { ProposeResult } from "../../src/managers/ingestManager";
-import type { BudgetLevel, ChatBudget, ChatProvider, ChatSettings, PublicChatSettings } from "../../src/managers/chatManager";
+import type { BudgetLevel } from "../../src/core/budget";
+import type { ChatBudget, ChatProvider, ChatSettings, PublicChatSettings } from "../../src/managers/chatManager";
 import type { ChatMessage } from "../../src/clients/chat";
 import type { SelectionItem } from "../../src/managers/exploreManager";
 import type { LinkStatus } from "../../src/managers/chatgptLink";

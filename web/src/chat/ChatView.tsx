@@ -6,7 +6,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { type ChatBudget, type ChatDetail, type ChatMessage, type PublicChatSettings, type SelectionItem, api } from "../api";
 import { BudgetNotice, Composer, FullNotice, SelectionChips } from "./Composer";
 import { AssistantMessage, MessageBoundary, Thinking, UserMessage } from "./Message";
-import { errorText, isFullError, isSilent, latestTokens, levelOf, repliesTo } from "./parts";
+import { budgetLevel } from "../../../src/core/budget";
+import { errorText, isFullError, isSilent, latestTokens, repliesTo } from "./parts";
 
 interface ChatActions {
   onSelect: (ids: string[]) => void;
@@ -70,7 +71,7 @@ function transportFor() {
 function useBudget(messages: ChatMessage[], stored: ChatBudget, error: Error | undefined) {
   const tokens = latestTokens(messages, stored.contextTokens);
   const window = messages.map((m) => m.metadata?.contextWindow).filter(Boolean).at(-1) ?? stored.contextWindow;
-  return { share: tokens / window, level: isFullError(error) ? "full" : levelOf(tokens, window) };
+  return { share: tokens / window, level: isFullError(error) ? "full" : budgetLevel(tokens, window) };
 }
 
 interface ListProps extends ChatViewProps {
