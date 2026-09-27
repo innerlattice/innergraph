@@ -145,7 +145,7 @@ export function EntriesView(props: { focus?: string; navigate: Navigate }) {
     <Page title="Entries" subtitle="Highlighted passages are cited as evidence. Select one to open what it supports.">
       <ErrorNote error={entries.error} />
       {entries.data?.length === 0 ? <Empty>No entries yet.</Empty> : null}
-      <div className="grid grid-cols-[14rem_1fr] gap-6">
+      <div className="grid grid-cols-1 gap-6 @2xl:grid-cols-[14rem_1fr] [&>*]:min-w-0">
         <ul className="space-y-1">
           {entries.data?.map((e) => (
             <li key={e.id}>

@@ -20,7 +20,7 @@ export function Button({ tone = "quiet", className = "", ...rest }: ButtonHTMLAt
 
 export function Page(props: { title: string; subtitle?: string; children: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mx-auto max-w-4xl px-8 py-8">
+    <div className="@container mx-auto max-w-4xl px-8 py-8">
       <header className="mb-6 flex items-end justify-between gap-4">
         <div>
           <h2 className="font-serif text-2xl text-stone-800">{props.title}</h2>

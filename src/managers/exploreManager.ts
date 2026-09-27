@@ -99,7 +99,7 @@ function overlaps(a: Evidence, b: Evidence): boolean {
 
 function citationsOf(graph: Graph) {
   return [...Object.values(graph.nodes), ...Object.values(graph.edges)].flatMap((item) =>
-    item.evidence.map((evidence) => ({ target: item.id, label: "label" in item ? item.label : item.type, evidence })),
+    item.evidence.map((evidence) => ({ target: item.id, label: "label" in item ? item.label : edgeLabel(graph, item), evidence })),
   );
 }
 

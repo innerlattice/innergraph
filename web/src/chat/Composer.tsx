@@ -4,12 +4,17 @@ import { ArrowUp, Square, X } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import type { BudgetLevel, SelectionItem } from "../api";
 
+/** Beyond this many, the chips fold into "+N more". */
+const SHOWN = 4;
+
 export function SelectionChips(props: { items: SelectionItem[]; onRemove: (id: string) => void; onSelect: (ids: string[]) => void; onClear: () => void }) {
+  const [open, setOpen] = useState(false);
   if (props.items.length === 0) return null;
+  const hidden = open ? 0 : Math.max(props.items.length - SHOWN, 0);
   return (
-    <div className="mb-2 flex flex-wrap items-center gap-1.5 px-1 text-xs">
+    <div className="mb-2 flex max-h-40 flex-wrap items-center gap-1.5 overflow-y-auto px-1 text-xs">
       <span className="text-stone-400">About</span>
-      {props.items.map((item) => (
+      {props.items.slice(0, props.items.length - hidden).map((item) => (
         <span key={item.id} className="flex items-center gap-1 rounded-full border border-sage-200 bg-sage-50 py-0.5 pr-1 pl-2.5 text-sage-700">
           <button type="button" className="hover:underline" onClick={() => props.onSelect([item.id])}>
             {item.label}
@@ -19,6 +24,11 @@ export function SelectionChips(props: { items: SelectionItem[]; onRemove: (id: s
           </button>
         </span>
       ))}
+      {hidden > 0 ? (
+        <button type="button" className="rounded-full px-1.5 text-sage-700 hover:underline" onClick={() => setOpen(true)}>
+          +{hidden} more
+        </button>
+      ) : null}
       {props.items.length > 1 ? (
         <button type="button" className="text-stone-400 hover:text-stone-700" onClick={props.onClear}>
           clear

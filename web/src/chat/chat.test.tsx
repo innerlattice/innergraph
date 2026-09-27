@@ -221,8 +221,13 @@ describe("the composer", () => {
     render(<SelectionChips items={items} onRemove={onRemove} onSelect={onSelect} onClear={onClear} />);
     fireEvent.click(screen.getByText("A"));
     fireEvent.click(screen.getByLabelText("Unselect B"));
-    fireEvent.click(screen.getByText("clear"));
+    fireEvent.click(screen.getAllByText("clear")[0]);
     expect([onSelect.mock.calls[0][0], onRemove.mock.calls[0][0], onClear.mock.calls.length]).toEqual([["a"], "b", 1]);
+    const many = Array.from({ length: 7 }, (_, i) => ({ ...items[0], id: `m${i}`, label: `M${i}` }));
+    render(<SelectionChips items={many} onRemove={onRemove} onSelect={onSelect} onClear={onClear} />);
+    expect(screen.queryByText("M5")).toBeNull();
+    fireEvent.click(screen.getByText("+3 more"));
+    expect(screen.getByText("M6")).toBeTruthy();
     render(<BudgetNotice level="warn" share={0.74} />);
     expect(screen.getByText(/74% of its room/)).toBeTruthy();
     const onNewChat = vi.fn();
