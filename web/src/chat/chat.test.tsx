@@ -8,7 +8,7 @@ import { ChatRail, ago } from "./ChatRail";
 import { ChatView, footerFor } from "./ChatView";
 import { BudgetNotice, Composer, ContextMeter, FullNotice, SelectionChips } from "./Composer";
 import { MessageBoundary } from "./Message";
-import { SettingsDialog } from "./SettingsDialog";
+import { SettingsDialog, linkPoll } from "./SettingsDialog";
 import { ToolCard } from "./ToolCard";
 import { describeTool, errorText, friendlyError, isFullError, isSilent, latestTokens, levelOf, marksFor, recordedEntry, repliesTo, segments, textOf } from "./parts";
 
@@ -244,12 +244,13 @@ describe("the composer", () => {
     expect(footerFor(SETTINGS)).toBe("Private to this device · gemma");
     expect(footerFor({ ...SETTINGS, provider: "openrouter", hosted: true })).toContain("through OpenRouter");
     expect(footerFor({ ...SETTINGS, hosted: true })).toContain("off this device");
+    expect(footerFor({ ...SETTINGS, provider: "chatgpt", hosted: true })).toContain("through your ChatGPT plan");
   });
 });
 
 describe("rails and settings", () => {
   it("list, open, rename and delete conversations", () => {
-    const handlers = { onOpen: vi.fn(), onNew: vi.fn(), onRename: vi.fn(), onDelete: vi.fn(), onSettings: vi.fn() };
+    const handlers = { onOpen: vi.fn(), onNew: vi.fn(), onRename: vi.fn(), onDelete: vi.fn(), onSettings: vi.fn(), chatOpen: true, onToggleChat: vi.fn() };
     const chat = { id: "c", title: "Monday", createdAt: "", updatedAt: new Date().toISOString(), contextTokens: 0, budget: { contextTokens: 0, contextWindow: 1, level: "full" as const } };
     const { rerender } = render(<ChatRail chats={[]} {...handlers} />);
     expect(screen.getByText("Nothing here yet.")).toBeTruthy();
@@ -305,6 +306,43 @@ describe("rails and settings", () => {
     render(<SettingsDialog settings={{ ...SETTINGS, provider: "openrouter", hasKey: true }} onSaved={onSaved} onClose={onClose} />);
     expect(screen.getByText(/A key is saved/)).toBeTruthy();
   });
+
+  it("connect a ChatGPT plan with a code, then pick its model and reasoning", { timeout: 15_000 }, async () => {
+    linkPoll.ms = 10;
+    const states = [{ state: "pending", userCode: "ABCD-1234", url: "https://auth.openai.com/codex/device" }, { state: "connected", plan: "pro", email: "me@example.com" }];
+    routes["GET /api/chat/chatgpt"] = () => json({ state: "disconnected" });
+    routes["POST /api/chat/chatgpt"] = () => json(states[0]);
+    routes["PUT /api/chat/settings"] = () => json({ ...SETTINGS, provider: "chatgpt" });
+    const onSaved = vi.fn();
+    render(<SettingsDialog settings={SETTINGS} onSaved={onSaved} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText("ChatGPT plan"));
+    fireEvent.click(await screen.findByText("Connect ChatGPT"));
+    expect(await screen.findByText("ABCD-1234")).toBeTruthy();
+    expect(screen.getByText(/Open OpenAI/).closest("a")?.getAttribute("href")).toBe("https://auth.openai.com/codex/device");
+    fireEvent.click(screen.getByLabelText("Copy code"));
+    routes["GET /api/chat/chatgpt"] = () => json(states[1]);
+    expect(await screen.findByText(/Connected · pro/, {}, { timeout: 5000 })).toBeTruthy();
+    expect((screen.getByLabelText("Model") as HTMLSelectElement).value).toBe("gpt-6-sol");
+    fireEvent.change(screen.getByLabelText("Model"), { target: { value: "gpt-5.5" } });
+    fireEvent.change(screen.getByLabelText("Reasoning"), { target: { value: "high" } });
+    fireEvent.click(screen.getByText("Save"));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(calls.at(-1)?.body).toMatchObject({ provider: "chatgpt", model: "gpt-5.5", effort: "high" });
+    routes["DELETE /api/chat/chatgpt"] = () => json({ state: "disconnected", error: "Signed out" });
+    fireEvent.click(screen.getByText("Disconnect"));
+    expect(await screen.findByText("Signed out")).toBeTruthy();
+    linkPoll.ms = 2500;
+  });
+
+  it("keep a custom plan model and cancel a pending sign-in", async () => {
+    routes["GET /api/chat/chatgpt"] = () => json({ state: "pending", userCode: "Z", url: "u" });
+    routes["DELETE /api/chat/chatgpt"] = () => json({ error: "offline" }, 500);
+    render(<SettingsDialog settings={{ ...SETTINGS, provider: "chatgpt", model: "gpt-custom", effort: "odd" }} onSaved={vi.fn()} onClose={vi.fn()} />);
+    expect((screen.getByLabelText("Model") as HTMLSelectElement).value).toBe("gpt-custom");
+    expect((screen.getByLabelText("Reasoning") as HTMLSelectElement).value).toBe("medium");
+    fireEvent.click(await screen.findByText("Cancel", { selector: "button.w-full" }));
+    expect(await screen.findByText("offline")).toBeTruthy();
+  });
 });
 
 const actions = () => ({ onSelect: vi.fn(), onOpenEntry: vi.fn(), onNewChat: vi.fn(), onOpenSettings: vi.fn(), onTurnEnd: vi.fn(), onDeselect: vi.fn(), onClearSelection: vi.fn() });
@@ -358,6 +396,23 @@ describe("a conversation", () => {
 });
 
 describe("the app shell", () => {
+  it("hides the chat from the left rail and never closes both sides", async () => {
+    render(<App />);
+    const main = await screen.findByRole("main");
+    fireEvent.click(screen.getByLabelText("Chat"));
+    expect(main.className).toContain("hidden");
+    fireEvent.click(screen.getByRole("button", { name: /Map/ }));
+    expect(main.className).not.toContain("hidden");
+    expect(screen.queryByTestId("graph-canvas")).toBeNull();
+    fireEvent.click(screen.getByLabelText("Chat"));
+    expect(await screen.findByTestId("graph-canvas")).toBeTruthy();
+    fireEvent.click(screen.getByLabelText("New conversation"));
+    expect(main.className).not.toContain("hidden");
+    fireEvent.click(screen.getByLabelText("Chat"));
+    fireEvent.click(await screen.findByText("Earlier"));
+    expect(main.className).not.toContain("hidden");
+  });
+
   it("puts the conversation beside a view, and links them", async () => {
     render(<App />);
     expect(await screen.findByText("What's on your mind?")).toBeTruthy();

@@ -11,6 +11,9 @@ export interface ChatRailProps {
   onRename: (id: string, title: string) => void;
   onDelete: (id: string) => void;
   onSettings: () => void;
+  /** Whether the conversation column is showing; the Chat button hides and shows it. */
+  chatOpen: boolean;
+  onToggleChat: () => void;
 }
 
 /** "just now", "3h ago", "2d ago", or the date. */
@@ -76,10 +79,18 @@ export function ChatRail(props: ChatRailProps) {
           <span className="whitespace-nowrap font-serif text-lg text-stone-800 opacity-0 transition-opacity group-hover/rail:opacity-100">Inner Graph</span>
         </div>
         <RailButton icon={<Plus size={18} />} label="New conversation" onClick={props.onNew} />
-        <div className="mt-3 flex items-center gap-3 px-2.5 text-stone-400">
+        <button
+          type="button"
+          aria-pressed={props.chatOpen}
+          aria-label="Chat"
+          title={props.chatOpen ? "Hide the chat" : "Show the chat"}
+          onClick={props.onToggleChat}
+          className={`flex h-9 w-full items-center gap-3 rounded-xl px-2.5 text-sm transition ${props.chatOpen ? "bg-white text-clay-600 shadow-sm" : "text-stone-500 hover:bg-stone-200/70 hover:text-stone-900"}`}
+        >
           <MessageCircle size={18} className="shrink-0" />
-          <span className="text-xs tracking-wide uppercase opacity-0 transition-opacity group-hover/rail:opacity-100">Conversations</span>
-        </div>
+          <span className="truncate opacity-0 transition-opacity group-hover/rail:opacity-100 group-has-[:focus-visible]/rail:opacity-100">Chat</span>
+        </button>
+        <p className="mt-3 px-2.5 text-[11px] tracking-wide whitespace-nowrap text-stone-400 uppercase opacity-0 transition-opacity group-hover/rail:opacity-100">Conversations</p>
         <div className="mt-1 min-h-0 flex-1 overflow-y-auto opacity-0 transition-opacity group-hover/rail:opacity-100 group-has-[:focus-visible]/rail:opacity-100">
           {props.chats.length === 0 ? <p className="px-2.5 py-2 text-xs whitespace-nowrap text-stone-400">Nothing here yet.</p> : null}
           {props.chats.map((chat) => (

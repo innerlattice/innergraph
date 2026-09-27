@@ -58,6 +58,30 @@ function useChats() {
   return { active, setActive, list: chats.data ?? [], reload: chats.reload, remove, rename, fresh: () => setActive(newChatId()) };
 }
 
+/** The chat and the view beside it. One side always stays open: hiding the chat shows a view,
+ *  closing the last view shows the chat, and opening a conversation shows it again. */
+function useSides(pane: ViewName | undefined, setPane: (pane: ViewName | undefined) => void, chats: ReturnType<typeof useChats>) {
+  const [chatOpen, setChatOpen] = useState(true);
+  const toggleChat = () => {
+    if (chatOpen && !pane) setPane("map");
+    setChatOpen(!chatOpen);
+  };
+  const togglePane = (view: ViewName) => {
+    const next = view === pane ? undefined : view;
+    if (!next) setChatOpen(true);
+    setPane(next);
+  };
+  const openChat = (id: string) => {
+    chats.setActive(id);
+    setChatOpen(true);
+  };
+  const newChat = () => {
+    chats.fresh();
+    setChatOpen(true);
+  };
+  return { chatOpen, toggleChat, togglePane, openChat, newChat };
+}
+
 export function App() {
   const [pane, setPane] = useState<ViewName | undefined>("map");
   const [focus, setFocus] = useState<string>();
@@ -67,6 +91,7 @@ export function App() {
   const labels = useLabels();
   const chats = useChats();
   const width = usePaneWidth();
+  const { chatOpen, toggleChat, togglePane, openChat, newChat } = useSides(pane, setPane, chats);
 
   const navigate: Navigate = (next, focusId) => {
     if (next === "map" && focusId) select(focusId.split(","));
@@ -79,8 +104,8 @@ export function App() {
   };
   return (
     <div className="flex h-screen bg-paper text-stone-800">
-      <ChatRail chats={chats.list} active={chats.active} onOpen={chats.setActive} onNew={chats.fresh} onRename={chats.rename} onDelete={chats.remove} onSettings={() => setSettingsOpen(true)} />
-      <main className="min-w-[22rem] flex-1">
+      <ChatRail chats={chats.list} active={chats.active} onOpen={openChat} onNew={newChat} onRename={chats.rename} onDelete={chats.remove} onSettings={() => setSettingsOpen(true)} chatOpen={chatOpen} onToggleChat={toggleChat} />
+      <main aria-label="Conversation" className={chatOpen ? "min-w-[22rem] flex-1" : "hidden"}>
         <ChatView
           id={chats.active}
           selection={selection.items}
@@ -96,16 +121,11 @@ export function App() {
         />
       </main>
       {pane ? (
-        <>
-          <Divider share={width.share} onChange={width.set} />
-          <section aria-label="View" style={{ flexBasis: `calc(${width.share} * (100vw - 104px))` }} className="min-w-0 shrink-0 overflow-hidden bg-stone-50">
-            <div className="h-full overflow-auto">
-              <CurrentView view={pane} focus={focus} selection={selection} onSelect={select} navigate={navigate} />
-            </div>
-          </section>
-        </>
+        <ViewPane chatOpen={chatOpen} share={width.share} onResize={width.set}>
+          <CurrentView view={pane} focus={focus} selection={selection} onSelect={select} navigate={navigate} />
+        </ViewPane>
       ) : null}
-      <ViewRail active={pane} onToggle={(v) => setPane(v === pane ? undefined : v)} />
+      <ViewRail active={pane} onToggle={togglePane} />
       {settingsOpen && settings.data ? (
         <SettingsDialog
           settings={settings.data}
@@ -117,6 +137,19 @@ export function App() {
         />
       ) : null}
     </div>
+  );
+}
+
+/** The view beside the chat, sized by the divider; alone, it takes the whole width. */
+function ViewPane(props: { chatOpen: boolean; share: number; onResize: (share: number) => void; children: ReactElement }) {
+  const style = props.chatOpen ? { flexBasis: `calc(${props.share} * (100vw - 104px))` } : undefined;
+  return (
+    <>
+      {props.chatOpen ? <Divider share={props.share} onChange={props.onResize} /> : null}
+      <section aria-label="View" style={style} className={`min-w-0 overflow-hidden bg-stone-50 ${props.chatOpen ? "shrink-0" : "flex-1"}`}>
+        <div className="h-full overflow-auto">{props.children}</div>
+      </section>
+    </>
   );
 }
 
