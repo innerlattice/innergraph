@@ -13,8 +13,16 @@ const FOCUS = "\u0000focus";
 
 type Span = { start: number; end: number };
 
-export function EntryText(props: { view: EntryView; focus?: Span; onOpen: (id: string) => void }) {
-  const { view, focus, onOpen } = props;
+/** Which items the pointer is on, in the text or the chips below it, so the other side can light them. */
+interface Hover {
+  lit: string[];
+  onHover: (ids: string[]) => void;
+}
+
+const NO_HOVER: Hover = { lit: [], onHover: () => undefined };
+
+export function EntryText(props: { view: EntryView; focus?: Span; onOpen: (id: string) => void; hover?: Hover }) {
+  const { view, focus, onOpen, hover = NO_HOVER } = props;
   const container = useRef<HTMLParagraphElement>(null);
   const labels = Object.fromEntries(view.citations.map((c) => [c.target, c.label]));
   const spans = view.citations.map((c) => ({ target: c.target, ...c.evidence }));
@@ -38,7 +46,9 @@ export function EntryText(props: { view: EntryView; focus?: Span; onOpen: (id: s
             data-focus={focused || undefined}
             aria-label={`${s.text} — supports ${cited.map((id) => labels[id]).join(", ")}`}
             title={cited.map((id) => labels[id]).join(", ")}
-            className={passageClass(focused ? "focused" : "rest")}
+            className={passageClass(focused ? "focused" : cited.some((id) => hover.lit.includes(id)) ? "lit" : "rest")}
+            onMouseEnter={() => hover.onHover(cited)}
+            onMouseLeave={() => hover.onHover([])}
             onClick={() => cited[0] && onOpen(cited[0])}
             onKeyDown={(e) => e.key === "Enter" && cited[0] && onOpen(cited[0])}
           >
@@ -85,7 +95,8 @@ export function EntryEditor(props: { view: EntryView; onSaved: (result: Revision
 }
 
 /** Everything this entry is evidence for, each one clickable, plus all of them at once. */
-export function SupportedItems(props: { view: EntryView; onOpen: (ids: string) => void }) {
+export function SupportedItems(props: { view: EntryView; onOpen: (ids: string) => void; hover?: Hover }) {
+  const { hover = NO_HOVER } = props;
   const items = [...new Map(props.view.citations.map((c) => [c.target, c.label])).entries()];
   if (items.length === 0) return <p className="text-xs text-stone-400">Nothing on the map cites this entry yet.</p>;
   return (
@@ -94,7 +105,9 @@ export function SupportedItems(props: { view: EntryView; onOpen: (ids: string) =
         Show all {items.length} on the map
       </Chip>
       {items.map(([id, label]) => (
-        <ItemChip key={id} id={id} label={label} onClick={() => props.onOpen(id)} />
+        <span key={id} className="inline-flex min-w-0 max-w-full" onMouseEnter={() => hover.onHover([id])} onMouseLeave={() => hover.onHover([])}>
+          <ItemChip id={id} label={label} lit={hover.lit.includes(id)} onClick={() => props.onOpen(id)} />
+        </span>
       ))}
     </div>
   );
@@ -108,6 +121,8 @@ function RevisionNote(props: { result: RevisionResult }) {
 
 function EntryCard(props: { view: EntryView; focus?: Span; navigate: Navigate; revision?: RevisionResult; onRevised: (result: RevisionResult) => void }) {
   const [editing, setEditing] = useState(false);
+  const [lit, setLit] = useState<string[]>([]);
+  const hover: Hover = { lit, onHover: setLit };
   const result = props.revision?.entry === props.view.entry.id ? props.revision : undefined;
   const saved = (r: RevisionResult) => {
     setEditing(false);
@@ -120,8 +135,8 @@ function EntryCard(props: { view: EntryView; focus?: Span; navigate: Navigate; r
         {editing ? null : <Button onClick={() => setEditing(true)}>Edit</Button>}
       </header>
       {result ? <RevisionNote result={result} /> : null}
-      {editing ? <EntryEditor view={props.view} onSaved={saved} onCancel={() => setEditing(false)} /> : <EntryText view={props.view} focus={props.focus} onOpen={(id) => props.navigate("map", id)} />}
-      <SupportedItems view={props.view} onOpen={(ids) => props.navigate("map", ids)} />
+      {editing ? <EntryEditor view={props.view} onSaved={saved} onCancel={() => setEditing(false)} /> : <EntryText view={props.view} focus={props.focus} hover={hover} onOpen={(id) => props.navigate("map", id)} />}
+      <SupportedItems view={props.view} hover={hover} onOpen={(ids) => props.navigate("map", ids)} />
     </Card>
   );
 }

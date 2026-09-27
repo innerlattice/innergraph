@@ -19,6 +19,9 @@ const TONES: Record<ChipTone, string> = {
   accent: "bg-clay-500 text-white enabled:hover:bg-clay-600",
 };
 
+/** A chip answering to something under the pointer: lifted and warmed. */
+const LIT = "bg-clay-100 text-stone-800 shadow-floating";
+
 const BASE = "inline-flex min-w-0 max-w-full items-center gap-1 rounded-full text-xs leading-5 transition disabled:opacity-60";
 
 export interface ChipProps {
@@ -32,6 +35,8 @@ export interface ChipProps {
   removeLabel?: string;
   /** No longer applies (e.g. undone): struck through and inert. */
   struck?: boolean;
+  /** Answers to something under the pointer elsewhere, such as the passage that cites it. */
+  lit?: boolean;
   title?: string;
 }
 
@@ -45,7 +50,7 @@ export function Chip(props: ChipProps) {
   );
   if (!props.onRemove) {
     return (
-      <span className={`${BASE} ${TONES[tone]} px-2.5 ${props.struck ? "opacity-60" : ""}`} data-tone={tone}>
+      <span className={`${BASE} ${props.lit ? LIT : TONES[tone]} px-2.5 ${props.struck ? "opacity-60" : ""}`} data-tone={tone} data-lit={props.lit || undefined}>
         {body}
       </span>
     );

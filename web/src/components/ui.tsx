@@ -72,13 +72,15 @@ export function Quote(props: { children: ReactNode; source?: string }) {
 // panel all mark it the same way: a clay wash that deepens and underlines under the pointer.
 //   rest:    on the map, click to see what it supports
 //   focused: the passage you came here to see
+//   lit:     cites the item under the pointer elsewhere on the page
 //   pending: the assistant is still adding it
 //   inert:   inside something else that is clickable, which carries the hover
-type Passage = "rest" | "focused" | "pending" | "inert";
+type Passage = "rest" | "focused" | "lit" | "pending" | "inert";
 
 const PASSAGES: Record<Passage, string> = {
   rest: "cursor-pointer bg-clay-200/60 hover:bg-clay-200 hover:underline",
   focused: "cursor-pointer bg-clay-300/80 underline",
+  lit: "cursor-pointer bg-clay-300/80 underline",
   pending: "animate-pulse bg-sage-100",
   inert: "bg-clay-200/60 group-hover:bg-clay-200 group-hover:underline",
 };

@@ -188,6 +188,20 @@ describe("EntriesView", () => {
     fireEvent.click(screen.getByText("Tuesday"));
   });
 
+  it("lights a passage's items when the pointer is on it, and a chip's passages when it is on the chip", async () => {
+    render(<EntriesView focus="h" navigate={vi.fn()} />);
+    const mark = await screen.findByRole("button", { name: /— supports Needing is unsafe/ });
+    const chip = () => screen.getAllByTitle("Needing is unsafe").find((e) => e.tagName === "BUTTON")?.closest("[data-tone]") as HTMLElement;
+    fireEvent.mouseEnter(mark);
+    expect(chip().dataset.lit).toBe("true");
+    fireEvent.mouseLeave(mark);
+    expect(chip().dataset.lit).toBeUndefined();
+    fireEvent.mouseEnter(chip());
+    expect(mark.className).toMatch(/(^| )underline( |$)/);
+    fireEvent.mouseLeave(chip());
+    expect(mark.className).not.toMatch(/(^| )underline( |$)/);
+  });
+
   it("follows renames made elsewhere as they happen", async () => {
     const sources: { emit: (data: string) => void }[] = [];
     vi.stubGlobal(
