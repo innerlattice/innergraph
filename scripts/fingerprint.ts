@@ -29,7 +29,8 @@ async function bundle(target: keyof typeof TARGETS): Promise<string> {
   return result.outputFiles.map((f) => f.text).join("\n");
 }
 
-const BINDINGS = ts.SymbolFlags.Variable | ts.SymbolFlags.Function | ts.SymbolFlags.Class | ts.SymbolFlags.Alias | ts.SymbolFlags.TypeParameter;
+// Imports keep their names: they name another package's exports.
+const BINDINGS = ts.SymbolFlags.Variable | ts.SymbolFlags.Function | ts.SymbolFlags.Class;
 
 function isBinding(symbol: ts.Symbol | undefined, file: ts.SourceFile): symbol is ts.Symbol {
   if (!symbol || !(symbol.flags & BINDINGS) || symbol.flags & ts.SymbolFlags.Property) return false;
@@ -40,16 +41,26 @@ function isScope(node: ts.Node): boolean {
   return ts.isSourceFile(node) || ts.isFunctionLike(node) || ts.isClassLike(node) || ts.isBlock(node) || ts.isIterationStatement(node, false) || ts.isCatchClause(node) || ts.isCaseBlock(node);
 }
 
-function scopeOf(declaration: ts.Node): { scope: ts.Node; depth: number } {
+/** esbuild marks where each source module starts ("// src/core/budget.ts"). */
+function moduleStarts(code: string): { at: number; path: string }[] {
+  return [...code.matchAll(/^\/\/ (\S+\.[cm]?[jt]sx?)$/gm)].map((m) => ({ at: m.index, path: m[1] }));
+}
+
+/** The scope a binding belongs to: its enclosing block or function, or for top-level names the
+ *  source module, so adding or removing a module doesn't renumber the others. */
+function scopeOf(declaration: ts.Node, modules: { at: number; path: string }[]): { scope: unknown; prefix: string } {
   let scope = declaration.parent;
   while (!isScope(scope)) scope = scope.parent;
   let depth = 0;
   for (let n = scope.parent; n; n = n.parent) if (isScope(n)) depth++;
-  return { scope, depth };
+  if (!ts.isSourceFile(scope)) return { scope, prefix: String(depth + 1) };
+  const path = modules.findLast((m) => m.at <= declaration.getStart())?.path ?? "";
+  return { scope: path, prefix: path.replace(/\W+/g, "_") };
 }
 
-/** The bundle with each local binding written as `$depth_n`: the depth of the scope that declares
- *  it, and its order of appearance there. Numbering per scope keeps a change local in the diff. */
+/** The bundle with each binding written as `$scope_n`: the scope that declares it (nesting depth,
+ *  or source module at the top level) and its order of appearance there. Numbering per scope
+ *  keeps a change local in the diff. */
 export function normalise(code: string): string {
   const name = "bundle.js";
   const host = ts.createCompilerHost({ allowJs: true, noLib: true, noResolve: true });
@@ -57,19 +68,25 @@ export function normalise(code: string): string {
   host.getSourceFile = (f) => (f === name ? file : undefined);
   const checker = ts.createProgram([name], { allowJs: true, noLib: true, noResolve: true }, host).getTypeChecker();
   const names = new Map<ts.Symbol, string>();
-  const counts = new Map<ts.Node, number>();
+  const counts = new Map<unknown, number>();
+  const modules = moduleStarts(code);
   const nameOf = (symbol: ts.Symbol) => {
-    const { scope, depth } = scopeOf(symbol.declarations?.[0] ?? file);
+    const { scope, prefix } = scopeOf(symbol.declarations?.[0] ?? file, modules);
     const n = counts.get(scope) ?? 0;
     counts.set(scope, n + 1);
-    names.set(symbol, `$${depth}_${n}`);
+    names.set(symbol, `$${prefix}_${n}`);
     return names.get(symbol) as string;
   };
   const edits: { start: number; end: number; text: string }[] = [];
   const visit = (node: ts.Node) => {
     if (ts.isIdentifier(node)) {
-      const symbol = ts.isShorthandPropertyAssignment(node.parent) ? undefined : checker.getSymbolAtLocation(node);
-      if (isBinding(symbol, file)) edits.push({ start: node.getStart(), end: node.getEnd(), text: names.get(symbol) ?? nameOf(symbol) });
+      // `{ key }` names a key as well as a binding: keep the key, as `key: $n`.
+      const shorthand = ts.isShorthandPropertyAssignment(node.parent) || (ts.isBindingElement(node.parent) && !node.parent.propertyName && ts.isObjectBindingPattern(node.parent.parent));
+      const symbol = ts.isShorthandPropertyAssignment(node.parent) ? checker.getShorthandAssignmentValueSymbol(node.parent) : checker.getSymbolAtLocation(node);
+      if (isBinding(symbol, file)) {
+        const name = names.get(symbol) ?? nameOf(symbol);
+        edits.push({ start: node.getStart(), end: node.getEnd(), text: shorthand ? `${node.text}: ${name}` : name });
+      }
     }
     ts.forEachChild(node, visit);
   };
