@@ -79,6 +79,8 @@
     "fingerprint": "tsx scripts/fingerprint.ts",
     "bundle": "tsx scripts/bundle.ts",
     "desktop": "npm run build && npm run bundle && electron .",
-    "dist": "npm run build && npm run bundle && electron-builder --publish never"
+    "dist": "npm run build && npm run bundle && electron-builder --publish never",
+    "ship": "tsx scripts/ship.ts",
+    "prepare": "git config core.hooksPath .githooks || true"
   }
 }

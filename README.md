@@ -6,7 +6,44 @@ can be undone. See
 [SPEC.md](docs/SPEC.md) for the ubiquitous language and architecture, and
 [context.md](docs/context.md) for the product principles.
 
+Version <!-- version -->0.1.0<!-- /version -->. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+
 v1 scope: single device, offline, local model (Ollama), one user-defined Schema.
+
+## Desktop app
+
+Installers for macOS (Apple silicon and Intel, `.dmg`) and Windows (x64, `.exe`) are attached to
+each [GitHub release](https://github.com/innerlattice/belief-graph/releases). The app keeps its
+Vault (and the Vault's key, `vault.key`) in its own data folder, created on first run:
+`~/Library/Application Support/Inner Graph/vault` on macOS, `%APPDATA%\Inner Graph\vault` on
+Windows.
+
+The installers are not signed yet, so each system warns the first time:
+
+- **macOS** says the app "can't be opened" or is "damaged". Right-click the app in
+  Applications and choose Open, or run `xattr -dr com.apple.quarantine "/Applications/Inner Graph.app"`.
+- **Windows** SmartScreen says it "protected your PC". Choose More info → Run anyway.
+
+### Connecting other agents
+
+Settings (bottom left) → Connect other agents shows, for Claude Desktop, Claude Code, Codex
+and Hermes Agent, the snippet that adds the map to that agent as an MCP server, with where it
+goes. Each connects with the `write` tier under its own name, so its changes show (and undo) as
+its own. The desktop app's snippet runs the app's own binary as Node
+(`ELECTRON_RUN_AS_NODE=1`) on its bundled CLI; from source it runs `src/bin.ts` with tsx.
+
+### Building the installers
+
+```bash
+npm run desktop   # run the desktop app from source
+npm run dist      # installers for this platform → release/
+```
+
+`npm run dist` on a Mac builds both `.dmg`s (ad-hoc signed, so they run on Apple silicon).
+Windows installers are built by the [Installers](.github/workflows/installers.yml) workflow,
+which runs only when started by hand (Actions → Installers → Run workflow). Run it on a
+version tag and it also drafts a GitHub release with the installers and that version's
+changelog, ready to publish.
 
 ## Quick start
 
@@ -23,8 +60,9 @@ passages it used are highlighted in your message (click one to see it on the map
 items on the map and they appear above the message box, so "these" means something.
 Conversations are in the left rail and the views (map, loops, entries, log) in the right
 rail; both open on hover, and clicking the open view again gives the chat the whole
-window. Settings (bottom left) choose the model: OpenRouter with a key (or
-`OPENROUTER_API_KEY`), or any local OpenAI-compatible server (Ollama by default). A
+window. Settings (bottom left) choose the model: a ChatGPT plan (signed in with a code),
+OpenRouter with a key (or `OPENROUTER_API_KEY`), or any local OpenAI-compatible server
+(Ollama by default). A
 conversation warns at 70% of its token budget and ends at 90%; the map keeps everything.
 
 `inner-graph chat` instead boots an external agent harness wired to the Inner Graph MCP
@@ -154,6 +192,25 @@ npm run quality   # typecheck + tests with coverage + metrics
 
 The gate fails if median or mode CRAP exceeds 8 or any file's MI is 70 or below. The
 report is written to `coverage/metrics.json`.
+
+## Versions and shipping
+
+Inner Graph follows [semver](https://semver.org): patch for fixes, minor for new features,
+major for changes that break a Vault or an agent's use of the MCP tools. Every push is a
+version:
+
+```bash
+npm run ship -- patch   # or minor, major
+```
+
+`scripts/ship.ts` checks the tree is clean and has commits since the last version, runs
+`npm run quality` and both builds, bumps the version in `package.json`, adds the commits since
+the last version to [CHANGELOG.md](CHANGELOG.md), stamps the version in this README, then
+commits `Release vX.Y.Z`, tags it and pushes with the tag. It warns when the README, docs and
+plugin haven't changed since the last version; check they still describe the app. The
+`.githooks/pre-push` hook (installed by `npm install`) refuses a push whose commit isn't a
+version; `git push --no-verify` skips it. Building installers for a version stays manual (see
+[Building the installers](#building-the-installers)).
 
 ## Open questions carried from the spec
 
