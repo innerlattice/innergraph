@@ -25,6 +25,8 @@ export interface Loop {
 
 export interface LoopStep {
   edge: string;
+  /** The Edge's schema type. */
+  type: string;
   from: string;
   to: string;
   sign: 1 | -1;
@@ -96,7 +98,7 @@ function toLoop(cycle: Arc[], edges: Record<string, GraphEdge>): Loop {
 }
 
 function step(e: GraphEdge): LoopStep {
-  return { edge: e.id, from: e.from, to: e.to, sign: e.sign === -1 ? -1 : 1, confidence: e.confidence };
+  return { edge: e.id, type: e.type, from: e.from, to: e.to, sign: e.sign === -1 ? -1 : 1, confidence: e.confidence };
 }
 
 function detail(loop: Loop, causal: GraphEdge[], all: Loop[]): LoopDetail {

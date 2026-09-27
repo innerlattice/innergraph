@@ -93,6 +93,13 @@ export function edgeLookOf(role: string, sign?: number): string {
   return role === "identity" ? "part-of" : "plain";
 }
 
+/** The look the map draws an Edge of this type with: a signed Edge is causal whatever the Schema says. */
+export function edgeLook(schema: Schema | null | undefined, type: string, sign?: number): EdgeLook {
+  const role = schema?.edgeTypes[type]?.role ?? (sign ? "causal" : "plain");
+  const name = edgeLookOf(role, sign);
+  return EDGE_LOOKS.find((l) => l.name === name) ?? EDGE_LOOKS[0];
+}
+
 // ---- Stylesheet ----
 
 const nodeRules: StylesheetJson = [

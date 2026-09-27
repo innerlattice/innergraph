@@ -4,11 +4,12 @@
 //   context  — something the assistant is being told about (the selection)
 //   accent   — the one primary action in a row of chips ("Show all")
 // A chip is a button when it does something, and gains a remove control with `onRemove`.
-// Labels go through ItemLabel, so Edges read as "from  verb →  to" everywhere.
-import { ArrowRight, X } from "lucide-react";
+// Labels go through ItemLabel, so Edges read as "from  link  to" everywhere.
+import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { parseEdgeText } from "../../../src/core/edgeText";
 import { ICON } from "../design/tokens";
+import { LinkMark } from "./ItemMarks";
 
 type ChipTone = "neutral" | "context" | "accent";
 
@@ -59,22 +60,20 @@ export function Chip(props: ChipProps) {
   );
 }
 
-/** An Edge as a phrase: the two things it joins carry the weight; the verb and arrow sit quietly
- *  between. Either end may be left out when the context already names it (a Node's own panel). */
-export function EdgeLabel(props: { from?: string; verb: string; to?: string }) {
+/** An Edge as a phrase: the two things it joins carry the weight; the link type, drawn as in the
+ *  key, sits quietly between. Either end may be left out when the context already names it (a
+ *  Node's own panel). */
+export function EdgeLabel(props: { from?: string; type: string; sign?: number; to?: string }) {
   return (
-    <span className="inline-flex min-w-0 items-baseline gap-1.5">
+    <span className="inline-flex min-w-0 items-center gap-1.5">
       {props.from ? <span className="min-w-0 truncate">{props.from}</span> : null}
-      <span className="inline-flex shrink-0 items-center gap-0.5 text-aside italic opacity-60">
-        {props.verb}
-        <ArrowRight size={ICON.xs} strokeWidth={2.25} aria-hidden />
-      </span>
+      <LinkMark type={props.type} sign={props.sign} />
       {props.to ? <span className="min-w-0 truncate">{props.to}</span> : null}
     </span>
   );
 }
 
-/** Any item's label: an Edge (written as "from —verb→ to") renders as EdgeLabel, anything else as is. */
+/** Any item's label: an Edge (written as "from —type→ to") renders as EdgeLabel, anything else as is. */
 export function ItemLabel(props: { label: string }) {
   const edge = parseEdgeText(props.label);
   return edge ? <EdgeLabel {...edge} /> : <>{props.label}</>;

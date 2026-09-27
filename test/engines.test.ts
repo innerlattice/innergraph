@@ -149,7 +149,7 @@ describe("AnalysisEngine", () => {
     ]);
     const [loop] = engine.loopDetails(graph, roles);
     expect(loop.steps.map((s) => s.edge)).toEqual(["1", "2"]);
-    expect(loop.inputs).toEqual([{ edge: "3", from: "brake", to: "b", sign: -1, confidence: 0.5 }]);
+    expect(loop.inputs).toEqual([{ edge: "3", type: "c", from: "brake", to: "b", sign: -1, confidence: 0.5 }]);
     expect(loop.outputs.map((s) => s.edge)).toEqual(["4"]);
     expect(loop.weakest.edge).toBe("2");
     expect(loop.certainty).toBeCloseTo(0.36);

@@ -2,7 +2,8 @@
 // back, so the server, agents and the UI agree. The UI renders the parts, not this string.
 export interface EdgeParts {
   from: string;
-  verb: string;
+  /** The Edge's schema type, e.g. "part_of". */
+  type: string;
   to: string;
 }
 
@@ -26,5 +27,5 @@ const PATTERN = /^(.+?) —(.+?)→ (.+)$/s;
 /** The parts of an Edge written by `edgeText`; undefined for anything else (a Node's label). */
 export function parseEdgeText(text: string): EdgeParts | undefined {
   const match = PATTERN.exec(text);
-  return match ? { from: match[1], verb: humanise(match[2]), to: match[3] } : undefined;
+  return match ? { from: match[1], type: match[2], to: match[3] } : undefined;
 }

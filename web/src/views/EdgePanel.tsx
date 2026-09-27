@@ -1,7 +1,7 @@
 import type { Navigate } from "../App";
 import { ArrowDown } from "lucide-react";
 import { type Schema, api } from "../api";
-import { EDGE_LOOKS, type EdgeLook, edgeLookOf } from "../design/graph";
+import { edgeLook } from "../design/graph";
 import { EdgeGlyph } from "../components/GraphGlyph";
 import { AddedBy, Eyebrow } from "../components/ItemMeta";
 import { ErrorNote, StatusPill } from "../components/ui";
@@ -11,13 +11,6 @@ import { useAsync } from "../lib/useAsync";
 import { EvidenceCard, StaleNote } from "./NodePanel";
 import { type Done, ItemActions } from "./ItemControls";
 import { ICON } from "../design/tokens";
-
-/** The look the map draws this Edge with: a signed Edge is causal whatever the Schema says. */
-function lookFor(schema: Schema | null | undefined, type: string, sign?: number): EdgeLook {
-  const role = schema?.edgeTypes[type]?.role ?? (sign ? "causal" : "plain");
-  const name = edgeLookOf(role, sign);
-  return EDGE_LOOKS.find((l) => l.name === name) ?? EDGE_LOOKS[0];
-}
 
 export interface EdgePanelProps {
   id: string;
@@ -35,7 +28,7 @@ export function EdgePanel(props: EdgePanelProps) {
   const view = useAsync(() => api.edge(props.id), [props.id, props.version]);
   if (!view.data) return <ErrorNote error={view.error} />;
   const { edge, fromLabel, toLabel, evidence } = view.data;
-  const look = lookFor(props.schema, edge.type, edge.sign);
+  const look = edgeLook(props.schema, edge.type, edge.sign);
   const done = (d: Done) => (view.reload(), props.onDone(d));
   return (
     <div className="space-y-5 p-5">

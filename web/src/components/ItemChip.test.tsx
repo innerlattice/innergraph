@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import type { GraphView } from "../api";
+import type { GraphView, Schema } from "../api";
 import { ItemsProvider } from "../lib/items";
 import { ItemChip } from "./ItemChip";
 
@@ -26,6 +26,34 @@ it("names items as the live map does, whatever label it was given", () => {
   expect(onClick).toHaveBeenCalledOnce();
   expect(screen.queryByText("Old name")).toBeNull();
   expect(node.querySelector("img")).toBeTruthy();
-  expect(screen.getByText("enacts").parentElement?.textContent).toBe("The HiderenactsGo quiet");
+  expect(screen.getByTitle("The Hider enacts Go quiet").textContent).toBe("The HiderenactsGo quiet");
   expect(screen.getByText("Forgotten")).toBeTruthy();
+});
+
+const schema = {
+  name: "s",
+  version: 1,
+  nodeTypes: { part: { description: "A partition of inference.", attributes: {} } },
+  edgeTypes: { reinforces: { description: "A raises or lowers B.", from: "*", to: "*", role: "causal", attributes: {} } },
+} as unknown as Schema;
+
+it("says what a causal link does, and explains link and node types on hover", () => {
+  const causal = {
+    nodes: view.nodes,
+    edges: { up: { id: "up", type: "reinforces", sign: 1, from: "a", to: "b" }, down: { id: "down", type: "reinforces", sign: -1, from: "b", to: "a" } },
+  } as unknown as GraphView;
+  render(
+    <ItemsProvider value={{ view: causal, schema }}>
+      <ItemChip id="up" />
+      <ItemChip id="down" />
+      <ItemChip id="a" />
+    </ItemsProvider>,
+  );
+  expect(screen.getByTitle("The Hider increases Go quiet")).toBeTruthy();
+  fireEvent.mouseEnter(screen.getByText("decreases"));
+  expect(screen.getByRole("tooltip").textContent).toBe("Decreases (reinforces)A raises or lowers B.");
+  fireEvent.mouseLeave(screen.getByText("decreases"));
+  expect(screen.queryByRole("tooltip")).toBeNull();
+  fireEvent.mouseEnter(screen.getByTitle("The Hider").querySelector("img") as Element);
+  expect(screen.getByRole("tooltip").textContent).toBe("partA partition of inference.");
 });

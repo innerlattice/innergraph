@@ -36,3 +36,9 @@ export const TYPE_PALETTE = ["#7c9885", "#b08968", "#8e7dbe", "#c97b84", "#5f8fa
 
 /** Icon and glyph sizes: `xs` inside chips, `sm` beside small text, `md` in buttons, `lg` and `xl` on their own. */
 export const ICON = { xs: 10, sm: 12, md: 14, lg: 16, xl: 18 } as const;
+
+/** How wide an edge sample is: full in the key and panels, small inside a chip. Its height follows. */
+export const LINK_GLYPH = { full: 36, chip: 24 } as const;
+
+/** A tooltip's clearance from the thing it explains and from the edges of the window. */
+export const TOOLTIP = { offset: 6, margin: 8 } as const;

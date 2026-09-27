@@ -8,18 +8,17 @@ afterEach(cleanup);
 
 it("writes and reads edges one way", () => {
   expect(edgeText("A", "held_by", "B")).toBe("A —held_by→ B");
-  expect(parseEdgeText("A —held_by→ B")).toEqual({ from: "A", verb: "held by", to: "B" });
+  expect(parseEdgeText("A —held_by→ B")).toEqual({ from: "A", type: "held_by", to: "B" });
   expect(parseEdgeText("Just a node")).toBeUndefined();
 });
 
-it("renders edges with the ends forward and the verb quiet", () => {
-  render(<ItemLabel label="The Hider —enacts→ Go quiet" />);
-  const verb = screen.getByText("enacts");
-  expect(verb.className).toContain("italic");
-  expect(verb.parentElement?.textContent).toBe("The HiderenactsGo quiet");
+it("renders edges with the ends forward and the link type quiet", () => {
+  const { container: edge } = render(<ItemLabel label="The Hider —enacts→ Go quiet" />);
+  expect(screen.getByText("enacts").className).toContain("italic");
+  expect(edge.textContent).toBe("The HiderenactsGo quiet");
   render(<ItemLabel label="Plain" />);
   expect(screen.getByText("Plain")).toBeTruthy();
-  const { container } = render(<EdgeLabel verb="protects" />);
+  const { container } = render(<EdgeLabel type="protects" />);
   expect(container.textContent).toBe("protects");
 });
 

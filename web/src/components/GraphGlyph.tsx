@@ -4,7 +4,7 @@ import type { LabelStyle } from "../../../src/core/types";
 import type { EdgeLook, NodeLook } from "../design/graph";
 import { nodeGem } from "../design/graph";
 import { aspectOf } from "../design/shapes";
-import { ICON } from "../design/tokens";
+import { ICON, LINK_GLYPH } from "../design/tokens";
 
 /** A node type's label as the map sets it: statements in serif, names bold, titles plain. */
 export const LABEL_FONT: Record<LabelStyle, string> = { statement: "font-serif", name: "font-semibold", title: "" };
@@ -31,13 +31,14 @@ function Arrow(props: { look: EdgeLook; x: number }) {
   return <path d={`M${x - 6},2.5 L${x},6 L${x - 6},9.5 Z`} fill={look.color} />;
 }
 
-/** A short sample of an edge: its line type, colour and arrowhead. */
-export function EdgeGlyph(props: { look: EdgeLook }) {
+/** A short sample of an edge: its line type, colour and arrowhead. `width` scales it; it keeps its proportions. */
+export function EdgeGlyph(props: { look: EdgeLook; width?: number }) {
+  const width = props.width ?? LINK_GLYPH.full;
   const { look } = props;
   const end = look.arrow === "triangle" ? 28 : 30;
   const line = (y: number, width: number) => <line x1={2} y1={y} x2={end} y2={y} stroke={look.color} strokeWidth={width} strokeDasharray={DASH[look.line]} strokeLinecap="round" />;
   return (
-    <svg width={36} height={12} viewBox="0 0 36 12" aria-hidden="true" className="shrink-0">
+    <svg width={width} height={width / 3} viewBox="0 0 36 12" aria-hidden="true" className="shrink-0">
       {look.line === "double" ? (
         <>
           {line(4.4, 1.1)}

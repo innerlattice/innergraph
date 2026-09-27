@@ -127,8 +127,8 @@ function Lineage(props: { view: NodeView; onSelect?: (id: string) => void }) {
 /** A Node's Edges, split by direction so each row reads as a phrase with this Node implied. */
 function EdgeList(props: { view: NodeView; labels: Record<string, string>; onSelect?: (id: string) => void }) {
   const { view, labels } = props;
-  const outgoing = view.outgoing.map((e) => ({ id: e.id, status: e.status, text: <EdgeLabel verb={humanise(e.type)} to={labels[e.to] ?? e.to} /> }));
-  const incoming = view.incoming.map((e) => ({ id: e.id, status: e.status, text: <EdgeLabel from={labels[e.from] ?? e.from} verb={humanise(e.type)} /> }));
+  const outgoing = view.outgoing.map((e) => ({ id: e.id, status: e.status, text: <EdgeLabel type={e.type} sign={e.sign} to={labels[e.to] ?? e.to} /> }));
+  const incoming = view.incoming.map((e) => ({ id: e.id, status: e.status, text: <EdgeLabel from={labels[e.from] ?? e.from} type={e.type} sign={e.sign} /> }));
   if (outgoing.length + incoming.length === 0) return <p className="text-sm text-stone-400">No edges.</p>;
   return (
     <div className="space-y-2">

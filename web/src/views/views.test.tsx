@@ -41,7 +41,7 @@ const nodeView = {
   derivedInto: [],
 } as unknown as NodeView;
 
-const step = (edge: string, from: string, to: string, sign: 1 | -1, confidence: number) => ({ edge, from, to, sign, confidence, fromLabel: from.toUpperCase(), toLabel: to.toUpperCase(), quotes: [`quote ${edge}`] });
+const step = (edge: string, from: string, to: string, sign: 1 | -1, confidence: number) => ({ edge, type: "reinforces", from, to, sign, confidence, fromLabel: from.toUpperCase(), toLabel: to.toUpperCase(), quotes: [`quote ${edge}`] });
 const LOOP = {
   nodes: ["a", "b"],
   edges: ["ab", "ba"],

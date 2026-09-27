@@ -1,5 +1,5 @@
-import { ArrowRight } from "lucide-react";
 import { ItemChip } from "../components/ItemChip";
+import { LinkMark } from "../components/ItemMarks";
 import type { Navigate } from "../App";
 import { type LoopStepView, type LoopView, api } from "../api";
 import { Button, Card, Empty, ErrorNote, Page } from "../components/ui";
@@ -7,15 +7,6 @@ import { pct } from "../lib/format";
 import { implications, loopFocus } from "../lib/loops";
 import { useAsync } from "../lib/useAsync";
 import { useLive } from "../lib/useLive";
-import { ICON } from "../design/tokens";
-
-function Sign(props: { sign: 1 | -1 }) {
-  return props.sign === 1 ? (
-    <span className="font-bold text-clay-600" title="increases">+</span>
-  ) : (
-    <span className="font-bold text-slate-600" title="decreases">−</span>
-  );
-}
 
 function StepRow(props: { step: LoopStepView; onOpen: (focus: string) => void }) {
   const { step } = props;
@@ -23,8 +14,7 @@ function StepRow(props: { step: LoopStepView; onOpen: (focus: string) => void })
     <li className="space-y-1">
       <p className="flex flex-wrap items-center gap-1.5 text-sm">
         <ItemChip id={step.from} label={step.fromLabel} onClick={() => props.onOpen(step.from)} />
-        <Sign sign={step.sign} />
-        <ArrowRight size={ICON.sm} className="shrink-0 text-stone-400" aria-hidden />
+        <LinkMark type={step.type} sign={step.sign} />
         <ItemChip id={step.to} label={step.toLabel} onClick={() => props.onOpen(step.to)} />
         <span className="text-xs text-stone-400">{pct(step.confidence)} sure</span>
       </p>

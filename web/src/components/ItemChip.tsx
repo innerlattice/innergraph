@@ -1,12 +1,9 @@
 // One Node or Edge, wherever it appears: a chip with the node's gem and its current name, or an
-// Edge as "from  verb →  to". Names come from the live map, so a rename shows everywhere at once;
+// Edge as "from  link  to". Names come from the live map, so a rename shows everywhere at once;
 // `label` is only the fallback for items the map no longer has.
-import { humanise } from "../../../src/core/edgeText";
-import { nodeLookOf } from "../design/graph";
 import { useItems } from "../lib/items";
 import { Chip, type ChipProps, EdgeLabel, ItemLabel } from "./Chip";
-import { NodeGlyph } from "./GraphGlyph";
-import { ICON } from "../design/tokens";
+import { TypeMark, linkWord } from "./ItemMarks";
 
 export interface ItemChipProps extends Omit<ChipProps, "children" | "lead"> {
   id: string;
@@ -16,10 +13,10 @@ export interface ItemChipProps extends Omit<ChipProps, "children" | "lead"> {
 function useItemFace(id: string, label: string | undefined) {
   const { view, schema } = useItems();
   const node = view?.nodes[id];
-  if (node) return { lead: <NodeGlyph look={nodeLookOf(schema, node.type)} size={ICON.xs} />, text: node.label, body: <>{node.label}</> };
+  if (node) return { lead: <TypeMark type={node.type} />, text: node.label, body: <>{node.label}</> };
   const edge = view?.edges[id];
   const name = (n: string) => view?.nodes[n]?.label ?? n;
-  if (edge) return { text: `${name(edge.from)} ${humanise(edge.type)} ${name(edge.to)}`, body: <EdgeLabel from={name(edge.from)} verb={humanise(edge.type)} to={name(edge.to)} /> };
+  if (edge) return { text: `${name(edge.from)} ${linkWord(schema, edge.type, edge.sign)} ${name(edge.to)}`, body: <EdgeLabel from={name(edge.from)} type={edge.type} sign={edge.sign} to={name(edge.to)} /> };
   return { text: label ?? id, body: <ItemLabel label={label ?? id} /> };
 }
 
