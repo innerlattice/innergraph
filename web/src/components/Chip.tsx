@@ -12,12 +12,12 @@ import { parseEdgeText } from "../../../src/core/edgeText";
 type ChipTone = "neutral" | "context" | "accent";
 
 const TONES: Record<ChipTone, string> = {
-  neutral: "border-stone-200 bg-stone-50 text-stone-700 enabled:hover:border-clay-300 enabled:hover:bg-clay-50",
-  context: "border-sage-200 bg-sage-50 text-sage-700 enabled:hover:bg-sage-100",
-  accent: "border-transparent bg-clay-500 text-white enabled:hover:bg-clay-600",
+  neutral: "bg-stone-100 text-stone-700 enabled:hover:bg-clay-50",
+  context: "bg-sage-50 text-sage-700 enabled:hover:bg-sage-100",
+  accent: "bg-clay-500 text-white enabled:hover:bg-clay-600",
 };
 
-const BASE = "inline-flex min-w-0 max-w-full items-center gap-1 rounded-full border text-xs leading-5 transition disabled:opacity-60";
+const BASE = "inline-flex min-w-0 max-w-full items-center gap-1 rounded-full text-xs leading-5 transition disabled:opacity-60";
 
 export interface ChipProps {
   children: ReactNode;

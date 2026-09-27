@@ -28,7 +28,7 @@ function ProviderPicker(props: { value: ChatProvider; onChange: (p: ChatProvider
   return (
     <fieldset className="grid grid-cols-3 gap-2">
       {PROVIDERS.map((p) => (
-        <label key={p.id} className={`rounded-xl border px-3 py-2 text-sm transition ${props.value === p.id ? "border-clay-300 bg-clay-50 text-stone-800" : "border-stone-200 text-stone-500"}`}>
+        <label key={p.id} className={`rounded-xl px-3 py-2 text-sm transition ${props.value === p.id ? "bg-clay-50 text-stone-800 shadow-rest ring-1 ring-clay-300" : "bg-stone-100/70 text-stone-500 hover:bg-stone-100"}`}>
           <input type="radio" name="provider" className="sr-only" checked={props.value === p.id} onChange={() => props.onChange(p.id)} />
           {p.name}
           <span className="block text-xs text-stone-400">{p.note}</span>
@@ -67,7 +67,7 @@ function CodeBox(props: { code: string; url: string }) {
       .then(() => setCopied(true))
       .catch(() => undefined);
   return (
-    <div className="space-y-3 rounded-xl border border-clay-200 bg-clay-50 p-4 text-center">
+    <div className="space-y-3 rounded-xl bg-clay-50 p-4 text-center">
       <p className="text-sm text-stone-600">Enter this code on OpenAI's page:</p>
       <div className="flex items-center justify-center gap-2">
         <span className="font-mono text-2xl tracking-[0.2em] text-stone-800">{props.code}</span>
@@ -87,7 +87,7 @@ function CodeBox(props: { code: string; url: string }) {
 
 function Connected(props: { status: LinkStatus; onDisconnect: () => void }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-sage-200 bg-sage-50 px-3 py-2 text-sm text-sage-700">
+    <div className="flex items-center justify-between rounded-xl bg-sage-50 px-3 py-2 text-sm text-sage-700">
       <span>
         Connected{props.status.plan ? ` on the ${props.status.plan} plan` : ""}
         {props.status.email ? <span className="block text-xs text-sage-600">{props.status.email}</span> : null}
@@ -116,7 +116,7 @@ function LinkState(props: { status?: LinkStatus; onConnect: () => void; onDiscon
   if (status?.state === "pending") return <Pending status={status} onCancel={props.onDisconnect} />;
   if (!status) return null;
   return (
-    <button type="button" onClick={props.onConnect} className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-700 hover:border-clay-300 hover:bg-clay-50">
+    <button type="button" onClick={props.onConnect} className="w-full rounded-xl bg-white px-3 py-2 text-sm text-stone-700 shadow-rest transition hover:bg-clay-50 hover:shadow-float">
       Connect ChatGPT
     </button>
   );

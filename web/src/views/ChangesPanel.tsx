@@ -43,7 +43,7 @@ function SessionCard(props: { change: SessionChanges; onFocus: (ids: string[]) =
   const undo = () => api.undoSession(change.session).then(props.onUndone).catch((e: Error) => setError(e.message));
   const focusable = change.rows.filter((r) => r.kind !== "entry");
   return (
-    <li className="space-y-2 rounded-lg border border-stone-200 p-3">
+    <li className="space-y-2 rounded-xl bg-white p-3 shadow-rest">
       <header className="flex items-start justify-between gap-3">
         <button type="button" className="text-left" onClick={() => props.onFocus(focusable.map((r) => r.id))} disabled={focusable.length === 0}>
           <span className="block text-sm font-medium text-stone-800">{PURPOSE[change.purpose] ?? change.purpose}</span>
@@ -79,7 +79,7 @@ function Duplicates(props: { groups: DuplicateGroup[]; labels: Record<string, st
       <h4 className="text-xs font-medium uppercase tracking-wide text-stone-400">Possible duplicates</h4>
       <ul className="space-y-2">
         {props.groups.map((g) => (
-          <li key={g.ids.join()} className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50/60 p-2 text-sm">
+          <li key={g.ids.join()} className="flex items-center justify-between gap-2 rounded-lg bg-amber-50 p-2 text-sm">
             <button type="button" onClick={() => props.onFocus(g.ids)} className="text-left text-stone-800 hover:underline">
               “{props.labels[g.ids[0]] ?? g.ids[0]}” is recorded {g.ids.length} times
             </button>

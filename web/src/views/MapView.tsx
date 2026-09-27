@@ -65,7 +65,7 @@ function SidePanel(props: PanelProps) {
   const content = panelFor(props);
   if (!content) return null;
   return (
-    <aside className="absolute top-3 right-3 bottom-3 z-20 w-[min(22rem,calc(100%-1.5rem))] animate-rise overflow-auto rounded-2xl border border-stone-200/80 bg-white/95 shadow-xl backdrop-blur">
+    <aside className="absolute top-3 right-3 bottom-3 z-20 w-[min(22rem,calc(100%-1.5rem))] animate-rise overflow-auto rounded-2xl bg-white/95 shadow-lift backdrop-blur">
       {content}
     </aside>
   );

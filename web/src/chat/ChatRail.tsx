@@ -72,7 +72,7 @@ export function ChatRail(props: ChatRailProps) {
     <div className="relative w-14 shrink-0">
       <nav
         aria-label="Conversations"
-        className="group/rail absolute inset-y-0 left-0 z-40 flex w-14 flex-col gap-1 overflow-hidden border-r border-stone-200/70 bg-stone-100/95 px-2 py-4 backdrop-blur transition-[width,box-shadow] duration-200 hover:w-72 hover:shadow-2xl has-[:focus-visible]:w-72"
+        className="group/rail absolute inset-y-0 left-0 z-40 flex w-14 flex-col gap-1 overflow-hidden bg-stone-100/95 px-2 py-4 backdrop-blur transition-[width,box-shadow] duration-200 hover:w-72 hover:shadow-2xl has-[:focus-visible]:w-72"
       >
         <div className="mb-3 flex h-8 items-center gap-3 px-2.5">
           <span className="h-3 w-3 shrink-0 rounded-full bg-clay-400" />

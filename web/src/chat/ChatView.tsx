@@ -36,7 +36,7 @@ function Greeting(props: { onPick: (text: string) => void }) {
       <p className="mt-3 max-w-md text-sm leading-relaxed text-stone-500">Write freely: a journal entry, a moment from today, a feeling you can't quite name. I'll help you see how it connects.</p>
       <div className="mt-8 flex max-w-lg flex-col gap-2">
         {SUGGESTIONS.map((s) => (
-          <button key={s} type="button" onClick={() => props.onPick(s)} className="rounded-2xl border border-stone-200 bg-white/60 px-4 py-2.5 text-left font-serif text-sm text-stone-600 transition hover:border-clay-200 hover:bg-white">
+          <button key={s} type="button" onClick={() => props.onPick(s)} className="rounded-2xl bg-white/70 shadow-rest px-4 py-2.5 text-left font-serif text-sm text-stone-600 transition hover:border-clay-200 hover:bg-white">
             {s}
           </button>
         ))}

@@ -17,7 +17,7 @@ export function ViewRail(props: { active?: PaneName; onToggle: (view: PaneName) 
     <div className="relative w-12 shrink-0">
       <nav
         aria-label="Views"
-        className="group/views absolute inset-y-0 right-0 z-40 flex w-12 flex-col gap-1 overflow-hidden border-l border-stone-200/70 bg-stone-100/95 px-1.5 py-4 backdrop-blur transition-[width,box-shadow] duration-200 hover:w-48 hover:shadow-2xl has-[:focus-visible]:w-48"
+        className="group/views absolute inset-y-0 right-0 z-40 flex w-12 flex-col gap-1 overflow-hidden bg-stone-100/95 px-1.5 py-4 backdrop-blur transition-[width,box-shadow] duration-200 hover:w-48 hover:shadow-2xl has-[:focus-visible]:w-48"
       >
         {VIEWS.map((v) => {
           const on = props.active === v.view;

@@ -9,9 +9,9 @@ type Tone = "primary" | "quiet" | "ghost" | "danger";
 
 const TONES: Record<Tone, string> = {
   primary: "bg-clay-500 text-white enabled:hover:bg-clay-600",
-  quiet: "border border-stone-300 bg-white text-stone-700 enabled:hover:border-clay-300 enabled:hover:bg-clay-50",
+  quiet: "bg-white text-stone-700 shadow-rest enabled:hover:bg-clay-50 enabled:hover:shadow-float",
   ghost: "text-stone-600 enabled:hover:bg-stone-200",
-  danger: "border border-rose-200 bg-white text-rose-700 enabled:hover:bg-rose-50",
+  danger: "bg-white text-rose-700 shadow-rest enabled:hover:bg-rose-50",
 };
 
 /** The classes of a Button, for links that act as one. */
@@ -39,11 +39,11 @@ export function Page(props: { title: string; subtitle?: string; children: ReactN
 }
 
 export function Card(props: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-xl border border-stone-200 bg-white p-5 shadow-sm ${props.className ?? ""}`}>{props.children}</section>;
+  return <section className={`rounded-xl bg-white p-5 shadow-rest ${props.className ?? ""}`}>{props.children}</section>;
 }
 
 export function Empty(props: { children: ReactNode }) {
-  return <p className="rounded-xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500">{props.children}</p>;
+  return <p className="rounded-xl bg-stone-100/60 p-8 text-center text-sm text-stone-500">{props.children}</p>;
 }
 
 export function ErrorNote(props: { error?: string }) {
@@ -53,8 +53,8 @@ export function ErrorNote(props: { error?: string }) {
 
 /** Only what is worth saying: confirmed, or removed. Unconfirmed is the quiet default. */
 export function StatusPill(props: { status: string; confirmed?: boolean }) {
-  if (props.status === "removed") return <span className="rounded-full border border-stone-200 px-2 py-0.5 text-xs text-stone-400 line-through">removed</span>;
-  if (props.confirmed) return <span className="rounded-full border border-sage-200 bg-sage-50 px-2 py-0.5 text-xs text-sage-700">confirmed</span>;
+  if (props.status === "removed") return <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-400 line-through">removed</span>;
+  if (props.confirmed) return <span className="rounded-full bg-sage-50 px-2 py-0.5 text-xs text-sage-700">confirmed</span>;
   return null;
 }
 

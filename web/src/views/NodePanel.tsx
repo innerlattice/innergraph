@@ -46,7 +46,7 @@ export function EvidenceCard(props: { evidence: NodeView["evidence"][number]; on
       type="button"
       onClick={onOpen}
       aria-label={`Open “${e.entryTitle}” at this passage`}
-      className="group block w-full rounded-lg border border-stone-200 bg-stone-50 p-3 text-left transition hover:border-stone-400 hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+      className="group block w-full rounded-lg bg-stone-50 p-3 text-left transition hover:bg-white hover:shadow-float focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
     >
       <p className="font-serif text-sm leading-relaxed text-stone-500">
         {e.before ? "…" : ""}
