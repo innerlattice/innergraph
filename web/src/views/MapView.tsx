@@ -95,8 +95,8 @@ function panelFor(props: PanelProps) {
     navigate: props.navigate,
     onSelect: (id: string) => props.onSelect([id]),
   };
-  if (props.view?.nodes[only]) return <NodePanel id={only} {...common} statuses={props.filter} onHighlight={props.onHighlight} />;
-  if (props.view?.edges[only]) return <EdgePanel id={only} {...common} />;
+  if (props.view?.nodes[only]) return <NodePanel key={only} id={only} {...common} statuses={props.filter} onHighlight={props.onHighlight} />;
+  if (props.view?.edges[only]) return <EdgePanel key={only} id={only} {...common} />;
   return <SelectionPanel ids={selection} version={props.version} onClear={() => props.onSelect([])} onFocus={(id) => props.onSelect([id])} onDone={props.onDone} />;
 }
 

@@ -62,6 +62,7 @@ const routes: Record<string, unknown> = {
       { id: "n2", kind: "node", type: "t", label: "Two", status: "active", confirmed: false },
     ],
   },
+  "/api/nodes/n1/related": [{ kind: "node", id: "n2", title: "Deep water", score: 0.9 }],
   "/api/nodes/n1/roots": { node: "n1", upstream: ["n0"], roots: [{ id: "n0", support: 1, path: ["n0", "n1"] }] },
 };
 const respond = (call: Call) => (/[?&]t=/.test(call.url) ? past : (routes[call.path] ?? { ok: true }));
@@ -95,6 +96,16 @@ it("selects nodes, traces roots, and travels back in time", async () => {
   fireEvent.click(screen.getByText("Now"));
   await waitFor(() => expect(screen.queryByText(/Nothing to show/)).toBeNull());
   fireEvent.change(screen.getByLabelText("Time travel"), { target: { value: "1" } });
+});
+
+it("forgets what the last node explored when another is opened", async () => {
+  render(<Harness />);
+  fireEvent.click(await screen.findByText("node:n1"));
+  fireEvent.click(await screen.findByText("Related"));
+  expect(await screen.findByText("Deep water")).toBeTruthy();
+  fireEvent.click(screen.getByText("node:p9"));
+  expect(await screen.findByText("Ghost", { selector: "h3" })).toBeTruthy();
+  expect(screen.queryByText("Deep water")).toBeNull();
 });
 
 it("shows a selection panel for several items and clears it", async () => {
