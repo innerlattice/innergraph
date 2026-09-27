@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { type ChatBudget, type ChatDetail, type ChatMessage, type PublicChatSettings, type SelectionItem, api } from "../api";
 import { BudgetNotice, Composer, FullNotice, SelectionChips } from "./Composer";
 import { AssistantMessage, MessageBoundary, Thinking, UserMessage } from "./Message";
+import { ACTIVITIES, type ActivityRequest } from "../../../src/core/activities";
 import { budgetLevel } from "../../../src/core/budget";
 import { errorText, isFullError, isSilent, latestTokens, repliesTo } from "./parts";
 
@@ -17,6 +18,8 @@ interface ChatActions {
   onTurnEnd: () => void;
   onDeselect: (id: string) => void;
   onClearSelection: () => void;
+  /** Called once the opening message of an activity has been sent. */
+  onOpened?: () => void;
 }
 
 export interface ChatViewProps extends ChatActions {
@@ -24,6 +27,8 @@ export interface ChatViewProps extends ChatActions {
   selection: SelectionItem[];
   settings?: PublicChatSettings;
   labels?: Record<string, string>;
+  /** An activity to begin this (new) conversation with. */
+  opening?: ActivityRequest;
 }
 
 const SUGGESTIONS = ["Something happened today that I keep thinking about…", "Help me understand a pattern I keep falling into", "What's on my map so far?"];
@@ -126,11 +131,25 @@ function MessageList(props: ListProps) {
   );
 }
 
+/** Sends an activity's opening message once, into an empty conversation. */
+function useOpening(props: Pick<ChatViewProps, "opening" | "onOpened">, empty: boolean, send: (message: { text: string; metadata: ChatMessage["metadata"] }) => unknown) {
+  const sent = useRef(false);
+  const { opening, onOpened } = props;
+  useEffect(() => {
+    if (!opening || !empty || sent.current) return;
+    sent.current = true;
+    const activity = ACTIVITIES.find((a) => a.id === opening.activity);
+    send({ text: activity?.opener(opening.name) ?? opening.name, metadata: { activity: opening } });
+    onOpened?.();
+  }, [opening, empty, send, onOpened]);
+}
+
 function Conversation(props: ChatViewProps & { initial: ChatMessage[]; budget: ChatBudget }) {
   const transport = useMemo(transportFor, []);
   const { messages, sendMessage, status, error, stop } = useChat<ChatMessage>({ id: props.id, messages: props.initial, transport, onFinish: props.onTurnEnd });
   const [draft, setDraft] = useState<string>();
   const busy = status === "submitted" || status === "streaming";
+  useOpening(props, messages.length === 0, sendMessage);
   const { share, level } = useBudget(messages, props.budget, error);
   return (
     <div className="flex h-full flex-col">

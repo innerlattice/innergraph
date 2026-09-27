@@ -1,5 +1,6 @@
 import { Pencil } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { ExploreButton } from "../components/ExploreButton";
 import { IconButton } from "../components/IconButton";
 import { Chip } from "../components/Chip";
 import { ItemChip } from "../components/ItemChip";
@@ -147,7 +148,12 @@ function EntryCard(props: { view: EntryView; focus?: Span; navigate: Navigate; r
     <Card className="space-y-4">
       <header className="flex items-center justify-between gap-3">
         <p className="text-xs text-stone-400">{props.view.entry.revises ? "Revised version. Earlier versions stay in history." : formatHlc(props.view.entry.addedAt)}</p>
-        {editing ? null : <IconButton label="Edit" hint="Change what you wrote; the map follows" icon={Pencil} onClick={() => setEditing(true)} />}
+        {editing ? null : (
+          <div className="flex gap-2">
+            <ExploreButton subject="entry" kind="Entry" name={props.view.entry.title} target={props.view.entry.id} />
+            <IconButton label="Edit" hint="Change what you wrote; the map follows" icon={Pencil} onClick={() => setEditing(true)} />
+          </div>
+        )}
       </header>
       {result ? <RevisionNote result={result} /> : null}
       {editing ? (

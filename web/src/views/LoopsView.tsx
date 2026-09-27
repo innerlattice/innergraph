@@ -1,4 +1,5 @@
 import { Map as MapIcon } from "lucide-react";
+import { ExploreButton } from "../components/ExploreButton";
 import { IconButton } from "../components/IconButton";
 import { ItemChip } from "../components/ItemChip";
 import { LinkMark } from "../components/ItemMarks";
@@ -46,6 +47,7 @@ function Steps(props: { title: string; steps: LoopStepView[]; onOpen: (focus: st
 export function LoopCard(props: { loop: LoopView; onOpen: (focus: string) => void }) {
   const { loop } = props;
   const reinforcing = loop.polarity === "reinforcing";
+  const title = [...loop.steps.map((s) => s.fromLabel), loop.steps[0]?.fromLabel].join(" → ");
   return (
     <Card className="space-y-4">
       <header className="flex items-start justify-between gap-4">
@@ -53,13 +55,16 @@ export function LoopCard(props: { loop: LoopView; onOpen: (focus: string) => voi
           <p className={`text-xs font-medium ${reinforcing ? "text-clay-600" : "text-slate-600"}`}>
             {reinforcing ? "Reinforcing loop: it feeds itself" : "Balancing loop: it holds itself steady"}
           </p>
-          <h3 className="font-serif text-lg text-stone-800">{[...loop.steps.map((s) => s.fromLabel), loop.steps[0]?.fromLabel].join(" → ")}</h3>
+          <h3 className="font-serif text-lg text-stone-800">{title}</h3>
           <p className="text-xs text-stone-400">
             {loop.steps.length} steps, {pct(loop.certainty)} certain
             {loop.linkedLoops > 0 ? `, overlapping ${loop.linkedLoops} other loop${loop.linkedLoops === 1 ? "" : "s"}` : ""}
           </p>
         </div>
-        <IconButton label="Show on map" hint="Light up this loop on the map" icon={MapIcon} onClick={() => props.onOpen(loopFocus(loop))} />
+        <div className="flex gap-2">
+          <ExploreButton subject="loop" kind={reinforcing ? "Reinforcing loop" : "Balancing loop"} name={title} target={loop.nodes.join(",")} />
+          <IconButton label="Show on map" hint="Light up this loop on the map" icon={MapIcon} onClick={() => props.onOpen(loopFocus(loop))} />
+        </div>
       </header>
       <ul className="list-disc space-y-1 pl-5 text-sm text-stone-600">
         {implications(loop).map((line) => (

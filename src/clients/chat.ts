@@ -17,6 +17,7 @@ import {
   toUIMessageStream,
 } from "ai";
 import { z } from "zod";
+import { type ActivityRequest, activityInstructions } from "../core/activities.js";
 import type { ActorId } from "../core/types.js";
 import type { SelectionItem } from "../managers/exploreManager.js";
 import { chatModel, modelActor } from "../utilities/chatModel.js";
@@ -26,6 +27,8 @@ import { allowedTools, toolSpecs } from "./tools.js";
 interface ChatMetadata {
   contextTokens?: number;
   contextWindow?: number;
+  /** Set on the opening message of a conversation started from an Explore menu. */
+  activity?: ActivityRequest;
 }
 
 export type ChatMessage = UIMessage<ChatMetadata>;
@@ -65,8 +68,14 @@ function selectionText(items: SelectionItem[]): string {
   return `\n\nThe person currently has these selected in the graph view ("these", "this", "the selected ones"):\n${lines.join("\n")}`;
 }
 
-export function chatInstructions(selection: SelectionItem[], skill: string = skillText()): string {
-  return `${IN_APP}\n\n${skill.trim()}${selectionText(selection)}`;
+/** The activity the conversation was started for, if any: it holds for the whole conversation. */
+function activityText(messages: ChatMessage[]): string {
+  const request = messages.find((m) => m.metadata?.activity)?.metadata?.activity;
+  return request ? activityInstructions(request) : "";
+}
+
+export function chatInstructions(selection: SelectionItem[], skill: string = skillText(), messages: ChatMessage[] = []): string {
+  return `${IN_APP}\n\n${skill.trim()}${selectionText(selection)}${activityText(messages)}`;
 }
 
 export function messageText(message: UIMessage): string {
@@ -135,7 +144,7 @@ export async function respondToChat(vault: Vault, request: ChatRequest, model?: 
   const actor = modelActor(settings.model);
   const messages = [...(chat.messages as ChatMessage[]), request.message];
   const tools = chatTools(vault, actor, messageText(request.message));
-  const instructions = chatInstructions(vault.explore.selection().items);
+  const instructions = chatInstructions(vault.explore.selection().items, skillText(), messages);
   const estimate = estimateTokens(instructions, messages);
   const choice = model ? { model, instructions } : chatModel(settings, instructions, vault.chat.chatgpt.planTokens());
   let last: LanguageModelUsage | undefined;

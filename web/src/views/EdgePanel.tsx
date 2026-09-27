@@ -2,6 +2,7 @@ import type { Navigate } from "../App";
 import { ArrowDown } from "lucide-react";
 import { type Schema, api } from "../api";
 import { edgeLook } from "../design/graph";
+import { ExploreButton } from "../components/ExploreButton";
 import { EdgeGlyph } from "../components/GraphGlyph";
 import { linkWord } from "../components/ItemMarks";
 import { AddedBy, Eyebrow } from "../components/ItemMeta";
@@ -42,18 +43,21 @@ export function EdgePanel(props: EdgePanelProps) {
           confidence={edge.confidence}
           tip={<TipBody title={humanise(relation)} text={edge.sign ? look.description : props.schema?.edgeTypes[edge.type]?.description} />}
         />
-        <h3 className="flex flex-col items-start font-serif text-xl leading-snug text-stone-800">
-          <button type="button" className="text-left hover:underline" onClick={() => props.onSelect(edge.from)}>
-            {fromLabel}
-          </button>
-          <span className="my-0.5 inline-flex items-center gap-1 pl-0.5 font-sans text-sm text-stone-400 italic">
-            <ArrowDown size={ICON.sm} aria-hidden />
-            {humanise(edge.type)}
-          </span>
-          <button type="button" className="text-left hover:underline" onClick={() => props.onSelect(edge.to)}>
-            {toLabel}
-          </button>
-        </h3>
+        <div className="flex items-start gap-2">
+          <h3 className="flex min-w-0 flex-1 flex-col items-start font-serif text-xl leading-snug text-stone-800">
+            <button type="button" className="text-left hover:underline" onClick={() => props.onSelect(edge.from)}>
+              {fromLabel}
+            </button>
+            <span className="my-0.5 inline-flex items-center gap-1 pl-0.5 font-sans text-sm text-stone-400 italic">
+              <ArrowDown size={ICON.sm} aria-hidden />
+              {humanise(edge.type)}
+            </span>
+            <button type="button" className="text-left hover:underline" onClick={() => props.onSelect(edge.to)}>
+              {toLabel}
+            </button>
+          </h3>
+          <ExploreButton subject="edge" kind="Link" name={`${fromLabel} ${relation} ${toLabel}`} target={`${edge.id} from ${edge.from} to ${edge.to}`} />
+        </div>
         <StatusPill status={edge.status} />
       </header>
       {edge.status === "removed" ? <p className="text-sm text-stone-500">Removed. Restore puts it back as it was.</p> : null}

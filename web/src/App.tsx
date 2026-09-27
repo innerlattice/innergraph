@@ -2,6 +2,7 @@
 // and one view beside it (map, loops, entries, log) chosen from the right rail. The map
 // selection lives here so the chat can say "these" and a highlight can show its item.
 import { type CSSProperties, type ReactElement, useCallback, useEffect, useMemo, useState } from "react";
+import type { ActivityRequest } from "../../src/core/activities";
 import { type Selection, api } from "./api";
 import { ChatRail } from "./chat/ChatRail";
 import { ChatView } from "./chat/ChatView";
@@ -9,6 +10,7 @@ import { SettingsDialog } from "./chat/SettingsDialog";
 import { Divider, usePaneWidth } from "./components/Divider";
 import { type PaneName, ViewRail } from "./components/ViewRail";
 import { labelsFrom } from "./lib/format";
+import { ExploreContext } from "./lib/explore";
 import { ItemsProvider } from "./lib/items";
 import { useAsync } from "./lib/useAsync";
 import { useLive } from "./lib/useLive";
@@ -57,7 +59,12 @@ function useChats() {
       chats.reload();
     });
   const rename = (id: string, title: string) => api.renameChat(id, title).then(chats.reload);
-  return { active, setActive, list: chats.data ?? [], reload: chats.reload, remove, rename, fresh: () => setActive(newChatId()) };
+  const fresh = () => {
+    const id = newChatId();
+    setActive(id);
+    return id;
+  };
+  return { active, setActive, list: chats.data ?? [], reload: chats.reload, remove, rename, fresh };
 }
 
 /** The chat and the view beside it. One side always stays open: hiding the chat shows a view,
@@ -78,10 +85,17 @@ function useSides(pane: ViewName | undefined, setPane: (pane: ViewName | undefin
     setChatOpen(true);
   };
   const newChat = () => {
-    chats.fresh();
     setChatOpen(true);
+    return chats.fresh();
   };
   return { chatOpen, toggleChat, togglePane, openChat, newChat };
+}
+
+/** An activity waiting to open a fresh conversation, which sends its first message once. */
+function useActivities(newChat: () => string) {
+  const [opening, setOpening] = useState<{ chat: string; request: ActivityRequest }>();
+  const explore = (request: ActivityRequest) => setOpening({ chat: newChat(), request });
+  return { opening, explore, opened: () => setOpening(undefined) };
 }
 
 export function App() {
@@ -94,6 +108,7 @@ export function App() {
   const chats = useChats();
   const width = usePaneWidth();
   const { chatOpen, toggleChat, togglePane, openChat, newChat } = useSides(pane, setPane, chats);
+  const activities = useActivities(newChat);
 
   const navigate: Navigate = (next, focusId) => {
     if (next === "map" && focusId) select(focusId.split(","));
@@ -106,50 +121,54 @@ export function App() {
   };
   return (
     <ItemsProvider value={items}>
-      <div className="flex h-screen bg-paper text-stone-800">
-        <ChatRail
-          chats={chats.list}
-          active={chats.active}
-          onOpen={openChat}
-          onNew={newChat}
-          onRename={chats.rename}
-          onDelete={chats.remove}
-          onSettings={() => setSettingsOpen(true)}
-          chatOpen={chatOpen}
-          onToggleChat={toggleChat}
-        />
-        <main aria-label="Conversation" className={chatOpen ? "min-w-panel flex-1" : "hidden"}>
-          <ChatView
-            id={chats.active}
-            selection={selection.items}
-            settings={settings.data}
-            labels={labels}
-            onSelect={showOnMap}
-            onOpenEntry={(entry) => navigate("entries", entry)}
-            onNewChat={chats.fresh}
-            onOpenSettings={() => setSettingsOpen(true)}
-            onTurnEnd={chats.reload}
-            onDeselect={(id) => select(selection.ids.filter((i) => i !== id))}
-            onClearSelection={() => select([])}
+      <ExploreContext.Provider value={activities.explore}>
+        <div className="flex h-screen bg-paper text-stone-800">
+          <ChatRail
+            chats={chats.list}
+            active={chats.active}
+            onOpen={openChat}
+            onNew={newChat}
+            onRename={chats.rename}
+            onDelete={chats.remove}
+            onSettings={() => setSettingsOpen(true)}
+            chatOpen={chatOpen}
+            onToggleChat={toggleChat}
           />
-        </main>
-        {pane ? (
-          <ViewPane chatOpen={chatOpen} share={width.share} onResize={width.set}>
-            <CurrentView view={pane} focus={focus} selection={selection} onSelect={select} navigate={navigate} />
-          </ViewPane>
-        ) : null}
-        <ViewRail active={pane} onToggle={togglePane} />
-        {settingsOpen && settings.data ? (
-          <SettingsDialog
-            settings={settings.data}
-            onClose={() => setSettingsOpen(false)}
-            onSaved={() => {
-              settings.reload();
-              setSettingsOpen(false);
-            }}
-          />
-        ) : null}
-      </div>
+          <main aria-label="Conversation" className={chatOpen ? "min-w-panel flex-1" : "hidden"}>
+            <ChatView
+              id={chats.active}
+              selection={selection.items}
+              settings={settings.data}
+              labels={labels}
+              onSelect={showOnMap}
+              onOpenEntry={(entry) => navigate("entries", entry)}
+              onNewChat={chats.fresh}
+              onOpenSettings={() => setSettingsOpen(true)}
+              onTurnEnd={chats.reload}
+              onDeselect={(id) => select(selection.ids.filter((i) => i !== id))}
+              onClearSelection={() => select([])}
+              opening={activities.opening?.chat === chats.active ? activities.opening.request : undefined}
+              onOpened={activities.opened}
+            />
+          </main>
+          {pane ? (
+            <ViewPane chatOpen={chatOpen} share={width.share} onResize={width.set}>
+              <CurrentView view={pane} focus={focus} selection={selection} onSelect={select} navigate={navigate} />
+            </ViewPane>
+          ) : null}
+          <ViewRail active={pane} onToggle={togglePane} />
+          {settingsOpen && settings.data ? (
+            <SettingsDialog
+              settings={settings.data}
+              onClose={() => setSettingsOpen(false)}
+              onSaved={() => {
+                settings.reload();
+                setSettingsOpen(false);
+              }}
+            />
+          ) : null}
+        </div>
+      </ExploreContext.Provider>
     </ItemsProvider>
   );
 }

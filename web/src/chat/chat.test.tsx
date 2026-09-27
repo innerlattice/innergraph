@@ -431,6 +431,17 @@ describe("a conversation", () => {
     expect(await screen.findByText("This conversation is full.")).toBeTruthy();
   });
 
+  it("opens with an activity's message, once, carrying the activity", async () => {
+    const onOpened = vi.fn();
+    const opening = { activity: "five_whys", subject: "node" as const, target: "n8", name: "Shame" };
+    render(<ChatView id="explore" selection={[]} {...actions()} opening={opening} onOpened={onOpened} />);
+    expect(await screen.findByText("Let's do five whys on “Shame”.")).toBeTruthy();
+    const sent = calls.filter((c) => c.url === "/api/chat");
+    expect(sent).toHaveLength(1);
+    expect(sent[0].body).toMatchObject({ message: { metadata: { activity: opening } } });
+    expect(onOpened).toHaveBeenCalledTimes(1);
+  });
+
   it("says when a reply had no words", async () => {
     routes["POST /api/chat"] = () => sse([TURN[0], TURN[1], TURN[4], TURN[5], TURN[8], { type: "finish", finishReason: "stop" }]);
     render(<ChatView id="quiet" selection={[]} {...actions()} />);

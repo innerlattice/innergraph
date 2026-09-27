@@ -13,6 +13,7 @@ import { AddedBy, Eyebrow } from "../components/ItemMeta";
 import { TipBody } from "../components/Tooltip";
 import { useAsync } from "../lib/useAsync";
 import { type Done, ItemActions } from "./ItemControls";
+import { ExploreButton } from "../components/ExploreButton";
 import { Related } from "../components/Related";
 import { ICON } from "../design/tokens";
 
@@ -236,7 +237,12 @@ export function NodePanel(props: NodePanelProps) {
           confidence={node.confidence}
           tip={<TipBody title={humanise(node.type)} text={props.schema?.nodeTypes[node.type]?.description} />}
         />
-        <EditableTitle value={node.label} readOnly={readOnly} onSave={(label) => run(() => api.rename(node.id, label))} />
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <EditableTitle value={node.label} readOnly={readOnly} onSave={(label) => run(() => api.rename(node.id, label))} />
+          </div>
+          <ExploreButton subject="node" kind={humanise(node.type)} name={node.label} target={node.id} />
+        </div>
         <StatusPill status={node.status} />
       </header>
       <ErrorNote error={error} />
