@@ -33,17 +33,19 @@ export interface Segment {
   cited: string[];
 }
 
-/** Splits text into runs, each tagged with the targets whose Evidence covers it. */
+/** The text cut at every range boundary (character offsets), each run with the ranges covering it. */
+export function runsOf<R extends { start: number; end: number }>(text: string, ranges: R[]): { text: string; covering: R[] }[] {
+  const cuts = [...new Set([0, text.length, ...ranges.flatMap((r) => [r.start, r.end])])].sort((a, b) => a - b);
+  return cuts
+    .slice(0, -1)
+    .map((from, i) => ({ text: text.slice(from, cuts[i + 1]), covering: ranges.filter((r) => r.start <= from && r.end >= cuts[i + 1]) }))
+    .filter((run) => run.text.length > 0);
+}
+
+/** Splits text into runs, each tagged with the targets whose Evidence (byte offsets) covers it. */
 export function highlightSegments(text: string, spans: { target: string; start: number; end: number }[]): Segment[] {
-  const ranges = spans.map((s) => ({ target: s.target, from: charIndex(text, s.start), to: charIndex(text, s.end) }));
-  const cuts = [...new Set([0, text.length, ...ranges.flatMap((r) => [r.from, r.to])])].sort((a, b) => a - b);
-  const segments: Segment[] = [];
-  for (let i = 0; i < cuts.length - 1; i++) {
-    const [from, to] = [cuts[i], cuts[i + 1]];
-    const cited = ranges.filter((r) => r.from <= from && r.to >= to).map((r) => r.target);
-    segments.push({ text: text.slice(from, to), cited });
-  }
-  return segments.filter((s) => s.text.length > 0);
+  const ranges = spans.map((s) => ({ target: s.target, start: charIndex(text, s.start), end: charIndex(text, s.end) }));
+  return runsOf(text, ranges).map((run) => ({ text: run.text, cited: run.covering.map((r) => r.target) }));
 }
 
 /** Anything shaped like a graph: the raw Graph or the materialized View. */

@@ -1,6 +1,7 @@
 // Reading a conversation: which tool calls happened, how to say them in plain words, and which
 // passages of the person's message they cite (highlighted in the message). Pure, no React.
 import type { ChatMessage, ProposeResult } from "../api";
+import { runsOf } from "../lib/format";
 
 export interface ToolPart {
   type: string;
@@ -168,14 +169,12 @@ export interface Segment {
 
 /** The text cut at every mark boundary; overlapping marks combine their items. */
 export function segments(text: string, marks: Mark[]): Segment[] {
-  const cuts = [...new Set([0, text.length, ...marks.flatMap((m) => [m.start, m.end])])].sort((a, b) => a - b);
-  const out: Segment[] = [];
-  for (let i = 0; i < cuts.length - 1; i++) {
-    const [from, to] = [cuts[i], cuts[i + 1]];
-    const covering = marks.filter((m) => m.start <= from && m.end >= to);
-    out.push({ text: text.slice(from, to), ids: [...new Set(covering.flatMap((m) => m.ids))], labels: [...new Set(covering.flatMap((m) => m.labels))], marked: covering.length > 0 });
-  }
-  return out;
+  return runsOf(text, marks).map(({ text: run, covering }) => ({
+    text: run,
+    ids: [...new Set(covering.flatMap((m) => m.ids))],
+    labels: [...new Set(covering.flatMap((m) => m.labels))],
+    marked: covering.length > 0,
+  }));
 }
 
 /** The assistant messages answering the user message at `index`. */
