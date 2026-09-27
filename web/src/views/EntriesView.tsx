@@ -86,10 +86,33 @@ export function EntryEditor(props: { view: EntryView; onSaved: (result: Revision
   );
 }
 
+/** Everything this entry is evidence for, each one clickable, plus all of them at once. */
+export function SupportedItems(props: { view: EntryView; onOpen: (ids: string) => void }) {
+  const items = [...new Map(props.view.citations.map((c) => [c.target, c.label])).entries()];
+  if (items.length === 0) return <p className="text-xs text-stone-400">Nothing on the map cites this entry yet.</p>;
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <button type="button" onClick={() => props.onOpen(items.map(([id]) => id).join(","))} className="rounded-full bg-clay-500 px-3 py-0.5 text-xs text-white hover:bg-clay-600">
+        Show all {items.length} on the map
+      </button>
+      {items.map(([id, label]) => (
+        <button key={id} type="button" onClick={() => props.onOpen(id)} className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 text-xs text-stone-700 hover:border-clay-300 hover:bg-clay-50">
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function RevisionNote(props: { result: RevisionResult }) {
+  const job = useJob(props.result.job?.id);
+  const updating = job?.state === "running" || job?.state === "queued";
+  return <p className="text-sm text-stone-600">Saved. {revisionSummary(props.result)} {updating ? "Updating the map…" : ""}</p>;
+}
+
 function EntryCard(props: { view: EntryView; focus?: Span; navigate: Navigate; revision?: RevisionResult; onRevised: (result: RevisionResult) => void }) {
   const [editing, setEditing] = useState(false);
   const result = props.revision?.entry === props.view.entry.id ? props.revision : undefined;
-  const job = useJob(result?.job?.id);
   const saved = (r: RevisionResult) => {
     setEditing(false);
     props.onRevised(r);
@@ -100,7 +123,8 @@ function EntryCard(props: { view: EntryView; focus?: Span; navigate: Navigate; r
         <p className="text-xs text-stone-400">{props.view.entry.revises ? "Revised version · earlier versions stay in history" : formatHlc(props.view.entry.addedAt)}</p>
         {editing ? null : <Button onClick={() => setEditing(true)}>Edit</Button>}
       </header>
-      {result ? <p className="text-sm text-stone-600">Saved. {revisionSummary(result)} {job?.state === "running" || job?.state === "queued" ? "Updating the map…" : ""}</p> : null}
+      <SupportedItems view={props.view} onOpen={(ids) => props.navigate("map", ids)} />
+      {result ? <RevisionNote result={result} /> : null}
       {editing ? <EntryEditor view={props.view} onSaved={saved} onCancel={() => setEditing(false)} /> : <EntryText view={props.view} focus={props.focus} onOpen={(id) => props.navigate("map", id)} />}
     </Card>
   );

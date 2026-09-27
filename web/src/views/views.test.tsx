@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EntryView, NodeView } from "../api";
 import { Button, Card, Empty, ErrorNote, Page, Quote, StatusPill } from "../components/ui";
-import { EntriesView, EntryText } from "./EntriesView";
+import { EntriesView, EntryText, SupportedItems } from "./EntriesView";
 import { LogView } from "./LogView";
 import { LoopCard, LoopsView } from "./LoopsView";
 import { NodePanel } from "./NodePanel";
@@ -105,6 +105,19 @@ describe("ui primitives", () => {
     );
     expect(screen.getByText("bad")).toBeTruthy();
     expect(screen.getByText("— src")).toBeTruthy();
+  });
+});
+
+describe("SupportedItems", () => {
+  it("lists what an entry supports and opens one or all of them", () => {
+    const onOpen = vi.fn();
+    const citations = [...entryView.citations, { target: "e1", label: "An edge", evidence: { entry: "h", start: 0, end: 3 } }, entryView.citations[0]];
+    render(<SupportedItems view={{ ...entryView, citations }} onOpen={onOpen} />);
+    fireEvent.click(screen.getByText("Show all 2 on the map"));
+    fireEvent.click(screen.getByText("An edge"));
+    expect(onOpen.mock.calls).toEqual([["n1,e1"], ["e1"]]);
+    render(<SupportedItems view={{ ...entryView, citations: [] }} onOpen={onOpen} />);
+    expect(screen.getByText(/Nothing on the map cites/)).toBeTruthy();
   });
 });
 
