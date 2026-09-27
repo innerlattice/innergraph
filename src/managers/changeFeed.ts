@@ -5,7 +5,7 @@ import type { ActorId, AnyEvent, EventBodies, ProjectionState, VaultEvent } from
 
 export type ChangeAction = "added" | "updated" | "renamed" | "edited" | "removed" | "restored" | "confirmed" | "merged" | "split" | "revised";
 
-export interface ChangeRow {
+interface ChangeRow {
   id: string;
   kind: "node" | "edge" | "entry";
   label: string;

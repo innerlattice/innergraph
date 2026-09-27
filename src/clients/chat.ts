@@ -26,7 +26,7 @@ import { chatModel, modelActor } from "../utilities/chatModel.js";
 import type { Vault } from "../vault.js";
 import { allowedTools, toolSpecs } from "./tools.js";
 
-export interface ChatMetadata {
+interface ChatMetadata {
   contextTokens?: number;
   contextWindow?: number;
 }

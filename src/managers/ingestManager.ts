@@ -30,7 +30,7 @@ export interface IngestResult {
 }
 
 /** A Node or Edge a write touched, with the passages it cites (so a Client can highlight them). */
-export interface WrittenItem {
+interface WrittenItem {
   id: string;
   kind: "node" | "edge";
   label: string;

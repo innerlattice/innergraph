@@ -114,7 +114,7 @@ function StatusSection(props: { view: NodeView; readOnly: boolean; onDone: (done
 }
 
 /** A title that becomes an input on double-click; Enter saves, Escape cancels. */
-export function EditableTitle(props: { value: string; readOnly: boolean; onSave: (value: string) => void }) {
+function EditableTitle(props: { value: string; readOnly: boolean; onSave: (value: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(props.value);
   const save = () => {

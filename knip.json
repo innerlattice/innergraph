@@ -9,11 +9,11 @@
     "web/src/**/*.{ts,tsx}",
     "scripts/**/*.ts",
     "experiments/**/*.ts",
-    "test/**/*.ts"
+    "test/**/*.ts",
+    "web/src/**/*.css"
   ],
   "ignoreDependencies": [
-    "@types/better-sqlite3",
-    "tailwindcss"
+    "@types/better-sqlite3"
   ],
   "ignoreExportsUsedInFile": false
 }
