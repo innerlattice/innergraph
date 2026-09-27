@@ -37,7 +37,7 @@ export function SelectionPanel(props: {
                   {humanise(item.type)} {item.kind}
                 </span>
               </span>
-              <StatusPill status={item.status} confirmed={item.confirmed} />
+              <StatusPill status={item.status} />
             </button>
           </li>
         ))}

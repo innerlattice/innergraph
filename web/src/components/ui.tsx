@@ -51,10 +51,9 @@ export function ErrorNote(props: { error?: string }) {
   return <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-800">{props.error}</p>;
 }
 
-/** Only what is worth saying: confirmed, or removed. Unconfirmed is the quiet default. */
-export function StatusPill(props: { status: string; confirmed?: boolean }) {
+/** Only the exception is worth saying: removed. Confirmed is the expected case and shows nothing. */
+export function StatusPill(props: { status: string }) {
   if (props.status === "removed") return <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-400 line-through">removed</span>;
-  if (props.confirmed) return <span className="rounded-full bg-sage-50 px-2 py-0.5 text-xs text-sage-700">confirmed</span>;
   return null;
 }
 

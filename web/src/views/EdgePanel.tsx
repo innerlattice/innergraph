@@ -48,7 +48,7 @@ export function EdgePanel(props: EdgePanelProps) {
             {toLabel}
           </button>
         </h3>
-        <StatusPill status={edge.status} confirmed={edge.confirmed} />
+        <StatusPill status={edge.status} />
       </header>
       {edge.status === "removed" ? <p className="text-sm text-stone-500">Removed. Restore puts it back as it was.</p> : null}
       {props.readOnly ? null : <ItemActions ids={[edge.id]} items={[edge]} onDone={done} />}

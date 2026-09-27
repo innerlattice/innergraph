@@ -199,7 +199,7 @@ export function NodePanel(props: NodePanelProps) {
       <header className="space-y-1">
         <p className="text-xs text-stone-400">{humanise(node.type)}, {pct(node.confidence)} sure, added by {actorLabel(node.assertedBy)}</p>
         <EditableTitle value={node.label} readOnly={readOnly} onSave={(label) => run(() => api.rename(node.id, label))} />
-        <StatusPill status={node.status} confirmed={node.confirmed} />
+        <StatusPill status={node.status} />
       </header>
       <ErrorNote error={error} />
       <StatusSection view={view.data} readOnly={readOnly} onDone={(done) => (view.reload(), onDone(done))} />

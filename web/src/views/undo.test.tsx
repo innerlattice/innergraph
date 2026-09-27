@@ -54,7 +54,7 @@ describe("edge panel", () => {
     edgeView.edge = { ...edgeView.edge, sign: -1, status: "active", confirmed: true };
     render(<EdgePanel id="e1" labels={{}} readOnly onDone={vi.fn()} onSelect={vi.fn()} navigate={vi.fn()} />);
     expect(await screen.findByText(/decreases/)).toBeTruthy();
-    expect(screen.getByText("confirmed")).toBeTruthy();
+    expect(screen.queryByText("confirmed")).toBeNull();
     expect(screen.queryByText("Remove")).toBeNull();
     edgeView.edge = { ...edgeView.edge, sign: undefined };
   });
