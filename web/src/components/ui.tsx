@@ -7,11 +7,14 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 //   danger:  not to be taken lightly
 type Tone = "primary" | "quiet" | "ghost" | "danger";
 
+// Every raised tone rests on the page and rises to meet the pointer.
+const RAISED = "shadow-raised enabled:hover:shadow-floating";
+
 const TONES: Record<Tone, string> = {
-  primary: "bg-clay-500 text-white enabled:hover:bg-clay-600",
-  quiet: "bg-white text-stone-700 shadow-raised enabled:hover:bg-clay-50 enabled:hover:shadow-floating",
+  primary: `bg-clay-500 text-white enabled:hover:bg-clay-600 ${RAISED}`,
+  quiet: `bg-white text-stone-700 enabled:hover:bg-clay-50 ${RAISED}`,
   ghost: "text-stone-600 enabled:hover:bg-stone-200",
-  danger: "bg-white text-rose-700 shadow-raised enabled:hover:bg-rose-50",
+  danger: `bg-white text-rose-700 enabled:hover:bg-rose-50 ${RAISED}`,
 };
 
 /** The classes of a Button, for links that act as one. */
