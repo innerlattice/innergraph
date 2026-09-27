@@ -97,7 +97,6 @@ export function GraphCanvas({ elements, selection, highlight = [], found = null,
   }, []);
 
   useKeys(cy);
-  useReveal(cy, selection, elements, container, cover);
 
   useEffect(() => {
     if (!cy) return;
@@ -107,6 +106,8 @@ export function GraphCanvas({ elements, selection, highlight = [], found = null,
     applySelection(cy, current.current);
     redrawing.current = false;
   }, [cy, elements]);
+  // After the redraw above, so a map opening on a selection has its items to show.
+  useReveal(cy, selection, elements, container, cover);
 
   useEffect(() => void (cy && tidied > 0 && tidy(cy, positions.current)), [cy, tidied]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-apply when the elements are rebuilt
