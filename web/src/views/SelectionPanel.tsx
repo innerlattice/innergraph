@@ -1,5 +1,5 @@
 import { type ViewStatus, api } from "../api";
-import { ItemLabel } from "../components/Chip";
+import { ItemChip } from "../components/ItemChip";
 import { Button, ErrorNote, StatusPill } from "../components/ui";
 import { humanise } from "../../../src/core/edgeText";
 import { useAsync } from "../lib/useAsync";
@@ -25,20 +25,12 @@ export function SelectionPanel(props: {
       <p className="text-xs text-stone-500">The assistant sees this selection: ask about “these”.</p>
       {items.length > 0 ? <ItemActions ids={props.ids} items={states} onDone={props.onDone} count /> : null}
       <ErrorNote error={selection.error} />
-      <ul className="space-y-1">
+      <ul className="space-y-1.5">
         {items.map((item) => (
-          <li key={item.id}>
-            <button type="button" onClick={() => props.onFocus(item.id)} className="flex w-full items-start justify-between gap-3 rounded-md px-2 py-1.5 text-left text-sm hover:bg-stone-100">
-              <span className="min-w-0">
-                <span className="block text-stone-800">
-                  <ItemLabel label={item.label} />
-                </span>
-                <span className="text-xs text-stone-400">
-                  {humanise(item.type)} {item.kind}
-                </span>
-              </span>
-              <StatusPill status={item.status} />
-            </button>
+          <li key={item.id} className="flex flex-wrap items-center gap-2">
+            <ItemChip id={item.id} label={item.label} onClick={() => props.onFocus(item.id)} />
+            <span className="text-xs text-stone-400">{humanise(item.type)}</span>
+            <StatusPill status={item.status} />
           </li>
         ))}
       </ul>

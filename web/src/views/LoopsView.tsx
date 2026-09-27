@@ -1,3 +1,5 @@
+import { ArrowRight } from "lucide-react";
+import { ItemChip } from "../components/ItemChip";
 import type { Navigate } from "../App";
 import { type LoopStepView, type LoopView, api } from "../api";
 import { Button, Card, Empty, ErrorNote, Page } from "../components/ui";
@@ -14,14 +16,16 @@ function Sign(props: { sign: 1 | -1 }) {
   );
 }
 
-function StepRow(props: { step: LoopStepView }) {
+function StepRow(props: { step: LoopStepView; onOpen: (focus: string) => void }) {
   const { step } = props;
   return (
     <li className="space-y-1">
-      <p className="text-sm text-stone-800">
-        {step.fromLabel} <span className="text-stone-400">—</span>
+      <p className="flex flex-wrap items-center gap-1.5 text-sm">
+        <ItemChip id={step.from} label={step.fromLabel} onClick={() => props.onOpen(step.from)} />
         <Sign sign={step.sign} />
-        <span className="text-stone-400">→</span> {step.toLabel} <span className="text-xs text-stone-400">({pct(step.confidence)} sure)</span>
+        <ArrowRight size={12} className="shrink-0 text-stone-400" aria-hidden />
+        <ItemChip id={step.to} label={step.toLabel} onClick={() => props.onOpen(step.to)} />
+        <span className="text-xs text-stone-400">{pct(step.confidence)} sure</span>
       </p>
       {step.quotes.map((q) => (
         <p key={q} className="border-l-2 border-stone-200 pl-3 font-serif text-sm text-stone-500">
@@ -32,14 +36,14 @@ function StepRow(props: { step: LoopStepView }) {
   );
 }
 
-function Steps(props: { title: string; steps: LoopStepView[] }) {
+function Steps(props: { title: string; steps: LoopStepView[]; onOpen: (focus: string) => void }) {
   if (props.steps.length === 0) return null;
   return (
     <section className="space-y-2">
       <h4 className="text-xs font-medium uppercase tracking-wide text-stone-400">{props.title}</h4>
       <ol className="space-y-3">
         {props.steps.map((s) => (
-          <StepRow key={s.edge} step={s} />
+          <StepRow key={s.edge} step={s} onOpen={props.onOpen} />
         ))}
       </ol>
     </section>
@@ -67,9 +71,9 @@ export function LoopCard(props: { loop: LoopView; onOpen: (focus: string) => voi
           <li key={line}>{line}</li>
         ))}
       </ul>
-      <Steps title="Steps" steps={loop.steps} />
-      <Steps title="Coming in from outside" steps={loop.inputs} />
-      <Steps title="What this loop drives" steps={loop.outputs} />
+      <Steps title="Steps" steps={loop.steps} onOpen={props.onOpen} />
+      <Steps title="Coming in from outside" steps={loop.inputs} onOpen={props.onOpen} />
+      <Steps title="What this loop drives" steps={loop.outputs} onOpen={props.onOpen} />
     </Card>
   );
 }
