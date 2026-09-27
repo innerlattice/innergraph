@@ -3,6 +3,7 @@ import { ArrowDown } from "lucide-react";
 import { type Schema, api } from "../api";
 import { edgeLook } from "../design/graph";
 import { EdgeGlyph } from "../components/GraphGlyph";
+import { linkWord } from "../components/ItemMarks";
 import { AddedBy, Eyebrow } from "../components/ItemMeta";
 import { TipBody } from "../components/Tooltip";
 import { ErrorNote, StatusPill } from "../components/ui";
@@ -30,15 +31,16 @@ export function EdgePanel(props: EdgePanelProps) {
   if (!view.data) return <ErrorNote error={view.error} />;
   const { edge, fromLabel, toLabel, evidence } = view.data;
   const look = edgeLook(props.schema, edge.type, edge.sign);
+  const relation = linkWord(props.schema ?? null, edge.type, edge.sign);
   const done = (d: Done) => (view.reload(), props.onDone(d));
   return (
     <div className="space-y-5 p-5">
       <header className="space-y-1">
         <Eyebrow
           mark={<EdgeGlyph look={look} />}
-          kind={look.label}
+          kind={relation}
           confidence={edge.confidence}
-          tip={<TipBody title={humanise(edge.type)} text={props.schema?.edgeTypes[edge.type]?.description ?? look.description} />}
+          tip={<TipBody title={humanise(relation)} text={edge.sign ? look.description : props.schema?.edgeTypes[edge.type]?.description} />}
         />
         <h3 className="flex flex-col items-start font-serif text-xl leading-snug text-stone-800">
           <button type="button" className="text-left hover:underline" onClick={() => props.onSelect(edge.from)}>

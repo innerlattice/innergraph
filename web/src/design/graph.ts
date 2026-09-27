@@ -81,7 +81,7 @@ export interface EdgeLook {
 }
 
 /** Each look differs in line and arrowhead as well as colour. */
-export const EDGE_LOOKS: EdgeLook[] = [
+const EDGE_LOOKS: EdgeLook[] = [
   { name: "plain", label: "Other link", description: "Any other kind of link. Its name says which.", color: COLOR.faint, width: 1.3, line: "solid", arrow: "triangle" },
   {
     name: "builds-on",

@@ -3,15 +3,24 @@
 import { type ReactNode, useRef, useState } from "react";
 import type { Schema } from "../api";
 import { humanise } from "../../../src/core/edgeText";
-import { EDGE_LOOKS, edgeLookOf, nodeLookOf } from "../design/graph";
+import { edgeLook, nodeLookOf } from "../design/graph";
+import { linkWord } from "./ItemMarks";
 import { EdgeGlyph, LABEL_FONT, NodeGlyph } from "./GraphGlyph";
 import { TipBody, Tooltip } from "./Tooltip";
 import { useDismiss } from "../lib/useDismiss";
 
-/** The edge looks this Schema can produce, in design-system order. */
-function looksIn(schema: Schema | null) {
-  const used = new Set(Object.values(schema?.edgeTypes ?? {}).flatMap((t) => [edgeLookOf(t.role ?? "plain", 1), edgeLookOf(t.role ?? "plain", -1)]));
-  return EDGE_LOOKS.filter((look) => used.has(look.name));
+/** One row per relation, as the map draws it; a relation that can go either way (a causal one)
+ *  has a row for each direction, named as chips name it ("increases", "decreases"). */
+function relationsIn(schema: Schema | null) {
+  return Object.entries(schema?.edgeTypes ?? {}).flatMap(([type, def]) => {
+    const signs = (def.role ?? "plain") === "causal" ? [1, -1] : [undefined];
+    return signs.map((sign) => {
+      const look = edgeLook(schema, type, sign);
+      const word = linkWord(schema, type, sign);
+      const text = sign ? look.description : def.description;
+      return { key: `${type}${sign ?? ""}`, look, word, tip: <TipBody title={sign ? `${humanise(word)} (${humanise(type)})` : humanise(type)} text={text} /> };
+    });
+  });
 }
 
 function Group(props: { title: string; children: ReactNode }) {
@@ -72,9 +81,9 @@ function KeyBody(props: { schema: Schema | null }) {
         </Group>
       ))}
       <Group title="Links">
-        {looksIn(props.schema).map((look) => (
-          <Row key={look.name} mark={<EdgeGlyph look={look} />} tip={<TipBody title={look.label} text={look.description} />}>
-            {look.label}
+        {relationsIn(props.schema).map(({ key, look, word, tip }) => (
+          <Row key={key} mark={<EdgeGlyph look={look} />} tip={tip}>
+            {word}
             {look.mark ? (
               <span className="ml-1 font-bold" style={{ color: look.color }}>
                 {look.mark}
