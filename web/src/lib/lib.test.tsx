@@ -110,6 +110,10 @@ describe("graph elements", () => {
     expect(n2?.data.shape).toBe("ellipse");
     expect(n2?.data.image).toMatch(/^data:image\/svg\+xml/);
     expect(n2?.data.imageW).toBeGreaterThan(n2?.data.w);
+    // Lit, the same gem wears a highlight ring along its own outline, with room for it.
+    expect(decodeURIComponent(n2?.data.litImage)).toContain('stroke-linejoin="round"');
+    expect(decodeURIComponent(n2?.data.image)).not.toContain('stroke-linejoin="round"');
+    expect(n2?.data.litW).toBeGreaterThanOrEqual(n2?.data.imageW);
     expect(labelStyleOf(null, "a")).toBe("name");
   });
 

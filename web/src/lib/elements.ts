@@ -20,8 +20,21 @@ function nodeElement(n: ViewNode, schema: Schema | null): ElementDefinition {
   const label = clip(n.label);
   const size = nodeSize(look, label);
   const image = nodeGem(look, size);
+  const lit = nodeGem(look, size, true);
   return {
-    data: { id: n.id, label, color: look.color, shape: look.shape, ...size, image: image.uri, imageW: image.width, imageH: image.height },
+    data: {
+      id: n.id,
+      label,
+      color: look.color,
+      shape: look.shape,
+      ...size,
+      image: image.uri,
+      imageW: image.width,
+      imageH: image.height,
+      litImage: lit.uri,
+      litW: lit.width,
+      litH: lit.height,
+    },
     classes: `${n.status} style-${look.style}`,
   };
 }

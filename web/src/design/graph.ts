@@ -59,8 +59,9 @@ export function nodeSize(look: NodeLook, label: string): { w: number; h: number 
   return { w: side, h: Math.round(side * aspectOf(look.shape)) };
 }
 
-export function nodeGem(look: NodeLook, size: { w: number; h: number }): Gem {
-  return gem({ shape: look.shape, color: look.color, ...size, glass: look.style === "statement" });
+/** A node's gem; `lit`, ringed in the highlight colour along its own outline. */
+export function nodeGem(look: NodeLook, size: { w: number; h: number }, lit = false): Gem {
+  return gem({ shape: look.shape, color: look.color, ...size, glass: look.style === "statement", ring: lit ? HIGHLIGHT : undefined });
 }
 
 // ---- Edges ----
@@ -170,7 +171,8 @@ const nodeRules: StylesheetJson = [
   { selector: "node:selected", style: { "underlay-color": COLOR.deep, "underlay-opacity": 0.16, "underlay-padding": 8, "underlay-shape": "ellipse" } },
   { selector: "node.style-statement:selected", style: { "underlay-shape": "round-rectangle" } },
   { selector: "node.dimmed", style: { opacity: 0.18 } },
-  { selector: "node.highlight, node.found", style: { "outline-width": 3, "outline-color": HIGHLIGHT, "outline-style": "solid", "outline-offset": 3, "outline-opacity": 1 } },
+  // Lit: the gem with a ring drawn along its own outline, so every shape lights true.
+  { selector: "node.highlight, node.found", style: { "background-image": "data(litImage)", "background-width": "data(litW)", "background-height": "data(litH)" } },
 ];
 
 /** Canvas edges can't be drawn double, so a double line is a paper-coloured line over a wider

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { type Point, cornersOf, inradius, inset } from "./shapes";
 
-const SHAPES = ["rhomboid", "round-rectangle", "barrel", "round-diamond", "round-hexagon", "round-octagon", "round-triangle", "round-tag", "ellipse"];
+const SHAPES = ["rhomboid", "round-rectangle", "barrel", "round-diamond", "round-hexagon", "round-octagon", "round-triangle", "round-tag", "round-pentagon", "ellipse"];
 
 /** Distance from p to the line through a and b. */
 const toLine = (p: Point, a: Point, b: Point) => Math.abs((b[0] - a[0]) * (a[1] - p[1]) - (a[0] - p[0]) * (b[1] - a[1])) / Math.hypot(b[0] - a[0], b[1] - a[1]);

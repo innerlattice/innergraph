@@ -12,6 +12,8 @@ export interface GemSpec {
   h: number;
   /** Pale, see-through body for nodes that hold text. */
   glass?: boolean;
+  /** A ring in this colour just outside the stone, following its outline: how the map lights a node. */
+  ring?: string;
 }
 
 export interface Gem {
@@ -33,6 +35,11 @@ const LIGHT: Point = [Math.sin((LIGHT_ANGLE * Math.PI) / 180), -Math.cos((LIGHT_
 const GLASS_BEVEL = 4;
 /** How much of a small stone's depth, centre to nearest edge, is crown: the rest is table. */
 const CROWN = 0.5;
+/** A ring's gap from the stone and its thickness. */
+const RING_GAP = 2.5;
+const RING_WIDTH = 2;
+/** Room a ring needs beyond the stone: a sharp corner pushes its offset out to twice the gap. */
+const RING_ROOM = 2 * RING_GAP + RING_WIDTH;
 
 function mix(hex: string, toward: string, amount: number): string {
   const parse = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
@@ -118,6 +125,7 @@ function gemBody(spec: GemSpec, blur: number, drop: number): string {
     `<path d="${polygonPath(table)}" fill="url(#t)" stroke="#fff" stroke-opacity=".5" stroke-width="${hair}"/>`,
     "</g>",
     `<path d="${outline}" fill="none" stroke="${edge}" stroke-opacity="${spec.glass ? 0.35 : 0.5}" stroke-width="${hair}"/>`,
+    spec.ring ? `<path d="${polygonPath(inset(outer, -RING_GAP))}" fill="none" stroke="${spec.ring}" stroke-width="${RING_WIDTH}" stroke-linejoin="round"/>` : "",
   ].join("");
 }
 
@@ -125,13 +133,13 @@ const cache = new Map<string, Gem>();
 
 /** The gem for a node of this shape, colour and size. Cached: most nodes share a few looks. */
 export function gem(spec: GemSpec): Gem {
-  const key = `${spec.shape}|${spec.color}|${spec.w}|${spec.h}|${spec.glass ? 1 : 0}`;
+  const key = `${spec.shape}|${spec.color}|${spec.w}|${spec.h}|${spec.glass ? 1 : 0}|${spec.ring ?? ""}`;
   const hit = cache.get(key);
   if (hit) return hit;
   const size = Math.min(spec.w, spec.h);
   const blur = Math.max(1.2, size * 0.06);
   const drop = Math.max(1.5, size * 0.08);
-  const margin = Math.ceil(drop + blur * 3);
+  const margin = Math.ceil(Math.max(drop + blur * 3, spec.ring ? RING_ROOM : 0));
   const width = spec.w + 2 * margin;
   const height = spec.h + 2 * margin;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * DENSITY}" height="${height * DENSITY}" viewBox="${-width / 2} ${-height / 2} ${width} ${height}">${gemBody(spec, blur, drop)}</svg>`;

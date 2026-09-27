@@ -32,7 +32,7 @@ nodeTypes:
       belief or expectation, and link them to it. The writer's own inner sides are part.
     label: name
     labelHint: how the writer refers to them, e.g. "Dad", "My manager"
-    display: { shape: ellipse, color: "#5b6b7a", group: Who }
+    display: { shape: round-pentagon, color: "#5b6b7a", group: Who }
     attributes:
       kind: { type: enum, values: [person, group, organisation] }
   core_memory:

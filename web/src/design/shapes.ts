@@ -28,6 +28,7 @@ const UNIT: Record<string, Point[]> = {
   "round-hexagon": ngon(6),
   "round-octagon": ngon(8),
   "round-triangle": ngon(3),
+  "round-pentagon": ngon(5),
   "round-tag": [
     [-1, -1],
     [0.3, -1],
@@ -38,7 +39,7 @@ const UNIT: Record<string, Point[]> = {
 };
 
 /** Height over width that keeps a shape regular: a hexagon or triangle squeezed into a square looks tall. */
-const ASPECT: Record<string, number> = { "round-hexagon": Math.sqrt(3) / 2, "round-triangle": Math.sqrt(3) / 2 };
+const ASPECT: Record<string, number> = { "round-hexagon": Math.sqrt(3) / 2, "round-triangle": Math.sqrt(3) / 2, "round-pentagon": 0.95 };
 
 export function aspectOf(shape: string): number {
   return ASPECT[shape] ?? 1;
