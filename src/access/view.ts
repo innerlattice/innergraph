@@ -30,6 +30,8 @@ export interface GraphView {
   /** How many items have each status, whatever the filter. */
   counts: Record<ViewStatus, number>;
   position: string;
+  /** Nodes merged or split away, each with the nodes made from it, so old references can follow. */
+  replaced: Record<string, string[]>;
 }
 
 // ---- evidence ------------------------------------------------------------------------
@@ -56,6 +58,15 @@ export function normaliseEvidence(evidence: Evidence[], state: ProjectionState):
 
 function replacedIds(state: ProjectionState): Set<string> {
   return new Set(Object.values(state.graph.nodes).flatMap((n) => n.derivedFrom));
+}
+
+/** Each replaced node's successors: the nodes merged or split from it. */
+function replacements(state: ProjectionState): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const node of Object.values(state.graph.nodes)) {
+    for (const source of node.derivedFrom) out[source] = [...(out[source] ?? []), node.id];
+  }
+  return out;
 }
 
 function withMeta<T extends GraphNode | GraphEdge>(item: T, state: ProjectionState): Omit<T, "status"> & ViewMeta {
@@ -89,5 +100,5 @@ export function materialize(state: ProjectionState, include: readonly ViewStatus
   for (const i of chosen) if (!isEdge(i)) nodes[i.id] = i;
   const edges: Record<string, ViewEdge> = {};
   for (const i of chosen) if (isEdge(i) && nodes[i.from] && nodes[i.to]) edges[i.id] = i;
-  return { nodes, edges, counts, position: state.position };
+  return { nodes, edges, counts, position: state.position, replaced: replacements(state) };
 }

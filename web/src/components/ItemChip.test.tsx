@@ -10,6 +10,7 @@ afterEach(cleanup);
 const view = {
   nodes: { a: { id: "a", type: "part", label: "The Hider" }, b: { id: "b", type: "behavior", label: "Go quiet" } },
   edges: { e: { id: "e", type: "enacts", from: "a", to: "b" } },
+  replaced: { old: ["a"] },
 } as unknown as GraphView;
 
 it("names items as the live map does, whatever label it was given", () => {
@@ -19,6 +20,7 @@ it("names items as the live map does, whatever label it was given", () => {
       <ItemChip id="a" label="Old name" onClick={onClick} />
       <ItemChip id="e" />
       <ItemChip id="gone" label="Forgotten" />
+      <ItemChip id="old" label="Doomscrolling" />
     </ItemsProvider>,
   );
   const node = screen.getByTitle("The Hider");
@@ -28,6 +30,7 @@ it("names items as the live map does, whatever label it was given", () => {
   expect(node.querySelector("img")).toBeTruthy();
   expect(screen.getByTitle("The Hider enacts Go quiet").textContent).toBe("The HiderenactsGo quiet");
   expect(screen.getByText("Forgotten")).toBeTruthy();
+  expect(screen.getByTitle("Doomscrolling, now The Hider").textContent).toBe("The Hider");
 });
 
 const schema = {

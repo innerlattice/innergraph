@@ -2,6 +2,7 @@
 // Edge as "from  link  to". Names come from the live map, so a rename shows everywhere at once;
 // `label` is only the fallback for items the map no longer has.
 import { useItems } from "../lib/items";
+import { successorsOf } from "../lib/successors";
 import { Chip, type ChipProps, EdgeLabel, ItemLabel } from "./Chip";
 import { TypeMark, linkWord } from "./ItemMarks";
 
@@ -21,6 +22,11 @@ function useItemFace(id: string, label: string | undefined) {
       text: `${name(edge.from)} ${linkWord(schema, edge.type, edge.sign)} ${name(edge.to)}`,
       body: <EdgeLabel from={name(edge.from)} type={edge.type} sign={edge.sign} to={name(edge.to)} />,
     };
+  const now = view ? successorsOf(view, id).map((n) => view.nodes[n]?.label) : [];
+  if (now.length > 0) {
+    const text = `${label ?? id}, now ${now.join(" and ")}`;
+    return { text, body: <ItemLabel label={now.join(", ")} /> };
+  }
   return { text: label ?? id, body: <ItemLabel label={label ?? id} /> };
 }
 

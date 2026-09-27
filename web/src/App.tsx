@@ -1,9 +1,9 @@
 // The app shell: conversations on the left (hover to open), the conversation in the middle,
 // and one view beside it (map, loops, entries, log) chosen from the right rail. The map
 // selection lives here so the chat can say "these" and a highlight can show its item.
-import { type CSSProperties, type ReactElement, useCallback, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ActivityRequest } from "../../src/core/activities";
-import { type Selection, api } from "./api";
+import { type GraphView, type Selection, api } from "./api";
 import { ChatRail } from "./chat/ChatRail";
 import { ChatView } from "./chat/ChatView";
 import { SettingsDialog } from "./chat/SettingsDialog";
@@ -12,6 +12,7 @@ import { type PaneName, ViewRail } from "./components/ViewRail";
 import { labelsFrom } from "./lib/format";
 import { ExploreContext } from "./lib/explore";
 import { ItemsProvider } from "./lib/items";
+import { currentIds } from "./lib/successors";
 import { useAsync } from "./lib/useAsync";
 import { useLive } from "./lib/useLive";
 import { EntriesView } from "./views/EntriesView";
@@ -27,13 +28,17 @@ const EMPTY: Selection = { ids: [], at: "", items: [] };
 
 const newChatId = () => globalThis.crypto.randomUUID();
 
-/** The shared map selection: set locally at once, then as the server resolves it. */
-function useSelection() {
+/** The shared map selection: set locally at once, then as the server resolves it. Items merged
+ *  or split away are selected as what they became. */
+function useSelection(view: GraphView | undefined) {
   const [selection, setSelection] = useState<Selection>(EMPTY);
+  const shown = useRef(view);
+  shown.current = view;
   useEffect(() => {
     api.selection().then(setSelection, () => undefined);
   }, []);
-  const select = useCallback((ids: string[]) => {
+  const select = useCallback((picked: string[]) => {
+    const ids = currentIds(shown.current, picked);
     setSelection((s) => ({ ...s, ids, items: s.items.filter((i) => ids.includes(i.id)) }));
     api.setSelection(ids).then(setSelection, () => undefined);
   }, []);
@@ -103,8 +108,8 @@ export function App() {
   const [focus, setFocus] = useState<string>();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settings = useAsync(api.chatSettings);
-  const { selection, select } = useSelection();
   const { items, labels } = useMapItems();
+  const { selection, select } = useSelection(items.view);
   const chats = useChats();
   const width = usePaneWidth();
   const { chatOpen, toggleChat, togglePane, openChat, newChat } = useSides(pane, setPane, chats);

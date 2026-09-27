@@ -43,6 +43,7 @@ describe("materialized view", () => {
       retired: ["removed", false],
       ab: ["active", true],
     });
+    expect(view.replaced).toEqual({ a: ["ab"], b: ["ab"] });
     expect(view.counts).toEqual({ active: 3 + 2, removed: 1 });
   });
 
