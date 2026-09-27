@@ -11,12 +11,12 @@ export interface StatusBarProps {
 export function StatusBar(props: StatusBarProps) {
   const removed = props.counts?.removed ?? 0;
   return (
-    <div className="flex flex-wrap items-center gap-4 bg-stone-50 px-5 shadow-rest py-1.5 text-sm">
+    <div className="flex flex-wrap items-center gap-4 bg-stone-50 px-5 shadow-raised py-1.5 text-sm">
       <button
         type="button"
         aria-pressed={props.changesOpen}
         onClick={props.onChanges}
-        className={`rounded-full px-3 py-0.5 ${props.changesOpen ? "bg-white text-stone-800 shadow-rest" : "text-stone-600 hover:bg-white"}`}
+        className={`rounded-full px-3 py-0.5 ${props.changesOpen ? "bg-white text-stone-800 shadow-raised" : "text-stone-600 hover:bg-white"}`}
       >
         What changed
         {props.duplicates > 0 ? <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 text-xs text-amber-800">{props.duplicates} duplicate{props.duplicates === 1 ? "" : "s"}</span> : null}

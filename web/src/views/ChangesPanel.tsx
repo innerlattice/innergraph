@@ -43,7 +43,7 @@ function SessionCard(props: { change: SessionChanges; onFocus: (ids: string[]) =
   const undo = () => api.undoSession(change.session).then(props.onUndone).catch((e: Error) => setError(e.message));
   const focusable = change.rows.filter((r) => r.kind !== "entry");
   return (
-    <li className="space-y-2 rounded-xl bg-white p-3 shadow-rest">
+    <li className="space-y-2 rounded-xl bg-white p-3 shadow-raised">
       <header className="flex items-start justify-between gap-3">
         <button type="button" className="text-left" onClick={() => props.onFocus(focusable.map((r) => r.id))} disabled={focusable.length === 0}>
           <span className="block text-sm font-medium text-stone-800">{PURPOSE[change.purpose] ?? change.purpose}</span>

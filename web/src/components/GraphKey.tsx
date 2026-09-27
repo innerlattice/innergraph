@@ -79,7 +79,7 @@ function KeyBody(props: { schema: Schema | null }) {
 export function GraphKey(props: { schema: Schema | null }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className={`absolute bottom-3 left-3 z-10 ${open ? "w-64" : ""} max-w-[calc(100%-1.5rem)] rounded-xl bg-white/90 text-xs text-stone-600 shadow-float backdrop-blur`}>
+    <div className={`absolute bottom-3 left-3 z-10 ${open ? "w-64" : ""} max-w-[calc(100%-1.5rem)] rounded-xl bg-white/90 text-xs text-stone-600 shadow-floating backdrop-blur`}>
       <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="w-full rounded-xl px-3 py-2 text-left font-medium hover:text-stone-900">
         {open ? "Hide key" : "Key"}
       </button>

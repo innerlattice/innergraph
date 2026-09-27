@@ -9,9 +9,9 @@ type Tone = "primary" | "quiet" | "ghost" | "danger";
 
 const TONES: Record<Tone, string> = {
   primary: "bg-clay-500 text-white enabled:hover:bg-clay-600",
-  quiet: "bg-white text-stone-700 shadow-rest enabled:hover:bg-clay-50 enabled:hover:shadow-float",
+  quiet: "bg-white text-stone-700 shadow-raised enabled:hover:bg-clay-50 enabled:hover:shadow-floating",
   ghost: "text-stone-600 enabled:hover:bg-stone-200",
-  danger: "bg-white text-rose-700 shadow-rest enabled:hover:bg-rose-50",
+  danger: "bg-white text-rose-700 shadow-raised enabled:hover:bg-rose-50",
 };
 
 /** The classes of a Button, for links that act as one. */
@@ -39,7 +39,7 @@ export function Page(props: { title: string; subtitle?: string; children: ReactN
 }
 
 export function Card(props: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-xl bg-white p-5 shadow-rest ${props.className ?? ""}`}>{props.children}</section>;
+  return <section className={`rounded-xl bg-white p-5 shadow-raised ${props.className ?? ""}`}>{props.children}</section>;
 }
 
 export function Empty(props: { children: ReactNode }) {

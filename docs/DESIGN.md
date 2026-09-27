@@ -38,11 +38,17 @@ surface tone before reaching for a line.
 Borders are still right for a few things: text inputs, which need a visible edge to invite typing,
 and dashed outlines that mean "empty" or "drop here".
 
-Shadow scale (Tailwind tokens in `index.css`):
+Elevation has five levels (shadow tokens in `index.css`):
 
-- `shadow-rest`: cards and chips lying on the page
-- `shadow-float`: popovers, the graph key, floating panels
-- `shadow-lift`: something being dragged or hovered to act on
+- `shadow-inset`: pressed into the page, for secondary detail that should recede, like the
+  record of what the assistant changed in a chat
+- surface: no shadow; the page itself and regions set apart by tone
+- `shadow-raised`: cards, chips and buttons lying on the page
+- `shadow-floating`: popovers, the graph key, floating panels, a button under the pointer
+- `shadow-lifted`: something being dragged, or a dialog above everything
+
+Choose the level by how much something should draw the eye, not by what it is. In a
+conversation about someone's life, the words come first; the machinery sits lower.
 
 ## The graph looks like gems
 

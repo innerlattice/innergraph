@@ -52,7 +52,7 @@ function ChatRow(props: { chat: ChatListItem; active: boolean } & Pick<ChatRailP
     );
   }
   return (
-    <div className={`group/row flex items-center rounded-lg transition ${props.active ? "bg-white shadow-sm" : "hover:bg-stone-200/60"}`}>
+    <div className={`group/row flex items-center rounded-lg transition ${props.active ? "bg-white shadow-raised" : "hover:bg-stone-200/60"}`}>
       <button type="button" onClick={() => props.onOpen(chat.id)} onDoubleClick={() => setEditing(true)} title="Double-click to rename" className="min-w-0 flex-1 px-2.5 py-1.5 text-left">
         <span className="block truncate text-sm text-stone-700">{chat.title}</span>
         <span className="block text-[11px] text-stone-400">
@@ -85,7 +85,7 @@ export function ChatRail(props: ChatRailProps) {
           aria-label="Chat"
           title={props.chatOpen ? "Hide the chat" : "Show the chat"}
           onClick={props.onToggleChat}
-          className={`flex h-9 w-full items-center gap-3 rounded-xl px-2.5 text-sm transition ${props.chatOpen ? "bg-white text-clay-600 shadow-sm" : "text-stone-500 hover:bg-stone-200/70 hover:text-stone-900"}`}
+          className={`flex h-9 w-full items-center gap-3 rounded-xl px-2.5 text-sm transition ${props.chatOpen ? "bg-white text-clay-600 shadow-raised" : "text-stone-500 hover:bg-stone-200/70 hover:text-stone-900"}`}
         >
           <MessageCircle size={18} className="shrink-0" />
           <span className="truncate opacity-0 transition-opacity group-hover/rail:opacity-100 group-has-[:focus-visible]/rail:opacity-100">Chat</span>

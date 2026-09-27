@@ -28,7 +28,7 @@ export function ViewRail(props: { active?: PaneName; onToggle: (view: PaneName) 
               title={v.hint}
               aria-pressed={on}
               onClick={() => props.onToggle(v.view)}
-              className={`flex h-9 items-center gap-3 rounded-xl px-2.5 text-sm transition ${on ? "bg-white text-clay-600 shadow-sm" : "text-stone-500 hover:bg-stone-200/70 hover:text-stone-900"}`}
+              className={`flex h-9 items-center gap-3 rounded-xl px-2.5 text-sm transition ${on ? "bg-white text-clay-600 shadow-raised" : "text-stone-500 hover:bg-stone-200/70 hover:text-stone-900"}`}
             >
               <span className="shrink-0">{v.icon}</span>
               <span className="whitespace-nowrap opacity-0 transition-opacity group-hover/views:opacity-100 group-has-[:focus-visible]/views:opacity-100">{v.label}</span>

@@ -62,7 +62,7 @@ export function MiniMap(props: { cy: Core }) {
       aria-label="Minimap: click or drag to move the view"
       width={WIDTH}
       height={HEIGHT}
-      className="absolute right-3 bottom-3 cursor-pointer rounded-xl bg-white/90 shadow-float"
+      className="absolute right-3 bottom-3 cursor-pointer rounded-xl bg-white/90 shadow-floating"
       onPointerDown={(e) => (e.currentTarget.setPointerCapture?.(e.pointerId), moveTo(e))}
       onPointerMove={(e) => e.buttons === 1 && moveTo(e)}
     >

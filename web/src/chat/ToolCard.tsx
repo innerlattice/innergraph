@@ -70,7 +70,7 @@ export function ToolCard(props: ToolCardProps) {
     info.title
   );
   return (
-    <div className="my-2 animate-rise rounded-xl bg-white/80 px-3.5 py-2.5 shadow-rest">
+    <div className="my-2 animate-rise rounded-xl bg-white/80 px-3.5 py-2.5 shadow-raised">
       <div className="flex items-center gap-2 text-sm text-stone-700">
         <CardIcon phase={info.phase} undone={undone} />
         <span className={`min-w-0 flex-1 ${undone ? "text-stone-400 line-through" : ""}`}>{title}</span>

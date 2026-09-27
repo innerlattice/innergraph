@@ -47,7 +47,7 @@ export function BudgetNotice(props: { level: BudgetLevel; share: number }) {
 
 export function FullNotice(props: { onNewChat: () => void }) {
   return (
-    <div className="rounded-2xl bg-white/80 px-5 py-4 text-center shadow-rest">
+    <div className="rounded-2xl bg-white/80 px-5 py-4 text-center shadow-raised">
       <p className="font-serif text-stone-700">This conversation is full.</p>
       <p className="mt-1 text-sm text-stone-500">Everything it added to your map stays. Start a new one to keep going.</p>
       <Button tone="primary" onClick={props.onNewChat} className="mt-3">
@@ -107,7 +107,7 @@ export function Composer(props: ComposerProps) {
   };
   return (
     <div>
-      <div className="flex items-end gap-2 rounded-3xl bg-white px-4 py-3 shadow-float transition focus-within:shadow-lift">
+      <div className="flex items-end gap-2 rounded-3xl bg-white px-4 py-3 shadow-floating transition focus-within:shadow-lifted">
         <textarea
           ref={box}
           rows={1}

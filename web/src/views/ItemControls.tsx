@@ -63,7 +63,7 @@ export function UndoBar(props: { done?: Done; onUndo: () => void; onClose: () =>
   if (!props.done || props.done.kind !== "remove") return null;
   const count = props.done.ids.length;
   return (
-    <div role="status" className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-full bg-stone-800 px-5 py-2 text-sm text-stone-50 shadow-lg">
+    <div role="status" className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-full bg-stone-800 px-5 py-2 text-sm text-stone-50 shadow-floating">
       <span>
         Removed {count} item{count === 1 ? "" : "s"}.
       </span>
