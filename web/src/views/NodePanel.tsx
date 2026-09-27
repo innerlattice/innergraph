@@ -141,31 +141,6 @@ function EditableTitle(props: { value: string; readOnly: boolean; onSave: (value
   );
 }
 
-function RefactorTools(props: { view: NodeView; labels: Record<string, string>; run: Run }) {
-  const { view, labels, run } = props;
-  const [parts, setParts] = useState("");
-  const [mergeWith, setMergeWith] = useState("");
-  const others = Object.entries(labels).filter(([id]) => id !== view.node.id);
-  const splitLabels = parts.split(",").map((p) => p.trim()).filter(Boolean);
-  return (
-    <div className="space-y-2 text-sm">
-      <div className="flex gap-2">
-        <input aria-label="Split into" className="min-w-0 flex-1 rounded-md border border-stone-200 px-2" placeholder="Split into: label A, label B" value={parts} onChange={(e) => setParts(e.target.value)} />
-        <Button disabled={splitLabels.length < 2} onClick={() => run(() => api.split(view.node.id, splitLabels))}>Split</Button>
-      </div>
-      <div className="flex gap-2">
-        <select aria-label="Merge with" className="min-w-0 flex-1 rounded-md border border-stone-200 px-2" value={mergeWith} onChange={(e) => setMergeWith(e.target.value)}>
-          <option value="">Merge with…</option>
-          {others.map(([id, label]) => (
-            <option key={id} value={id}>{label}</option>
-          ))}
-        </select>
-        <Button disabled={!mergeWith} onClick={() => run(() => api.merge([view.node.id, mergeWith], view.node.label))}>Merge</Button>
-      </div>
-    </div>
-  );
-}
-
 function RootsList(props: { trace?: RootTrace; labels: Record<string, string> }) {
   if (!props.trace) return null;
   if (props.trace.roots.length === 0) return <p className="text-sm text-stone-500">No upstream roots: this node is itself a root.</p>;
@@ -227,11 +202,6 @@ export function NodePanel(props: NodePanelProps) {
         <RootsList trace={trace} labels={labels} />
         {related ? <Related items={related} /> : null}
       </Section>
-      {readOnly ? null : (
-        <Section title="Refactor">
-          <RefactorTools view={view.data} labels={labels} run={run} />
-        </Section>
-      )}
     </div>
   );
 }

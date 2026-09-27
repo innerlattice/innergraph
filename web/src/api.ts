@@ -73,7 +73,6 @@ export const api = {
   changes: (limit = 30) => request<SessionChanges[]>(`/changes?limit=${limit}`),
   addEntry: (input: { content: string; title?: string; format?: string }) => request<IngestResult>("/entries", input),
   rename: (id: string, label: string) => request<ChangeResult>(`/items/${enc(id)}/attributes`, { label }),
-  split: (id: string, labels: string[]) => request<ChangeResult>(`/nodes/${enc(id)}/split`, { parts: labels.map((label) => ({ label })) }),
   revise: (id: string, content: string, interpret: boolean) => request<RevisionResult>(`/entries/${enc(id)}/revise`, { content, interpret }),
   remove: (ids: string[]) => request<ChangeResult>("/remove", { ids }),
   confirm: (ids: string[]) => request<ChangeResult>("/confirm", { ids }),
@@ -89,5 +88,4 @@ export const api = {
   chatgptStatus: () => request<LinkStatus>("/chat/chatgpt"),
   connectChatgpt: () => request<LinkStatus>("/chat/chatgpt", {}),
   disconnectChatgpt: () => request<LinkStatus>("/chat/chatgpt", {}, fetch, "DELETE"),
-  merge: (sources: string[], label: string) => request<ChangeResult>("/merge", { sources, into: { label } }),
 };

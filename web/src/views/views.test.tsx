@@ -233,12 +233,8 @@ describe("NodePanel", () => {
     fireEvent.doubleClick(screen.getByText("Needing is unsafe", { selector: "h3" }));
     fireEvent.change(screen.getByLabelText("Rename"), { target: { value: "Renamed" } });
     fireEvent.keyDown(screen.getByLabelText("Rename"), { key: "Enter" });
-    fireEvent.change(screen.getByLabelText("Split into"), { target: { value: "A, B" } });
-    fireEvent.click(screen.getByText("Split"));
-    fireEvent.change(screen.getByLabelText("Merge with"), { target: { value: "n2" } });
-    fireEvent.click(screen.getByText("Merge"));
     fireEvent.click(screen.getByText(/needing things is unsafe/));
-    await waitFor(() => expect(sent(calls).map((p) => p.url)).toEqual(["/api/confirm", "/api/items/n1/attributes", "/api/nodes/n1/split", "/api/merge"]));
+    await waitFor(() => expect(sent(calls).map((p) => p.url)).toEqual(["/api/confirm", "/api/items/n1/attributes"]));
     expect(props.onHighlight).toHaveBeenCalledWith(["n2", "n1"]);
     expect(props.navigate).toHaveBeenCalledWith("entries", "h@15-39");
     expect(screen.getByRole("button", { name: "Open “Tuesday” at this passage" })).toBeTruthy();
