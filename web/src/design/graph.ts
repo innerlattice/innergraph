@@ -200,7 +200,7 @@ const edgeRules: StylesheetJson = [
 
 // Pressing on the map or an item shows nothing of its own: selection is what answers a click.
 const pressRules: StylesheetJson = [
-  { selector: "core", style: { "active-bg-opacity": 0 } },
+  { selector: "core", style: { "active-bg-opacity": 0 } as never },
   { selector: "node:active, edge:active", style: { "overlay-opacity": 0 } },
 ];
 
