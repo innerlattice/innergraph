@@ -1,7 +1,6 @@
 import { type ViewStatus, api } from "../api";
 import { ItemChip } from "../components/ItemChip";
 import { Button, ErrorNote, StatusPill } from "../components/ui";
-import { humanise } from "../../../src/core/edgeText";
 import { useAsync } from "../lib/useAsync";
 import { type Done, ItemActions } from "./ItemControls";
 
@@ -23,7 +22,6 @@ export function SelectionPanel(props: { ids: string[]; version?: string; onClear
         {items.map((item) => (
           <li key={item.id} className="flex flex-wrap items-center gap-2">
             <ItemChip id={item.id} label={item.label} onClick={() => props.onFocus(item.id)} />
-            <span className="text-xs text-stone-400">{humanise(item.type)}</span>
             <StatusPill status={item.status} />
           </li>
         ))}
