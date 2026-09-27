@@ -191,7 +191,7 @@ export class MapManager {
     const state = this.deps.vault.state();
     const position = events[index - 1]?.hlc ?? "";
     const before = this.deps.vault.stateAt(position);
-    const only = withAttachedEdges(new Set(targetsOf(event, state)), [before.graph, state.graph]);
+    const only = withAttachedEdges(new Set(targetsOf(event)), [before.graph, state.graph]);
     const plan = planRevert(before, state, event.hlc, only);
     return this.applyPlan(plan, actor, "undo");
   }
@@ -203,7 +203,7 @@ export class MapManager {
     requireFound(events[first], `Session ${session}`);
     const state = this.deps.vault.state();
     const before = this.deps.vault.stateAt(events[first - 1]?.hlc ?? "");
-    const touched = events.filter((e) => e.session === session && GRAPH_EVENT_TYPES.includes(e.type)).flatMap((e) => targetsOf(e, state));
+    const touched = events.filter((e) => e.session === session && GRAPH_EVENT_TYPES.includes(e.type)).flatMap((e) => targetsOf(e));
     const only = withAttachedEdges(new Set(touched), [before.graph, state.graph]);
     return this.applyPlan(planRevert(before, state, events[first].hlc, only), actor, "undo");
   }

@@ -1,7 +1,6 @@
 // Compensating Events that return items to an earlier state (git-revert style: nothing is
 // removed from the Log, so a revert can itself be reverted). Helpers for MapManager.
-import { patchAttributes } from "../access/projection.js";
-import type { ActorId, AnyDraft, AnyEvent, Attributes, EventBodies, EventType, Graph, GraphEdge, GraphNode, ProjectionState, VaultEvent } from "../core/types.js";
+import type { ActorId, AnyDraft, AnyEvent, Attributes, EventBodies, EventType, Graph, GraphEdge, GraphNode, ProjectionState } from "../core/types.js";
 import { newId } from "../utilities/crypto.js";
 
 type Item = GraphNode | GraphEdge;
@@ -72,7 +71,7 @@ export function planRevert(before: ProjectionState, now: ProjectionState, positi
 }
 
 /** Ids an Event touched, so it can be undone on its own. */
-export function targetsOf(event: AnyEvent, state: ProjectionState): string[] {
+export function targetsOf(event: AnyEvent): string[] {
   const b = event.body as { target?: string; id?: string; source?: string; sources?: string[]; into?: { id: string } | { id: string }[] };
   const into = Array.isArray(b.into) ? b.into.map((p) => p.id) : b.into ? [b.into.id] : [];
   return [b.target, b.id, b.source, ...(b.sources ?? []), ...into].filter((x): x is string => Boolean(x));

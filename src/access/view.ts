@@ -1,7 +1,7 @@
 // The materialized View: one read model every Client renders from. Each Node and Edge gets
 // exactly one user-facing status, evidence is normalised once, and a status filter decides
 // what is materialized ("Show declined" widens the filter; nothing else special-cases it).
-import type { AnyEvent, Evidence, GraphEdge, GraphNode, ProjectionState, VaultEvent } from "../core/types.js";
+import type { Evidence, GraphEdge, GraphNode, ProjectionState } from "../core/types.js";
 
 /**
  * - active: on the map (`confirmed` when the person has said it is right)

@@ -1,18 +1,18 @@
 // Typed client for the local HTTP API. Types come straight from the core.
-import type { Loop, RootTrace } from "../../src/engines/analysisEngine";
+import type { RootTrace } from "../../src/engines/analysisEngine";
 import type { EdgeView, EntryView, EvidenceHit, LoopStepView, LoopView, NodeView, Selection } from "../../src/managers/exploreManager";
 import type { GraphView, ViewEdge, ViewNode, ViewStatus } from "../../src/access/view";
 import type { ChangeResult, GraphAt, UndoResult } from "../../src/managers/mapManager";
-import type { ChangeAction, ChangeRow, SessionChanges } from "../../src/managers/changeFeed";
+import type { ChangeAction, SessionChanges } from "../../src/managers/changeFeed";
 import type { DuplicateGroup } from "../../src/managers/resolve";
 import type { IngestResult, RevisionResult } from "../../src/managers/ingestManager";
 import type { RelatedItem } from "../../src/managers/recallCorpus";
-import type { AnyEvent, EntryRecord, Graph, GraphEdge, GraphNode, Schema, Status } from "../../src/core/types";
+import type { AnyEvent, EntryRecord, Graph, Schema } from "../../src/core/types";
 import type { Job } from "../../src/utilities/jobQueue";
 import type { ChatSummary } from "../../src/access/chatAccess";
-import type { AmendResult, ProposeResult, WrittenItem } from "../../src/managers/ingestManager";
+import type { ProposeResult } from "../../src/managers/ingestManager";
 import type { BudgetLevel, ChatBudget, ChatProvider, ChatSettings, PublicChatSettings } from "../../src/managers/chatManager";
-import type { ChatMessage, ChatMetadata } from "../../src/clients/chat";
+import type { ChatMessage } from "../../src/clients/chat";
 import type { SelectionItem } from "../../src/managers/exploreManager";
 import type { LinkStatus } from "../../src/managers/chatgptLink";
 

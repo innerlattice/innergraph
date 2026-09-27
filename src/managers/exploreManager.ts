@@ -2,7 +2,7 @@
 import { edgeText } from "../core/edgeText.js";
 import { rolesOf } from "../access/schemaAccess.js";
 import type { VaultAccess } from "../access/vaultAccess.js";
-import type { AnyEvent, EntryRecord, Evidence, Graph, GraphEdge, GraphNode, ProjectionState, Schema } from "../core/types.js";
+import type { AnyEvent, EntryRecord, Evidence, Graph, GraphNode, ProjectionState, Schema } from "../core/types.js";
 import { type AnalysisEngine, type Loop, type LoopDetail, type LoopStep, type RootTrace, activeGraph } from "../engines/analysisEngine.js";
 import type { RecallEngine, Reranker, SearchHit } from "../engines/recallEngine.js";
 import { toPosition } from "../utilities/hlc.js";

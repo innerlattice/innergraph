@@ -259,7 +259,7 @@ function numbered(items: string[]): string {
 export function normaliseAssignment(parts: number, raw: unknown, counts: { evidence: number; edges: number }): SplitAssignment[] {
   const parsed = splitOutput.safeParse(raw);
   const proposed = parsed.success ? parsed.data.parts : [];
-  const result = Array.from({ length: parts }, (_, i) => ({ evidence: [] as number[], edges: [] as number[] }));
+  const result = Array.from({ length: parts }, () => ({ evidence: [] as number[], edges: [] as number[] }));
   for (const key of ["evidence", "edges"] as const) {
     for (let index = 0; index < counts[key]; index++) {
       const owner = proposed.findIndex((p, i) => i < parts && p[key].includes(index));

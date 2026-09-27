@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { LlmReranker, parseScores, rerankPrompt } from "../src/engines/llmReranker.js";
 import { denseCosine, fuse, hybridSearch } from "../src/engines/recallEngine.js";
 import type { RecallDoc, Reranker } from "../src/engines/recallEngine.js";

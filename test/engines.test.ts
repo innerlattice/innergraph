@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadSchemaFile } from "../src/access/schemaAccess.js";
-import type { AnyEvent, Graph, GraphEdge, GraphNode } from "../src/core/types.js";
+import type { Graph, GraphEdge, GraphNode } from "../src/core/types.js";
 import { AnalysisEngine, activeGraph } from "../src/engines/analysisEngine.js";
 import { locate, quoteToEvidence } from "../src/engines/evidenceLocator.js";
 import {
