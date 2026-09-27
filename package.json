@@ -24,7 +24,6 @@
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.3",
     "@types/better-sqlite3": "^9.6.0",
-    "@types/cytoscape": "^3.21.9",
     "@types/node": "^26.5.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
@@ -33,7 +32,9 @@
     "concurrently": "^10.0.5",
     "cytoscape": "^3.34.3",
     "cytoscape-fcose": "^2.2.0",
+    "esbuild": "^0.28.2",
     "jsdom": "^30.0.1",
+    "knip": "^6.35.1",
     "lucide-react": "^1.45.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -62,6 +63,8 @@
     "metrics": "tsx scripts/metrics.ts",
     "quality": "npm run typecheck && npm run coverage && npm run metrics",
     "chat": "tsx src/bin.ts chat",
-    "fixture:reset": "tsx experiments/best-case/decompose.ts --fresh"
+    "fixture:reset": "tsx experiments/best-case/decompose.ts --fresh",
+    "unused": "knip",
+    "fingerprint": "tsx scripts/fingerprint.ts"
   }
 }

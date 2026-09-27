@@ -8,3 +8,4 @@ coverage/
 .claude/launch.json
 .DS_Store
 .experiments/
+.fingerprint

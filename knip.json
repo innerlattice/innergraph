@@ -1,0 +1,19 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "scripts/*.ts",
+    "experiments/**/*.ts"
+  ],
+  "project": [
+    "src/**/*.ts",
+    "web/src/**/*.{ts,tsx}",
+    "scripts/**/*.ts",
+    "experiments/**/*.ts",
+    "test/**/*.ts"
+  ],
+  "ignoreDependencies": [
+    "@types/better-sqlite3",
+    "tailwindcss"
+  ],
+  "ignoreExportsUsedInFile": false
+}
