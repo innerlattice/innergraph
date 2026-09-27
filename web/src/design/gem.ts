@@ -1,5 +1,5 @@
 // A node drawn as a cut stone seen from above: a flat table in the middle, a ring of crown facets
-// sloping down to the girdle, each facet flat-shaded by a light from the upper left, and a warm
+// sloping down to the girdle, each facet flat-shaded by a light from above, and a warm
 // shadow on the paper beneath. Statement nodes are cut from pale glass with a wide table for their
 // text. Rendered as an SVG data URI so the canvas (as a node background) and the page (as an <img>)
 // show exactly the same thing.
@@ -25,8 +25,8 @@ export interface Gem {
 const SHADOW = "#4a3526";
 /** Extra resolution so gems stay crisp when the map is zoomed in. */
 const DENSITY = 4;
-/** Where the light comes from: up and to the left, as on the rest of the page. */
-const LIGHT: Point = [-0.55, -0.83];
+/** Where the light comes from: straight above, as for every shadow on the page. */
+const LIGHT: Point = [0, -1];
 /** How wide the crown is on a glass stone, so the table stays big enough for text. */
 const GLASS_BEVEL = 4;
 /** How much of a small stone's width is table. */
@@ -76,11 +76,11 @@ function crown(outer: Point[], table: Point[], body: string, glass: boolean): st
     .join("");
 }
 
-/** The flat top: lit a little from the upper left, and for glass, almost clear so text reads. */
+/** The flat top: lit a little from above, and for glass, almost clear so text reads. */
 function tableFill(spec: GemSpec, body: string): string {
   const top = spec.glass ? shade(body, 0.74) : shade(body, 0.16);
   const bottom = spec.glass ? shade(body, 0.6) : shade(body, -0.06);
-  return `<linearGradient id="t" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${bottom}"/></linearGradient>`;
+  return `<linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${bottom}"/></linearGradient>`;
 }
 
 function gemBody(spec: GemSpec, blur: number, drop: number): string {
