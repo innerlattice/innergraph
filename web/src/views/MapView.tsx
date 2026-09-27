@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import type { Navigate } from "../App";
 import { type GraphView, type Schema, type ViewStatus, api } from "../api";
 import { GraphCanvas } from "../components/GraphCanvas";
@@ -63,11 +63,13 @@ interface PanelProps {
 
 /** History, one Node, one Edge, or the selection: exactly one card at a time, floating over
  *  the map so the conversation keeps its room. */
-function SidePanel(props: PanelProps) {
+function SidePanel(props: PanelProps & { panel: RefObject<HTMLElement | null> }) {
   const content = panelFor(props);
   if (!content) return null;
   return (
-    <aside className="absolute top-3 right-3 bottom-3 z-20 w-panel max-w-inset animate-rise overflow-auto rounded-2xl bg-white/95 shadow-floating backdrop-blur">{content}</aside>
+    <aside ref={props.panel} className="absolute top-3 right-3 bottom-3 z-20 w-panel max-w-inset animate-rise overflow-auto rounded-2xl bg-white/95 shadow-floating backdrop-blur">
+      {content}
+    </aside>
   );
 }
 
@@ -123,6 +125,7 @@ export function MapView(props: MapViewProps) {
   const { version, positions, view, error, duplicates, schema, elements, labels, refresh } = useMapData(index, filter);
   const empty = view && Object.keys(view.nodes).length === 0;
   const found = useMemo(() => (view ? searchHits(view, query) : null), [view, query]);
+  const panel = useRef<HTMLElement>(null);
 
   const changeSelection = (ids: string[]) => {
     setHighlight([]);
@@ -170,11 +173,12 @@ export function MapView(props: MapViewProps) {
               <Empty>Nothing on the map here yet. Add an entry to begin.</Empty>
             </div>
           ) : null}
-          <GraphCanvas elements={elements} selection={selection} highlight={highlight} found={found} onSelectionChange={changeSelection} tidied={tidied} />
+          <GraphCanvas elements={elements} selection={selection} highlight={highlight} found={found} onSelectionChange={changeSelection} tidied={tidied} cover={panel} />
           <GraphKey schema={schema} />
           <UndoBar done={done} onUndo={undoRemove} onClose={() => setDone(undefined)} />
         </div>
         <SidePanel
+          panel={panel}
           mode={mode}
           selection={selection}
           view={view}

@@ -2,9 +2,10 @@
 // for changes, with the items it touched (click to see them on the map) and Undo. The record sits
 // below the conversation's surface: someone talking through their life is reading the words, not
 // the machinery.
-import { Check, CircleAlert, Search, Sparkles, Undo2 } from "lucide-react";
+import { Check, CircleAlert, Map as MapIcon, Search, Sparkles, Undo2 } from "lucide-react";
 import { useState } from "react";
 import { api } from "../api";
+import { IconButton } from "../components/IconButton";
 import { ItemChip } from "../components/ItemChip";
 import { type ToolCardInfo, type ToolPart, describeTool } from "./parts";
 import { ICON } from "../design/tokens";
@@ -76,6 +77,9 @@ export function ToolCard(props: ToolCardProps) {
       <div className="flex items-center gap-2 text-xs text-stone-600">
         <CardIcon phase={info.phase} undone={undone} />
         <span className={`min-w-0 flex-1 ${undone ? "text-stone-400 line-through" : ""}`}>{title}</span>
+        {info.items.length > 0 && !undone ? (
+          <IconButton tone="well" label="Show on map" hint="Light these up on the map" icon={MapIcon} onClick={() => props.onSelect(info.items.map((i) => i.id))} />
+        ) : null}
         <UndoButton session={info.session} undone={undone} onUndone={() => setUndone(true)} onError={setFailure} />
       </div>
       <Chips info={info} undone={undone} onSelect={props.onSelect} />

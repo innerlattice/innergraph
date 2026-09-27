@@ -415,6 +415,8 @@ describe("a conversation", () => {
     expect(handlers.onSelect).toHaveBeenCalledWith(["n7"]);
     fireEvent.keyDown(screen.getByTitle("On your map: Shame"), { key: "Enter" });
     expect(handlers.onSelect).toHaveBeenLastCalledWith(["n8"]);
+    fireEvent.click(screen.getByLabelText("Show on map"));
+    expect(handlers.onSelect).toHaveBeenLastCalledWith(["n7", "n8"]);
     expect(await screen.findByText(/75% of its room/)).toBeTruthy();
     await waitFor(() => expect(handlers.onTurnEnd).toHaveBeenCalled());
   });
