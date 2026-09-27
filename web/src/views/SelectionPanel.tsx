@@ -34,7 +34,7 @@ export function SelectionPanel(props: {
                   <ItemLabel label={item.label} />
                 </span>
                 <span className="text-xs text-stone-400">
-                  {humanise(item.type)} · {item.kind}
+                  {humanise(item.type)} {item.kind}
                 </span>
               </span>
               <StatusPill status={item.status} confirmed={item.confirmed} />

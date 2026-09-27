@@ -150,7 +150,7 @@ describe("LoopsView and LogView", () => {
     expect(screen.getByText(/“F” feeds “A”/)).toBeTruthy();
     expect(screen.getByText(/least certain link is B → A \(40%\)/)).toBeTruthy();
     expect(screen.getByText("What this loop drives")).toBeTruthy();
-    expect(screen.getByText(/shares nodes with 1 other loop$/)).toBeTruthy();
+    expect(screen.getByText(/sharing nodes with 1 other loop$/)).toBeTruthy();
     fireEvent.click(screen.getByText("Show on map"));
     expect(navigate).toHaveBeenCalledWith("map", "a,b,ab,ba");
   });
@@ -165,7 +165,7 @@ describe("LoopsView and LogView", () => {
 
   it("renders the log", async () => {
     render(<LogView />);
-    expect(await screen.findByText("belief: “New one” · 70%")).toBeTruthy();
+    expect(await screen.findByText("belief: “New one” (70%)")).toBeTruthy();
   });
 });
 

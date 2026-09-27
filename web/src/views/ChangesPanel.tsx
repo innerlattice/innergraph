@@ -7,16 +7,17 @@ import { Button, ErrorNote } from "../components/ui";
 import { actorLabel, formatHlc } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 
-const VERB: Record<ChangeAction, { text: string; tone: string }> = {
+/** `joiner` links the item to the row's detail: "renamed A to B", "merged A from B, C". */
+const VERB: Record<ChangeAction, { text: string; tone: string; joiner?: string }> = {
   added: { text: "added", tone: "text-emerald-700" },
   updated: { text: "more evidence", tone: "text-stone-500" },
-  renamed: { text: "renamed", tone: "text-sky-700" },
+  renamed: { text: "renamed", tone: "text-sky-700", joiner: "to" },
   edited: { text: "edited", tone: "text-sky-700" },
   removed: { text: "removed", tone: "text-rose-700" },
   restored: { text: "restored", tone: "text-emerald-700" },
   confirmed: { text: "confirmed", tone: "text-emerald-700" },
-  merged: { text: "merged", tone: "text-violet-700" },
-  split: { text: "split", tone: "text-violet-700" },
+  merged: { text: "merged", tone: "text-violet-700", joiner: "from" },
+  split: { text: "split", tone: "text-violet-700", joiner: "into" },
   revised: { text: "edited entry", tone: "text-sky-700" },
 };
 
@@ -47,7 +48,7 @@ function SessionCard(props: { change: SessionChanges; onFocus: (ids: string[]) =
         <button type="button" className="text-left" onClick={() => props.onFocus(focusable.map((r) => r.id))} disabled={focusable.length === 0}>
           <span className="block text-sm font-medium text-stone-800">{PURPOSE[change.purpose] ?? change.purpose}</span>
           <span className="text-xs text-stone-400">
-            by {actorLabel(change.actor)} · {formatHlc(change.at)}
+            By {actorLabel(change.actor)}, {formatHlc(change.at)}
           </span>
         </button>
         <Button onClick={undo} title="Undo everything in this change">
@@ -61,7 +62,7 @@ function SessionCard(props: { change: SessionChanges; onFocus: (ids: string[]) =
               <span className={`text-xs ${VERB[row.action].tone}`}>{VERB[row.action].text}</span> <span className="text-stone-700">
                 <ItemLabel label={row.label} />
               </span>
-              {row.detail ? <span className="text-stone-400"> · {row.detail}</span> : null}
+              {row.detail ? <span className="text-stone-400"> {VERB[row.action].joiner ?? "with"} {row.detail}</span> : null}
             </button>
           </li>
         ))}

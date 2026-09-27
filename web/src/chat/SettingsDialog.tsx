@@ -89,7 +89,7 @@ function Connected(props: { status: LinkStatus; onDisconnect: () => void }) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-sage-200 bg-sage-50 px-3 py-2 text-sm text-sage-700">
       <span>
-        Connected{props.status.plan ? ` · ${props.status.plan}` : ""}
+        Connected{props.status.plan ? ` on the ${props.status.plan} plan` : ""}
         {props.status.email ? <span className="block text-xs text-sage-600">{props.status.email}</span> : null}
       </span>
       <button type="button" onClick={props.onDisconnect} className="rounded-full px-3 py-1 text-xs hover:bg-sage-100">

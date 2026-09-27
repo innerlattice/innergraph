@@ -57,7 +57,7 @@ function ChatRow(props: { chat: ChatListItem; active: boolean } & Pick<ChatRailP
         <span className="block truncate text-sm text-stone-700">{chat.title}</span>
         <span className="block text-[11px] text-stone-400">
           {ago(chat.updatedAt)}
-          {chat.budget.level === "full" ? " · full" : ""}
+          {chat.budget.level === "full" ? " (full)" : ""}
         </span>
       </button>
       <button type="button" aria-label={`Delete ${chat.title}`} onClick={() => props.onDelete(chat.id)} className="mr-1 rounded-md p-1.5 text-stone-400 opacity-0 transition group-hover/row:opacity-100 hover:bg-stone-200 hover:text-rose-600">

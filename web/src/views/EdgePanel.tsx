@@ -34,7 +34,7 @@ export function EdgePanel(props: EdgePanelProps) {
       <header className="space-y-1">
         <p className="text-xs text-stone-400">
           {humanise(edge.type)}
-          {signText(edge.sign)} · {pct(edge.confidence)} · by {actorLabel(edge.assertedBy)}
+          {signText(edge.sign)}, {pct(edge.confidence)} sure, added by {actorLabel(edge.assertedBy)}
         </p>
         <h3 className="flex flex-col items-start font-serif text-xl leading-snug text-stone-800">
           <button type="button" className="text-left hover:underline" onClick={() => props.onSelect(edge.from)}>

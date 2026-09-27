@@ -173,7 +173,7 @@ function RootsList(props: { trace?: RootTrace; labels: Record<string, string> })
     <ol className="space-y-1 text-sm text-stone-600">
       {props.trace.roots.map((r) => (
         <li key={r.id}>
-          <span className="font-medium text-stone-800">{props.labels[r.id] ?? r.id}</span> supports {r.support} downstream · via {r.path.map((p) => props.labels[p] ?? p).join(" → ")}
+          <span className="font-medium text-stone-800">{props.labels[r.id] ?? r.id}</span> supports {r.support} downstream, via {r.path.map((p) => props.labels[p] ?? p).join(" → ")}
         </li>
       ))}
     </ol>
@@ -197,7 +197,7 @@ export function NodePanel(props: NodePanelProps) {
   return (
     <div className="space-y-5 p-5">
       <header className="space-y-1">
-        <p className="text-xs text-stone-400">{humanise(node.type)} · {pct(node.confidence)} · by {actorLabel(node.assertedBy)}</p>
+        <p className="text-xs text-stone-400">{humanise(node.type)}, {pct(node.confidence)} sure, added by {actorLabel(node.assertedBy)}</p>
         <EditableTitle value={node.label} readOnly={readOnly} onSave={(label) => run(() => api.rename(node.id, label))} />
         <StatusPill status={node.status} confirmed={node.confirmed} />
       </header>

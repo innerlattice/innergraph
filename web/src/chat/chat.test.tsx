@@ -157,7 +157,7 @@ describe("tool cards", () => {
     expect(await screen.findByText("Undone")).toBeTruthy();
     expect(calls.at(-1)).toMatchObject({ url: "/api/undo-session", body: { session: "s9" } });
     render(<ToolCard part={tool("record_entry", "output-available", { output: { entry: "h1", title: "Tuesday" } })} onSelect={onSelect} onOpenEntry={onOpenEntry} />);
-    fireEvent.click(screen.getByText("Saved as an entry · Tuesday"));
+    fireEvent.click(screen.getByText("Saved as an entry: Tuesday"));
     expect(onOpenEntry).toHaveBeenCalledWith("h1");
     render(<ToolCard part={tool("remove", "input-available")} onSelect={onSelect} onOpenEntry={onOpenEntry} />);
     render(<ToolCard part={tool("amend", "output-error", { errorText: "Bad id" })} onSelect={onSelect} onOpenEntry={onOpenEntry} />);
@@ -236,7 +236,7 @@ describe("the composer", () => {
 
   it("says where messages go", () => {
     expect(footerFor(undefined)).toBe("");
-    expect(footerFor(SETTINGS)).toBe("Private to this device · gemma");
+    expect(footerFor(SETTINGS)).toBe("Private to this device, using gemma");
     expect(footerFor({ ...SETTINGS, provider: "openrouter", hosted: true })).toContain("through OpenRouter");
     expect(footerFor({ ...SETTINGS, hosted: true })).toContain("off this device");
     expect(footerFor({ ...SETTINGS, provider: "chatgpt", hosted: true })).toContain("through your ChatGPT plan");
@@ -250,7 +250,7 @@ describe("rails and settings", () => {
     const { rerender } = render(<ChatRail chats={[]} {...handlers} />);
     expect(screen.getByText("Nothing here yet.")).toBeTruthy();
     rerender(<ChatRail chats={[chat]} active="c" {...handlers} />);
-    expect(screen.getByText(/just now · full/)).toBeTruthy();
+    expect(screen.getByText(/just now \(full\)/)).toBeTruthy();
     fireEvent.click(screen.getByText("Monday"));
     fireEvent.click(screen.getByLabelText("New conversation"));
     fireEvent.click(screen.getByLabelText("Settings"));
@@ -316,7 +316,7 @@ describe("rails and settings", () => {
     expect(screen.getByText(/Open OpenAI/).closest("a")?.getAttribute("href")).toBe("https://auth.openai.com/codex/device");
     fireEvent.click(screen.getByLabelText("Copy code"));
     routes["GET /api/chat/chatgpt"] = () => json(states[1]);
-    expect(await screen.findByText(/Connected · pro/, {}, { timeout: 5000 })).toBeTruthy();
+    expect(await screen.findByText(/Connected on the pro plan/, {}, { timeout: 5000 })).toBeTruthy();
     expect((screen.getByLabelText("Model") as HTMLSelectElement).value).toBe("gpt-6-sol");
     fireEvent.change(screen.getByLabelText("Model"), { target: { value: "gpt-5.5" } });
     fireEvent.change(screen.getByLabelText("Reasoning"), { target: { value: "high" } });
@@ -436,7 +436,7 @@ describe("the app shell", () => {
     render(<App />);
     fireEvent.change(await screen.findByLabelText("Message"), { target: { value: TEXT } });
     fireEvent.click(screen.getByLabelText("Send"));
-    fireEvent.click(await screen.findByText("Saved as an entry · The meeting"));
+    fireEvent.click(await screen.findByText("Saved as an entry: The meeting"));
     await waitFor(() => expect(calls.some((c) => c.url.startsWith("/api/entries"))).toBe(true));
     fireEvent.click(screen.getAllByRole("button", { name: "Freezing" })[0]);
     await waitFor(() => expect(screen.getByTestId("graph-canvas")).toBeTruthy());

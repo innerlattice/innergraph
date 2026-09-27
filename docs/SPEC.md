@@ -1,6 +1,6 @@
 # Inner Graph — Core Spec (v0.1)
 
-Sep 25, 2026 · @Aya Hohner
+Sep 25, 2026, by @Aya Hohner
 
 ## Purpose and scope
 

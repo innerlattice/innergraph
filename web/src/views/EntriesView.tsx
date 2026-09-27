@@ -121,7 +121,7 @@ function EntryCard(props: { view: EntryView; focus?: Span; navigate: Navigate; r
   return (
     <Card className="space-y-4">
       <header className="flex items-center justify-between gap-3">
-        <p className="text-xs text-stone-400">{props.view.entry.revises ? "Revised version · earlier versions stay in history" : formatHlc(props.view.entry.addedAt)}</p>
+        <p className="text-xs text-stone-400">{props.view.entry.revises ? "Revised version. Earlier versions stay in history." : formatHlc(props.view.entry.addedAt)}</p>
         {editing ? null : <Button onClick={() => setEditing(true)}>Edit</Button>}
       </header>
       <SupportedItems view={props.view} onOpen={(ids) => props.navigate("map", ids)} />

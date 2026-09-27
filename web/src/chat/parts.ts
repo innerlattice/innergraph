@@ -46,7 +46,7 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /** [while running, when done] for each tool the person may see. */
 const WORDS: Record<string, [string, (out: Record<string, unknown>) => string]> = {
-  record_entry: ["Saving your words", (o) => `Saved as an entry${o.title ? ` · ${o.title}` : ""}`],
+  record_entry: ["Saving your words", (o) => `Saved as an entry${o.title ? `: ${o.title}` : ""}`],
   add_to_graph: ["Adding to your map", (o) => `Added ${plural((o.items as unknown[] | undefined)?.length ?? 0, "thing")} to your map`],
   amend: ["Adjusting", (o) => `Adjusted ${plural((o.changed as unknown[] | undefined)?.length ?? 0, "thing")}`],
   remove: ["Taking off the map", (o) => `Took ${plural((o.removed as unknown[] | undefined)?.length ?? 0, "thing")} off the map`],

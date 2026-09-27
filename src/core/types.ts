@@ -1,7 +1,7 @@
 // Ubiquitous language of the core (see SPEC.md). No theory vocabulary lives here.
 
 export type Role = "derivational" | "causal" | "identity";
-/** hypothesis: on the map, unconfirmed · accepted: confirmed by the person · superseded: removed. */
+/** hypothesis: on the map, unconfirmed. accepted: confirmed by the person. superseded: removed. */
 export type Status = "hypothesis" | "accepted" | "superseded";
 export type ActorId = string; // "user" | `agent:${name}` | `model:${name}`
 export type Sign = 1 | -1;

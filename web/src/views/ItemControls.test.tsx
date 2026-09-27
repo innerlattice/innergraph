@@ -78,7 +78,7 @@ describe("what changed", () => {
     render(<ChangesPanel version="1" duplicates={[{ kind: "node", ids: ["n1", "n4"], reason: "same" }]} labels={{ n1: "The Hider" }} onFocus={onFocus} onChanged={onChanged} onClose={vi.fn()} />);
     expect(await screen.findByText("New entry")).toBeTruthy();
     expect(screen.getByText("mystery")).toBeTruthy();
-    expect(screen.getByText("· The Controller")).toBeTruthy();
+    expect(screen.getByText("to The Controller")).toBeTruthy();
     fireEvent.click(screen.getByText("New entry"));
     expect(onFocus).toHaveBeenCalledWith(["n1", "n2"]);
     fireEvent.click(screen.getByText("The Hider", { selector: "span" }));

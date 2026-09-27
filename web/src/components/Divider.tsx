@@ -70,7 +70,7 @@ export function Divider(props: { share: number; onChange: (share: number) => voi
       onPointerUp={() => setDragging(false)}
       onDoubleClick={() => props.onChange(DEFAULT_WIDTH)}
       onKeyDown={key}
-      title="Drag to resize · double-click to reset"
+      title="Drag to resize. Double-click to reset."
       className="group relative z-30 -mx-1 w-2 shrink-0 cursor-col-resize touch-none outline-none"
     >
       <span className={`absolute inset-y-0 left-1/2 w-px -translate-x-1/2 transition-colors ${dragging ? "bg-clay-400" : "bg-stone-200 group-hover:bg-clay-300 group-focus-visible:bg-clay-400"}`} />

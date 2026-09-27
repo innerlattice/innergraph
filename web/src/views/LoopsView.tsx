@@ -20,7 +20,7 @@ function StepRow(props: { step: LoopStepView }) {
       <p className="text-sm text-stone-800">
         {step.fromLabel} <span className="text-stone-400">—</span>
         <Sign sign={step.sign} />
-        <span className="text-stone-400">→</span> {step.toLabel} <span className="text-xs text-stone-400">· {pct(step.confidence)}</span>
+        <span className="text-stone-400">→</span> {step.toLabel} <span className="text-xs text-stone-400">({pct(step.confidence)} sure)</span>
       </p>
       {step.quotes.map((q) => (
         <p key={q} className="border-l-2 border-stone-200 pl-3 font-serif text-sm text-stone-500">
@@ -55,8 +55,8 @@ export function LoopCard(props: { loop: LoopView; onOpen: (focus: string) => voi
           <p className={`text-xs font-medium ${reinforcing ? "text-orange-700" : "text-sky-700"}`}>{reinforcing ? "Reinforcing loop" : "Balancing loop"}</p>
           <h3 className="font-serif text-lg text-stone-800">{[...loop.steps.map((s) => s.fromLabel), loop.steps[0]?.fromLabel].join(" → ")}</h3>
           <p className="text-xs text-stone-400">
-            {loop.steps.length} steps · certainty {pct(loop.certainty)}
-            {loop.linkedLoops > 0 ? ` · shares nodes with ${loop.linkedLoops} other loop${loop.linkedLoops === 1 ? "" : "s"}` : ""}
+            {loop.steps.length} steps, {pct(loop.certainty)} certain
+            {loop.linkedLoops > 0 ? `, sharing nodes with ${loop.linkedLoops} other loop${loop.linkedLoops === 1 ? "" : "s"}` : ""}
           </p>
         </div>
         <Button onClick={() => props.onOpen(loopFocus(loop))}>Show on map</Button>

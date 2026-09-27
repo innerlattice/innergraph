@@ -77,8 +77,8 @@ function signMark(sign: number | undefined): string {
 const STATUS_WORDS: Record<string, string> = { superseded: "removed", accepted: "confirmed", hypothesis: "unconfirmed" };
 
 const DESCRIBERS: Describers = {
-  NodeAsserted: (b) => `${b.type}: “${b.label}” · ${pct(b.confidence)}`,
-  EdgeAsserted: (b, name) => `${name(b.from)} —${b.type}${signMark(b.sign)}→ ${name(b.to)} · ${pct(b.confidence)}`,
+  NodeAsserted: (b) => `${b.type}: “${b.label}” (${pct(b.confidence)})`,
+  EdgeAsserted: (b, name) => `${name(b.from)} —${b.type}${signMark(b.sign)}→ ${name(b.to)} (${pct(b.confidence)})`,
   StatusChanged: (b, name) => `${name(b.target)} → ${STATUS_WORDS[b.status] ?? b.status}`,
   AttributesChanged: (b, name) => `edit ${name(b.target)}`,
   NodesSplit: (b, name) => `split ${name(b.source)} into ${b.into.map((p) => p.label).join(", ")}`,

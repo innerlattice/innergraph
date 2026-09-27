@@ -66,10 +66,10 @@ describe("format helpers", () => {
   it("describes every event type in plain words", () => {
     const labels = { n1: "One", n2: "Two" };
     const cases: [string, object, string][] = [
-      ["NodeAsserted", { type: "a", label: "L", confidence: 0.8 }, "a: “L” · 80%"],
-      ["EdgeAsserted", { type: "c", from: "n1", to: "n2", sign: -1, confidence: 0.5 }, "One —c (−)→ Two · 50%"],
-      ["EdgeAsserted", { type: "c", from: "n1", to: "zzzzzzzz", sign: 1, confidence: 0.5 }, "One —c (+)→ zzzzzz · 50%"],
-      ["EdgeAsserted", { type: "d", from: "n1", to: "n2", confidence: 1 }, "One —d→ Two · 100%"],
+      ["NodeAsserted", { type: "a", label: "L", confidence: 0.8 }, "a: “L” (80%)"],
+      ["EdgeAsserted", { type: "c", from: "n1", to: "n2", sign: -1, confidence: 0.5 }, "One —c (−)→ Two (50%)"],
+      ["EdgeAsserted", { type: "c", from: "n1", to: "zzzzzzzz", sign: 1, confidence: 0.5 }, "One —c (+)→ zzzzzz (50%)"],
+      ["EdgeAsserted", { type: "d", from: "n1", to: "n2", confidence: 1 }, "One —d→ Two (100%)"],
       ["StatusChanged", { target: "n1", status: "superseded" }, "One → removed"],
       ["StatusChanged", { target: "n1", status: "odd" }, "One → odd"],
       ["AttributesChanged", { target: "n2" }, "edit Two"],

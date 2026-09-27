@@ -47,7 +47,7 @@ function Greeting(props: { onPick: (text: string) => void }) {
 
 export function footerFor(settings?: PublicChatSettings): string {
   if (!settings) return "";
-  if (!settings.hosted) return `Private to this device · ${settings.model}`;
+  if (!settings.hosted) return `Private to this device, using ${settings.model}`;
   const via: Record<string, string> = { openrouter: " through OpenRouter", chatgpt: " through your ChatGPT plan" };
   return `Your messages go to ${settings.model}${via[settings.provider] ?? " off this device"}`;
 }
