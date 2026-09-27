@@ -3,7 +3,7 @@ import { type RefObject, useEffect, useRef, useState } from "react";
 import { applyHighlight, applySearch, applySelection, onKeyDown, onKeyUp, pointerOnHover, remember, render, selectedIds, tidy, wheelToViewport } from "../lib/canvasController";
 import { GRAPH_STYLE } from "../design/graph";
 import { type Positions, loadPositions } from "../lib/layoutCache";
-import { reveal } from "../lib/reveal";
+import { coveredWidth, revealOnce, selectionKey } from "../lib/reveal";
 import { MiniMap } from "./MiniMap";
 
 export interface GraphCanvasProps {
@@ -19,12 +19,6 @@ export interface GraphCanvasProps {
   cover?: RefObject<HTMLElement | null>;
 }
 
-/** How many pixels of the canvas's right side `cover` hides. */
-function coveredWidth(canvas: HTMLElement, cover: HTMLElement | null | undefined): number {
-  if (!cover) return 0;
-  return Math.max(0, canvas.getBoundingClientRect().right - cover.getBoundingClientRect().left);
-}
-
 /** Brings each new selection into view once its items are on the map. */
 function useReveal(
   cy: Core | undefined,
@@ -34,13 +28,11 @@ function useReveal(
   cover?: RefObject<HTMLElement | null>,
 ): void {
   const revealed = useRef("");
-  // The same items in another order (as the server echoes a selection back) are not a new selection.
-  const key = [...selection].sort().join();
   // biome-ignore lint/correctness/useExhaustiveDependencies: try again when the elements arrive, but only once per selection
   useEffect(() => {
-    if (!cy || !container.current || key === revealed.current) return;
-    if (selection.length === 0 || reveal(cy, selection, coveredWidth(container.current, cover?.current))) revealed.current = key;
-  }, [cy, key, elements]);
+    const canvas = container.current;
+    if (cy && canvas) revealed.current = revealOnce(cy, selection, revealed.current, () => coveredWidth(canvas, cover?.current));
+  }, [cy, selectionKey(selection), elements]);
 }
 
 /** Keyboard: Space pans while held, Escape clears the selection. */

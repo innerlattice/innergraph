@@ -1,6 +1,6 @@
 import cytoscape from "cytoscape";
 import { expect, it, vi } from "vitest";
-import { reveal, revealViewport } from "./reveal";
+import { coveredWidth, reveal, revealOnce, revealViewport } from "./reveal";
 
 const clear = { x1: 32, y1: 32, x2: 468, y2: 568 };
 const at = { zoom: 1, pan: { x: 0, y: 0 } };
@@ -34,4 +34,21 @@ it("lets a move under way finish when asked for the same place again", () => {
   reveal(cy, ["a"], 0);
   reveal(cy, ["a"], 0);
   expect(animate).toHaveBeenCalledOnce();
+});
+
+it("reveals each selection once, and again only when it changes or its items arrive", () => {
+  const cy = cytoscape({ headless: true, layout: { name: "preset", fit: false }, elements: [{ data: { id: "a" }, position: { x: 5000, y: 5000 } }] });
+  const covered = vi.fn(() => 0);
+  expect(revealOnce(cy, ["b"], "", covered)).toBe("");
+  expect(revealOnce(cy, ["b", "a"], "", covered)).toBe("a,b");
+  expect(revealOnce(cy, ["a", "b"], "a,b", covered)).toBe("a,b");
+  expect(covered).toHaveBeenCalledTimes(2);
+  expect(revealOnce(cy, [], "a,b", covered)).toBe("");
+});
+
+it("measures how much of the canvas a cover hides", () => {
+  const box = (left: number, right: number) => ({ getBoundingClientRect: () => ({ left, right }) }) as HTMLElement;
+  expect(coveredWidth(box(0, 800), box(500, 790))).toBe(300);
+  expect(coveredWidth(box(0, 800), box(900, 1000))).toBe(0);
+  expect(coveredWidth(box(0, 800), null)).toBe(0);
 });

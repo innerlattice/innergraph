@@ -73,3 +73,24 @@ export function reveal(cy: Core, ids: string[], covered: number): boolean {
   cy.animate({ ...next }, { duration: DURATION, easing: "ease-in-out-cubic", queue: false });
   return true;
 }
+
+/** The same items in another order (as the server echoes a selection back) are not a new selection. */
+export function selectionKey(ids: string[]): string {
+  return [...ids].sort().join();
+}
+
+/**
+ * Reveals `ids` unless they are the selection `last` revealed, and returns the key of the one now
+ * revealed: unchanged while none of them are on the map yet, so it is tried again when they arrive.
+ */
+export function revealOnce(cy: Core, ids: string[], last: string, covered: () => number): string {
+  const key = selectionKey(ids);
+  if (key === last) return last;
+  return ids.length === 0 || reveal(cy, ids, covered()) ? key : last;
+}
+
+/** How many pixels of the canvas's right side `cover` hides. */
+export function coveredWidth(canvas: HTMLElement, cover: HTMLElement | null | undefined): number {
+  if (!cover) return 0;
+  return Math.max(0, canvas.getBoundingClientRect().right - cover.getBoundingClientRect().left);
+}
