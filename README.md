@@ -6,7 +6,7 @@ can be undone. See
 [SPEC.md](docs/SPEC.md) for the ubiquitous language and architecture, and
 [context.md](docs/context.md) for the product principles.
 
-Version <!-- version -->0.1.0<!-- /version -->. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+Version <!-- version -->0.2.0<!-- /version -->. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 v1 scope: single device, offline, local model (Ollama), one user-defined Schema.
 
