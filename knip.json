@@ -1,7 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": ["scripts/*.ts", "experiments/**/*.ts"],
-  "project": ["src/**/*.ts", "web/src/**/*.{ts,tsx}", "scripts/**/*.ts", "experiments/**/*.ts", "test/**/*.ts", "web/src/**/*.css"],
+  "entry": ["scripts/*.ts", "experiments/**/*.ts", "desktop/main.ts"],
+  "project": ["src/**/*.ts", "web/src/**/*.{ts,tsx}", "scripts/**/*.ts", "experiments/**/*.ts", "test/**/*.ts", "web/src/**/*.css", "desktop/**/*.ts"],
   "ignoreDependencies": ["@types/better-sqlite3"],
   "ignoreExportsUsedInFile": false
 }

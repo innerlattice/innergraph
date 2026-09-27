@@ -1,0 +1,34 @@
+# Installers for the desktop app: unsigned for now (macOS gets an ad-hoc signature so it runs on
+# Apple silicon). Build with `npm run dist`; CI builds both platforms on demand.
+appId: com.innerlattice.innergraph
+productName: Inner Graph
+copyright: Copyright © 2026 Inner Lattice
+directories:
+  output: release
+  buildResources: desktop/resources
+# Unpacked, so other agents can run build/cli.mjs with the app's own binary.
+asar: false
+files:
+  - build/**
+  - "!build/**/*.map"
+  - web/dist/**
+  - schema/**
+  - plugin/**
+  - package.json
+artifactName: Inner-Graph-${version}-${os}-${arch}.${ext}
+mac:
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  category: public.app-category.productivity
+  identity: "-"
+  hardenedRuntime: false
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+publish: null

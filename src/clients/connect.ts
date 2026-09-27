@@ -1,6 +1,7 @@
 // How other agents reach the map: the command that runs its MCP server, and each agent's own way
 // of being told about it. The command is this same program asked to speak MCP: the source through
 // tsx in development, the desktop app's own binary (running as plain Node) once installed.
+import { join } from "node:path";
 import YAML from "yaml";
 import type { Tier } from "./mcp.js";
 
@@ -96,4 +97,9 @@ function hermes(launch: McpLaunch, platform: Platform): AgentSetup {
 export function agentSetups(runner: Runner, vault: string, platform: Platform): AgentSetup[] {
   const as = (agent: string) => mcpLaunch(runner, vault, "write", agent);
   return [claudeDesktop(as("claude-desktop"), platform), claudeCode(as("claude-code")), codex(as("codex"), platform), hermes(as("hermes"), platform)];
+}
+
+/** The installed desktop app: its own binary run as plain Node on the bundled CLI. */
+export function desktopRunner(execPath: string, root: string): Runner {
+  return { command: execPath, prefix: [join(root, "build", "cli.mjs")], env: { ELECTRON_RUN_AS_NODE: "1" } };
 }

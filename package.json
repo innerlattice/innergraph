@@ -1,9 +1,14 @@
 {
   "name": "inner-graph",
+  "productName": "Inner Graph",
   "version": "0.1.0",
+  "description": "A map of how your inner life fits together, built from what you write.",
+  "author": "Inner Lattice",
+  "homepage": "https://github.com/innerlattice/belief-graph",
   "private": true,
   "type": "module",
   "license": "MIT",
+  "main": "build/main.mjs",
   "dependencies": {
     "@ai-sdk/openai": "^4.0.66",
     "@ai-sdk/openai-compatible": "^3.0.48",
@@ -33,6 +38,8 @@
     "concurrently": "^10.0.5",
     "cytoscape": "^3.34.3",
     "cytoscape-fcose": "^2.2.0",
+    "electron": "^44.3.0",
+    "electron-builder": "^26.15.3",
     "esbuild": "^0.28.2",
     "jsdom": "^30.0.1",
     "knip": "^6.35.1",
@@ -69,6 +76,9 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "styles": "tsx scripts/auditStyles.ts",
-    "fingerprint": "tsx scripts/fingerprint.ts"
+    "fingerprint": "tsx scripts/fingerprint.ts",
+    "bundle": "tsx scripts/bundle.ts",
+    "desktop": "npm run build && npm run bundle && electron .",
+    "dist": "npm run build && npm run bundle && electron-builder --publish never"
   }
 }

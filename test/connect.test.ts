@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import YAML from "yaml";
-import { agentSetups, mcpLaunch, serverEntry } from "../src/clients/connect.js";
+import { agentSetups, desktopRunner, mcpLaunch, serverEntry } from "../src/clients/connect.js";
 import { findRoot } from "../src/paths.js";
 
 const desktop = { command: "/Applications/Inner Graph.app/Contents/MacOS/Inner Graph", prefix: ["/app/build/cli.mjs"], env: { ELECTRON_RUN_AS_NODE: "1" } };
@@ -20,6 +20,10 @@ describe("connecting other agents", () => {
       args: ["/repo/src/bin.ts", "mcp", "--vault", VAULT, "--tier", "write", "--agent", "codex"],
       env: {},
     });
+  });
+
+  it("runs the installed app's own binary as Node on its bundled CLI", () => {
+    expect(desktopRunner("/A/Inner Graph", "/A/app")).toEqual({ command: "/A/Inner Graph", prefix: ["/A/app/build/cli.mjs"], env: { ELECTRON_RUN_AS_NODE: "1" } });
   });
 
   it("leaves the environment out of a config entry when there is none", () => {
