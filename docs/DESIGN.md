@@ -57,7 +57,8 @@ Edges get their meaning from line type as well as colour:
 
 ## Graph pieces are design-system components
 
-The look of nodes and edges lives in one place, `web/src/design/graph.ts`: the shapes, the gem
-rendering and the edge looks. The Cytoscape stylesheet, `NodeGlyph` and `EdgeGlyph`
-(`components/GraphGlyph.tsx`) all read from it, so the key, panels and canvas can't drift apart,
-and restyling the graph means editing one file.
+The look of nodes and edges lives in one folder, `web/src/design/`: `shapes.ts` draws the node
+outlines, `gem.ts` renders them as stones, and `graph.ts` holds node sizes, the edge looks and the
+Cytoscape stylesheet. `NodeGlyph` and `EdgeGlyph` (`components/GraphGlyph.tsx`) read from the same
+place, so the key, panels and canvas can't drift apart, and restyling the graph means editing that
+folder alone.

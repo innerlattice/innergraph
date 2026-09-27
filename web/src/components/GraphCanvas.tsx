@@ -1,7 +1,7 @@
 import cytoscape, { type Core, type ElementDefinition } from "cytoscape";
 import { useEffect, useRef, useState } from "react";
 import { applyHighlight, applySelection, onKeyDown, onKeyUp, pointerOnHover, remember, render, selectedIds, wheelToViewport } from "../lib/canvasController";
-import { GRAPH_STYLE } from "../lib/elements";
+import { GRAPH_STYLE } from "../design/graph";
 import { type Positions, loadPositions } from "../lib/layoutCache";
 import { MiniMap } from "./MiniMap";
 

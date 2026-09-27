@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { AnyEvent, GraphView, Schema } from "../api";
 import { ApiError, request } from "../api";
 import { humanise } from "../../../src/core/edgeText";
-import { boxSize, clip, edgeLabel, labelStyleOf, roleOf, toElements } from "./elements";
+import { clip, edgeLabel, roleOf, toElements } from "./elements";
+import { boxSize, edgeLookOf, labelStyleOf } from "../design/graph";
 import { appeared, loadPositions, partition, savePositions } from "./layoutCache";
 import { entryFocus, parseEntryFocus } from "./format";
 import { actorLabel, charIndex, colorFor, describeEvent, formatHlc, citedRuns, labelsFrom, spanText } from "./format";
@@ -104,14 +105,18 @@ describe("graph elements", () => {
     const n2 = elements.find((e) => e.data.id === "n2");
     expect(n2?.classes).toBe("active confirmed style-name");
     expect(n2?.data.shape).toBe("ellipse");
+    expect(n2?.data.image).toMatch(/^data:image\/svg\+xml/);
+    expect(n2?.data.imageW).toBeGreaterThan(n2?.data.w);
     expect(labelStyleOf(null, "a")).toBe("name");
   });
 
   it("classes edges by role and sign, labelling causal edges by sign", () => {
     const elements = toElements(graph, schema);
-    expect(elements.find((e) => e.data.id === "e1")).toMatchObject({ classes: "causal negative active confirmed", data: { label: "−" } });
-    expect(elements.find((e) => e.data.id === "e2")?.classes).toBe("derivational positive active");
-    expect(elements.find((e) => e.data.id === "e3")?.classes).toBe("plain active");
+    expect(elements.find((e) => e.data.id === "e1")).toMatchObject({ classes: "look-decreases active confirmed", data: { label: "−" } });
+    expect(elements.find((e) => e.data.id === "e2")?.classes).toBe("look-builds-on active");
+    expect(elements.find((e) => e.data.id === "e3")?.classes).toBe("look-plain active");
+    expect(edgeLookOf("causal", 1)).toBe("increases");
+    expect(edgeLookOf("identity")).toBe("part-of");
     expect(edgeLabel({ ...graph.edges.e1, sign: 1 }, schema)).toBe("+");
     expect(edgeLabel(graph.edges.e3, schema)).toBe("x");
     expect(roleOf(null, "c")).toBe("plain");
