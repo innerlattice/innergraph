@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Navigate } from "../App";
-import { type GraphView, type ViewStatus, api } from "../api";
+import { type GraphView, type Schema, type ViewStatus, api } from "../api";
 import { GraphCanvas } from "../components/GraphCanvas";
 import { GraphKey } from "../components/GraphKey";
 import { Empty, ErrorNote } from "../components/ui";
@@ -57,6 +57,7 @@ interface PanelProps {
   onHighlight: (ids: string[]) => void;
   onCloseChanges: () => void;
   navigate: Navigate;
+  schema: Schema | null;
 }
 
 /** What changed, one Node, one Edge, or the selection: exactly one card at a time, floating over
@@ -78,7 +79,7 @@ function panelFor(props: PanelProps) {
   const { selection } = props;
   if (selection.length === 0) return null;
   const only = selection.length === 1 ? selection[0] : "";
-  const common = { labels: props.labels, readOnly: props.readOnly, version: props.version, onDone: props.onDone, navigate: props.navigate, onSelect: (id: string) => props.onSelect([id]) };
+  const common = { schema: props.schema, labels: props.labels, readOnly: props.readOnly, version: props.version, onDone: props.onDone, navigate: props.navigate, onSelect: (id: string) => props.onSelect([id]) };
   if (props.view?.nodes[only]) return <NodePanel id={only} {...common} statuses={props.filter} onHighlight={props.onHighlight} />;
   if (props.view?.edges[only]) return <EdgePanel id={only} {...common} />;
   return <SelectionPanel ids={selection} version={props.version} onClear={() => props.onSelect([])} onFocus={(id) => props.onSelect([id])} onDone={props.onDone} />;
@@ -142,6 +143,7 @@ export function MapView(props: MapViewProps) {
           mode={mode}
           selection={selection}
           view={view}
+          schema={schema}
           duplicates={duplicates}
           filter={filter}
           labels={labels}

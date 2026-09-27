@@ -1,10 +1,13 @@
 import { type ReactNode, useState } from "react";
 import { EdgeLabel } from "../components/Chip";
 import type { Navigate } from "../App";
-import { type NodeView, type RelatedItem, type RootTrace, type ViewStatus, api } from "../api";
+import { type NodeView, type RelatedItem, type RootTrace, type Schema, type ViewStatus, api } from "../api";
 import { Button, ErrorNote, StatusPill, passageClass } from "../components/ui";
 import { humanise } from "../../../src/core/edgeText";
-import { actorLabel, entryFocus, pct } from "../lib/format";
+import { entryFocus } from "../lib/format";
+import { nodeLookOf } from "../design/graph";
+import { NodeGlyph } from "../components/GraphGlyph";
+import { AddedBy, Eyebrow } from "../components/ItemMeta";
 import { useAsync } from "../lib/useAsync";
 import { type Done, ItemActions } from "./ItemControls";
 import { Related } from "../components/Related";
@@ -21,6 +24,7 @@ export interface NodePanelProps {
   /** Which statuses the map shows; the edge list follows the same filter. */
   statuses?: ViewStatus[];
   onSelect?: (id: string) => void;
+  schema?: Schema | null;
 }
 
 type Run = (work: () => Promise<unknown>) => void;
@@ -172,9 +176,11 @@ export function NodePanel(props: NodePanelProps) {
   return (
     <div className="space-y-5 p-5">
       <header className="space-y-1">
-        <p className="text-xs text-stone-400">{humanise(node.type)}, {pct(node.confidence)} sure, added by {actorLabel(node.assertedBy)}</p>
+        <Eyebrow mark={<NodeGlyph look={nodeLookOf(props.schema ?? null, node.type)} />} kind={humanise(node.type)} confidence={node.confidence} />
         <EditableTitle value={node.label} readOnly={readOnly} onSave={(label) => run(() => api.rename(node.id, label))} />
-        <StatusPill status={node.status} />
+        <AddedBy actor={node.assertedBy}>
+          <StatusPill status={node.status} />
+        </AddedBy>
       </header>
       <ErrorNote error={error} />
       <StatusSection view={view.data} readOnly={readOnly} onDone={(done) => (view.reload(), onDone(done))} />
@@ -189,9 +195,10 @@ export function NodePanel(props: NodePanelProps) {
       </Section>
       {view.data.derivedFrom.length + view.data.derivedInto.length > 0 ? (
         <Section title="Lineage">
-          <p className="text-sm text-stone-600">
-            {view.data.derivedFrom.map((n) => `from “${n.label}”`).join(", ")} {view.data.derivedInto.map((n) => `into “${n.label}”`).join(", ")}
-          </p>
+          <ul className="space-y-1 text-sm text-stone-600">
+            {view.data.derivedFrom.map((n) => <li key={n.id}>From “{n.label}”</li>)}
+            {view.data.derivedInto.map((n) => <li key={n.id}>Into “{n.label}”</li>)}
+          </ul>
         </Section>
       ) : null}
       <Section title="Explore">

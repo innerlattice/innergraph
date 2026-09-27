@@ -222,7 +222,7 @@ describe("NodePanel", () => {
     expect(outgoing.textContent).toBe("scaffoldsDinner table");
     const incoming = screen.getByText("abduces").closest("button") as HTMLElement;
     expect([incoming.textContent, incoming.className.includes("line-through")]).toEqual(["Dinner tableabduces", true]);
-    expect(screen.getByText(/from “Dinner table”/)).toBeTruthy();
+    expect(screen.getByText(/From “Dinner table”/)).toBeTruthy();
     fireEvent.click(screen.getByText("Looks right"));
     fireEvent.click(screen.getByText("Trace roots"));
     expect(await screen.findByText(/supports 1 downstream/)).toBeTruthy();

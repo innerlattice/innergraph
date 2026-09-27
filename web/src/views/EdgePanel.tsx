@@ -1,16 +1,21 @@
 import type { Navigate } from "../App";
 import { ArrowDown } from "lucide-react";
-import { api } from "../api";
+import { type Schema, api } from "../api";
+import { EDGE_LOOKS, type EdgeLook, edgeLookOf } from "../design/graph";
+import { EdgeGlyph } from "../components/GraphGlyph";
+import { AddedBy, Eyebrow } from "../components/ItemMeta";
 import { ErrorNote, StatusPill } from "../components/ui";
 import { humanise } from "../../../src/core/edgeText";
-import { actorLabel, entryFocus, pct } from "../lib/format";
+import { entryFocus } from "../lib/format";
 import { useAsync } from "../lib/useAsync";
 import { EvidenceCard, StaleNote } from "./NodePanel";
 import { type Done, ItemActions } from "./ItemControls";
 
-function signText(sign: number | undefined): string {
-  if (sign === -1) return " (decreases)";
-  return sign === 1 ? " (increases)" : "";
+/** The look the map draws this Edge with: a signed Edge is causal whatever the Schema says. */
+function lookFor(schema: Schema | null | undefined, type: string, sign?: number): EdgeLook {
+  const role = schema?.edgeTypes[type]?.role ?? (sign ? "causal" : "plain");
+  const name = edgeLookOf(role, sign);
+  return EDGE_LOOKS.find((l) => l.name === name) ?? EDGE_LOOKS[0];
 }
 
 export interface EdgePanelProps {
@@ -21,6 +26,7 @@ export interface EdgePanelProps {
   onDone: (done: Done) => void;
   onSelect: (id: string) => void;
   navigate: Navigate;
+  schema?: Schema | null;
 }
 
 /** One Edge: its endpoints, evidence and the review actions its status allows. */
@@ -28,14 +34,12 @@ export function EdgePanel(props: EdgePanelProps) {
   const view = useAsync(() => api.edge(props.id), [props.id, props.version]);
   if (!view.data) return <ErrorNote error={view.error} />;
   const { edge, fromLabel, toLabel, evidence } = view.data;
+  const look = lookFor(props.schema, edge.type, edge.sign);
   const done = (d: Done) => (view.reload(), props.onDone(d));
   return (
     <div className="space-y-5 p-5">
       <header className="space-y-1">
-        <p className="text-xs text-stone-400">
-          {humanise(edge.type)}
-          {signText(edge.sign)}, {pct(edge.confidence)} sure, added by {actorLabel(edge.assertedBy)}
-        </p>
+        <Eyebrow mark={<EdgeGlyph look={look} />} kind={look.label} confidence={edge.confidence} />
         <h3 className="flex flex-col items-start font-serif text-xl leading-snug text-stone-800">
           <button type="button" className="text-left hover:underline" onClick={() => props.onSelect(edge.from)}>
             {fromLabel}
@@ -48,7 +52,9 @@ export function EdgePanel(props: EdgePanelProps) {
             {toLabel}
           </button>
         </h3>
-        <StatusPill status={edge.status} />
+        <AddedBy actor={edge.assertedBy}>
+          <StatusPill status={edge.status} />
+        </AddedBy>
       </header>
       {edge.status === "removed" ? <p className="text-sm text-stone-500">Removed. Restore puts it back as it was.</p> : null}
       {props.readOnly ? null : <ItemActions ids={[edge.id]} items={[edge]} onDone={done} />}

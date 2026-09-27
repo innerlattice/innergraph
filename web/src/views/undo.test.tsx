@@ -41,7 +41,8 @@ describe("edge panel", () => {
     render(<EdgePanel id="e1" labels={{ e1: "A → B" }} readOnly={false} onDone={onDone} onSelect={onSelect} navigate={vi.fn()} />);
     expect(await screen.findByText(/Restore puts it back/)).toBeTruthy();
     expect(screen.getByText("removed")).toBeTruthy();
-    expect(screen.getByText(/reinforces \(increases\)/)).toBeTruthy();
+    expect(screen.getByText("Increases")).toBeTruthy();
+    expect(screen.getByText("reinforces")).toBeTruthy();
     fireEvent.click(screen.getByText("A"));
     expect(onSelect).toHaveBeenCalledWith("a");
     fireEvent.click(screen.getByText("Restore"));
@@ -53,7 +54,7 @@ describe("edge panel", () => {
   it("is read-only in the past and describes decreases", async () => {
     edgeView.edge = { ...edgeView.edge, sign: -1, status: "active", confirmed: true };
     render(<EdgePanel id="e1" labels={{}} readOnly onDone={vi.fn()} onSelect={vi.fn()} navigate={vi.fn()} />);
-    expect(await screen.findByText(/decreases/)).toBeTruthy();
+    expect(await screen.findByText("Decreases")).toBeTruthy();
     expect(screen.queryByText("confirmed")).toBeNull();
     expect(screen.queryByText("Remove")).toBeNull();
     edgeView.edge = { ...edgeView.edge, sign: undefined };

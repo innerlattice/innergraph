@@ -22,7 +22,7 @@ badge and pill has to earn its place against the clutter it adds.
 Never string items together with middle dots ("belief · 70% · by you"). A row of dots is hard to
 scan: every item has the same weight and nothing says which is which. Instead:
 
-- lay items out as separate elements with space between them (`Meta` in `components/ui.tsx`),
+- lay items out as separate elements with space between them (`components/ItemMeta.tsx`: the kind with its glyph, a confidence meter, "Added by"),
 - give each item a label or icon when it isn't obvious what it is,
 - use a list when there are more than two or three things (the graph key), or
 - write a sentence ("Saved as “Tuesday”", "gemma, private to this device").
