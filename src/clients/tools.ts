@@ -1,5 +1,5 @@
 // The agent surface: one registry of tools over the Managers, shared by every agent Client
-// (MCP for external harnesses, the in-app chat). A read tier sees; write also changes the graph.
+// (MCP for other agents, the in-app chat). A read tier sees; write also changes the graph.
 import { z } from "zod";
 import type { ActorId } from "../core/types.js";
 import type { Vault } from "../vault.js";

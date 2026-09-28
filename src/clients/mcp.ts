@@ -1,6 +1,7 @@
 // MCP Client: exposes Managers to any agent. A read connection sees; a write connection also
 // changes the graph directly. Every change is one Session the person can undo.
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { VERSION, skillText } from "../paths.js";
 import type { Vault } from "../vault.js";
 import { type Tier, allowedTools, toolSpecs } from "./tools.js";
 
@@ -22,7 +23,7 @@ async function respond(work: () => unknown): Promise<ToolResult> {
 }
 
 export function createMcpServer(vault: Vault, options: McpOptions): McpServer {
-  const server = new McpServer({ name: "inner-graph", version: "0.1.0" });
+  const server = new McpServer({ name: "inner-graph", version: VERSION }, { instructions: skillText() });
   const actor = `agent:${options.agent}`;
   for (const spec of allowedTools(toolSpecs(vault, actor), options.tier)) {
     server.registerTool(spec.name, { description: spec.description, inputSchema: spec.input }, (args: Record<string, unknown>) => respond(() => spec.run(args)));

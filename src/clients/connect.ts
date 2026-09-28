@@ -28,7 +28,7 @@ export function serverEntry(launch: McpLaunch) {
   return Object.keys(env).length > 0 ? { command, args, env } : { command, args };
 }
 
-export const SERVER_NAME = "inner-graph";
+const SERVER_NAME = "inner-graph";
 
 export type Platform = "darwin" | "win32" | "linux";
 
@@ -97,6 +97,11 @@ function hermes(launch: McpLaunch, platform: Platform): AgentSetup {
 export function agentSetups(runner: Runner, vault: string, platform: Platform): AgentSetup[] {
   const as = (agent: string) => mcpLaunch(runner, vault, "write", agent);
   return [claudeDesktop(as("claude-desktop"), platform), claudeCode(as("claude-code")), codex(as("codex"), platform), hermes(as("hermes"), platform)];
+}
+
+/** This program run from source, as in development. */
+export function sourceRunner(root: string): Runner {
+  return { command: join(root, "node_modules", ".bin", "tsx"), prefix: [join(root, "src", "bin.ts")] };
 }
 
 /** The installed desktop app: its own binary run as plain Node on the bundled CLI. */

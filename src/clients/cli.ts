@@ -1,5 +1,4 @@
 // CLI Client: init a Vault, serve the desktop UI, run the MCP server, add Entries.
-import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { extname, join } from "node:path";
@@ -10,18 +9,16 @@ import { loadSchemaFile } from "../access/schemaAccess.js";
 import { PATHS, ROOT } from "../paths.js";
 import type { ModelGateway } from "../utilities/modelGateway.js";
 import { type Vault, initVault, openVault, vaultExists } from "../vault.js";
-import { type LaunchPlan, launchContext, planFor, sourceRunner, writeAgentFiles } from "./launcher.js";
+import { sourceRunner } from "./connect.js";
 import { connectionNotice, createMcpServer, tierOf } from "./mcp.js";
 import { startServer } from "./server.js";
 
-const USAGE = "Usage: inner-graph [chat|init|serve|mcp|add|schema] [--vault dir] [--harness claude|<command>] [--schema file] [--port n] [--tier read|write] [--agent name]";
+const USAGE = "Usage: inner-graph [serve|init|mcp|add|schema] [--vault dir] [--schema file] [--port n] [--tier read|write] [--agent name]";
 
 export interface CliEnv {
   log: (message: string) => void;
   gateway?: ModelGateway;
   key?: string;
-  /** Runs a harness in the foreground and resolves with its exit code. */
-  spawn?: (plan: LaunchPlan) => Promise<number>;
 }
 
 /** Something the caller can stop: a server, or nothing for one-shot commands. */
@@ -38,7 +35,6 @@ function parse(argv: string[]) {
       schema: { type: "string", default: PATHS.schema },
       port: { type: "string", default: "4317" },
       tier: { type: "string" },
-      harness: { type: "string", default: "claude" },
       agent: { type: "string", default: "mcp" },
       format: { type: "string" },
       "no-interpret": { type: "boolean", default: false },
@@ -69,14 +65,6 @@ async function startView(args: Parsed, env: CliEnv): Promise<Running> {
   return server;
 }
 
-export function spawnInForeground(plan: LaunchPlan): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(plan.command, plan.args, { stdio: "inherit", env: { ...process.env, ...plan.env } });
-    child.on("error", reject);
-    child.on("exit", (code) => resolve(code ?? 0));
-  });
-}
-
 const commands: Record<string, Command> = {
   init: ({ values }, env) => {
     initVault({ dir: values.vault, schemaFile: values.schema, key: env.key, gateway: env.gateway }).close();
@@ -84,19 +72,6 @@ const commands: Record<string, Command> = {
     return undefined;
   },
   serve: (args, env) => startView(args, env),
-  chat: async (args, env) => {
-    const view = await startView(args, env);
-    const ctx = launchContext(ROOT, args.values.vault, { tier: tierOf(args.values.tier), agent: args.values.harness, port: args.values.port });
-    writeAgentFiles(ctx);
-    const plan = planFor(args.values.harness, ctx);
-    env.log(`Starting ${args.values.harness} with the inner-graph skill and MCP (tier "${ctx.tier}"). Graph view: ${ctx.viewUrl}`);
-    try {
-      await (env.spawn ?? spawnInForeground)(plan);
-    } finally {
-      await view.stop();
-    }
-    return undefined;
-  },
   mcp: async (args, env) => {
     const options = { tier: tierOf(args.values.tier), agent: args.values.agent };
     const vault = open(args, env);
@@ -129,7 +104,7 @@ const commands: Record<string, Command> = {
 
 export async function runCli(argv: string[], env: CliEnv): Promise<Running | undefined> {
   const args = parse(argv);
-  const command = commands[args.positionals[0] ?? "chat"];
+  const command = commands[args.positionals[0] ?? "serve"];
   if (!command) throw new Error(USAGE);
   return command(args, env);
 }

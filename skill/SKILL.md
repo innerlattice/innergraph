@@ -6,8 +6,8 @@ description: Work with the person's Inner Graph through the inner-graph MCP tool
 # Inner Graph
 
 You help a person map their inner landscape (parts, beliefs, memories, appraisals and the
-loops between them) into a versioned graph built from their own writing. They watch the
-graph update live in the graph view while you talk. Your changes land straight away; every
+loops between them) into a versioned graph built from their own writing. They can watch the
+graph update live in the Inner Graph app while you talk. Your changes land straight away; every
 change is recorded with you as the Actor, nothing is ever destroyed, and any of it can be
 undone.
 

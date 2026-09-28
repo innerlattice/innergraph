@@ -29,7 +29,7 @@ The installers are not signed yet, so each system warns the first time:
 Settings (bottom left) → Connect other agents shows, for Claude Desktop, Claude Code, Codex
 and Hermes Agent, the snippet that adds the map to that agent as an MCP server, with where it
 goes. Each connects with the `write` tier under its own name, so its changes show (and undo) as
-its own. The desktop app's snippet runs the app's own binary as Node
+its own, and gets the skill in `skill/SKILL.md` as its instructions. The desktop app's snippet runs the app's own binary as Node
 (`ELECTRON_RUN_AS_NODE=1`) on its bundled CLI; from source it runs `src/bin.ts` with tsx.
 
 ### Building the installers
@@ -65,15 +65,11 @@ OpenRouter with a key (or `OPENROUTER_API_KEY`), or any local OpenAI-compatible 
 (Ollama by default). A
 conversation warns at 70% of its token budget and ends at 90%; the map keeps everything.
 
-`inner-graph chat` instead boots an external agent harness wired to the Inner Graph MCP
-server and skill, with the app alongside:
-
-- `--harness claude` (default) runs Claude Code with the plugin in `plugin/` (the
-  `inner-graph` skill) and the MCP server via `--mcp-config`.
-- `--harness "<any command>"` runs another harness with `INNER_GRAPH_MCP_CONFIG` (an
-  `mcpServers` JSON file written to `<vault>/agent/mcp.json`), `INNER_GRAPH_SKILL` (the
-  skill's `SKILL.md`) and `INNER_GRAPH_VIEW` in its environment.
-- Chat connections use the `write` tier; pass `--tier read` for a look-only agent.
+Other agents work on the same map over MCP (see [Connecting other agents](#connecting-other-agents)).
+The server sends each one the skill in [`skill/SKILL.md`](skill/SKILL.md) as its MCP
+instructions, the same guidance the in-app assistant follows, so no setup is needed. Agents that
+load skills from files (Claude Code, Codex, Hermes Agent) can also install it as a skill, for
+example into `~/.claude/skills/inner-graph/SKILL.md`.
 
 The map updates live as any agent works. Select with click, shift-click or a drag
 box; the agent sees the selection through `get_selection`. "History" lists recent
@@ -207,7 +203,7 @@ npm run ship -- patch   # or minor, major
 `npm run quality` and both builds, bumps the version in `package.json`, adds the commits since
 the last version to [CHANGELOG.md](CHANGELOG.md), stamps the version in this README, then
 commits `Release vX.Y.Z`, tags it and pushes with the tag. It warns when the README, docs and
-plugin haven't changed since the last version; check they still describe the app. The
+skill haven't changed since the last version; check they still describe the app. The
 `.githooks/pre-push` hook (installed by `npm install`) refuses a push whose commit isn't a
 version; `git push --no-verify` skips it. Building installers for a version stays manual (see
 [Building the installers](#building-the-installers)).

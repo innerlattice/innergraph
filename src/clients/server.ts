@@ -1,10 +1,9 @@
 // The app's local server: the HTTP API and the built web app on 127.0.0.1, for the CLI's `serve`
 // and the desktop app alike.
-import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync } from "node:fs";
 import { type ServerType, serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
-import { PATHS, ROOT } from "../paths.js";
+import { PATHS, VERSION } from "../paths.js";
 import type { Vault } from "../vault.js";
 import type { Runner } from "./connect.js";
 import { createApp } from "./http.js";
@@ -25,8 +24,6 @@ export interface LocalServer {
   url: string;
   stop(): Promise<void>;
 }
-
-const VERSION: string = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
 
 function listen(fetch: (request: Request) => Response | Promise<Response>, port: number): Promise<{ server: ServerType; port: number }> {
   return new Promise((resolve, reject) => {

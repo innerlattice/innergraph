@@ -1,7 +1,6 @@
 // Chat Client: the in-app assistant. One agent loop (AI SDK) over the same tool registry the MCP
 // server exposes, plus `record_entry`, which saves the person's own message as an Entry word
 // for word so the quotes it cites can be highlighted in that message.
-import { readFileSync } from "node:fs";
 import {
   type LanguageModel,
   type LanguageModelUsage,
@@ -20,7 +19,7 @@ import { type ActivityRequest, activityInstructions } from "../core/activities.j
 import type { ActorId } from "../core/types.js";
 import type { SelectionItem } from "../managers/exploreManager.js";
 import { chatModel, modelActor } from "../utilities/chatModel.js";
-import { PATHS } from "../paths.js";
+import { skillText } from "../paths.js";
 import type { Vault } from "../vault.js";
 import { allowedTools, toolSpecs } from "./tools.js";
 
@@ -41,10 +40,6 @@ export interface ChatRequest {
 /** Tools an in-app conversation never needs: it records the person's own words instead. */
 const HIDDEN = new Set(["add_entry"]);
 const MAX_STEPS = 24;
-
-function skillText(): string {
-  return readFileSync(PATHS.skill, "utf8").replace(/^---\n[\s\S]*?\n---\n/, "");
-}
 
 const IN_APP = `You are the assistant inside the Inner Graph app. The person talks to you in a chat
 beside a live view of their graph; they are not a developer and never see tool names.

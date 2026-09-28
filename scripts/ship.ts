@@ -65,8 +65,8 @@ function main(): void {
   const kind = process.argv[2] as Kind;
   if (!KINDS.includes(kind)) fail(`usage: npm run ship -- ${KINDS.join("|")} [--no-push]`);
   const { last, subjects } = pending();
-  const docs = git("diff", "--name-only", `${last}..HEAD`, "--", "README.md", "docs", "plugin");
-  if (!docs) console.warn(`ship: README, docs and the plugin are unchanged since ${last}; check they still describe the app.`);
+  const docs = git("diff", "--name-only", `${last}..HEAD`, "--", "README.md", "docs", "skill");
+  if (!docs) console.warn(`ship: README, docs and the skill are unchanged since ${last}; check they still describe the app.`);
   run("npm", "run", "quality");
   run("npm", "run", "build");
   run("npm", "run", "bundle");

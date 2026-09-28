@@ -13,7 +13,7 @@ files:
   - "!build/**/*.map"
   - web/dist/**
   - schema/**
-  - plugin/**
+  - skill/**
   - package.json
 artifactName: Inner-Graph-${version}-${os}-${arch}.${ext}
 mac:
