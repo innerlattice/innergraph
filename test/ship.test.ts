@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bump, changes, prepend, section, stampVersion } from "../scripts/ship.js";
+import { bump, changes, prepend, section, stampVersion, tagMessage } from "../scripts/ship.js";
 
 describe("shipping a version", () => {
   it("bumps semver", () => {
@@ -15,6 +15,10 @@ describe("shipping a version", () => {
     expect(entry).toBe("## 0.3.0 — 2026-10-01\n\n- Loops glow\n");
     expect(prepend("# Changelog\n\nIntro.\n\n## 0.2.0 — x\n\n- old\n", entry)).toBe("# Changelog\n\nIntro.\n\n## 0.3.0 — 2026-10-01\n\n- Loops glow\n\n## 0.2.0 — x\n\n- old\n");
     expect(prepend("# Changelog\n", entry)).toBe(`# Changelog\n\n${entry}`);
+  });
+
+  it("lists the changes in the version's tag", () => {
+    expect(tagMessage("0.3.0", ["Loops glow", "Maps fold"])).toBe("Inner Graph 0.3.0\n\n- Loops glow\n- Maps fold\n");
   });
 
   it("stamps the version wherever the README marks it", () => {

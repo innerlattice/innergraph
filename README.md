@@ -202,7 +202,8 @@ npm run ship -- patch   # or minor, major
 `scripts/ship.ts` checks the tree is clean and has commits since the last version, runs
 `npm run quality` and both builds, bumps the version in `package.json`, adds the commits since
 the last version to [CHANGELOG.md](CHANGELOG.md), stamps the version in this README, then
-commits `Release vX.Y.Z`, tags it and pushes with the tag. It warns when the README, docs and
+commits `Release vX.Y.Z`, tags it (the tag's message lists the same changes, so
+`git show vX.Y.Z` shows them) and pushes with the tag. It warns when the README, docs and
 skill haven't changed since the last version; check they still describe the app. The
 `.githooks/pre-push` hook (installed by `npm install`) refuses a push whose commit isn't a
 version; `git push --no-verify` skips it. Building installers for a version stays manual (see

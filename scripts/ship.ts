@@ -22,8 +22,15 @@ export function changes(subjects: string[]): string[] {
   return subjects.filter((s) => s.trim() && !/^Release v\d/.test(s));
 }
 
+const bullets = (subjects: string[]) => subjects.map((s) => `- ${s}`).join("\n");
+
 export function section(version: string, date: string, subjects: string[]): string {
-  return `## ${version} — ${date}\n\n${subjects.map((s) => `- ${s}`).join("\n")}\n`;
+  return `## ${version} — ${date}\n\n${bullets(subjects)}\n`;
+}
+
+/** The tag's message: the version's changes, as in the changelog, so `git show vX.Y.Z` lists them. */
+export function tagMessage(version: string, subjects: string[]): string {
+  return `Inner Graph ${version}\n\n${bullets(subjects)}\n`;
 }
 
 /** Puts the new version's section at the top, under the title. */
@@ -75,7 +82,7 @@ function main(): void {
   write(version, subjects);
   git("add", "package.json", "package-lock.json", "CHANGELOG.md", "README.md");
   git("commit", "-m", `Release v${version}`);
-  git("tag", "-a", `v${version}`, "-m", `Inner Graph ${version}`);
+  git("tag", "-a", `v${version}`, "-m", tagMessage(version, subjects));
   console.log(`ship: v${version}, with ${subjects.length} change${subjects.length === 1 ? "" : "s"}.`);
   if (process.argv.includes("--no-push")) console.log("ship: push with: git push --follow-tags");
   else run("git", "push", "--follow-tags");
