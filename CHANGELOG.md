@@ -3,6 +3,10 @@
 Every version of Inner Graph, newest first. `npm run ship` writes each section from the commits
 since the version before it.
 
+## 0.3.0 — 2026-09-28
+
+- Agents connect over MCP and get the skill as its instructions; the chat command that launched a harness is gone
+
 ## 0.2.0 — 2026-09-27
 
 - Every push ships as a version: npm run ship bumps semver, writes the changelog and tags, and installers build on demand in CI
