@@ -42,8 +42,8 @@ npm run dist      # installers for this platform → release/
 `npm run dist` on a Mac builds both `.dmg`s (ad-hoc signed, so they run on Apple silicon).
 Windows installers are built by the [Installers](.github/workflows/installers.yml) workflow,
 which runs only when started by hand (Actions → Installers → Run workflow). Run it on a
-version tag and it also drafts a GitHub release with the installers and that version's
-changelog, ready to publish.
+version tag and it also publishes a GitHub release with the installers and that version's
+changelog once both builds finish.
 
 ## Quick start
 
