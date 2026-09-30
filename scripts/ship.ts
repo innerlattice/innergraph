@@ -2,7 +2,7 @@
 // is clean and there is something new, runs the quality gate and the builds, bumps the version,
 // writes the changelog from the commits since the last version, updates the version in the README,
 // then commits, tags and pushes. The pre-push hook refuses pushes that skip this.
-// Building the installers stays a separate, manual step (see README).
+// Building the installers stays a separate, manual step (see CONTRIBUTING.md).
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -72,7 +72,7 @@ function main(): void {
   const kind = process.argv[2] as Kind;
   if (!KINDS.includes(kind)) fail(`usage: npm run ship -- ${KINDS.join("|")} [--no-push]`);
   const { last, subjects } = pending();
-  const docs = git("diff", "--name-only", `${last}..HEAD`, "--", "README.md", "docs", "skill");
+  const docs = git("diff", "--name-only", `${last}..HEAD`, "--", "README.md", "CONTRIBUTING.md", "docs", "skill");
   if (!docs) console.warn(`ship: README, docs and the skill are unchanged since ${last}; check they still describe the app.`);
   run("npm", "run", "quality");
   run("npm", "run", "build");
