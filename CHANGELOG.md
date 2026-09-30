@@ -3,6 +3,10 @@
 Every version of Inner Graph, newest first. `npm run ship` writes each section from the commits
 since the version before it.
 
+## 0.3.3 — 2026-09-30
+
+- The README is for people using the app; running from source, architecture and MCP details have their own pages
+
 ## 0.3.2 — 2026-09-30
 
 - Building installers for a version publishes its release when the builds finish
