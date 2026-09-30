@@ -3,6 +3,10 @@
 Every version of Inner Graph, newest first. `npm run ship` writes each section from the commits
 since the version before it.
 
+## 0.3.2 — 2026-09-30
+
+- Building installers for a version publishes its release when the builds finish
+
 ## 0.3.1 — 2026-09-28
 
 - A version's tag lists what changed in it, as the changelog does
