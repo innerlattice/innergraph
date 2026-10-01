@@ -3,6 +3,10 @@
 Every version of Inner Graph, newest first. `npm run ship` writes each section from the commits
 since the version before it.
 
+## 0.3.4 — 2026-10-01
+
+- Maps made by an earlier version get their node shapes back: the app brings a Vault up to the Schema it ships with when it starts
+
 ## 0.3.3 — 2026-09-30
 
 - The README is for people using the app; running from source, architecture and MCP details have their own pages
