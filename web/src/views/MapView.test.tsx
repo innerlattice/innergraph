@@ -39,8 +39,8 @@ const node = {
   staleEvidence: 0,
 };
 const nodes = { n1: { ...node, id: "n1", label: "One" }, n2: { ...node, id: "n2", label: "Two" }, p9: { ...node, id: "p9", label: "Ghost" } };
-const now = { nodes, edges: {}, counts: { active: 3, removed: 1 }, position: HLC2 };
-const past = { ...now, nodes: {}, counts: { active: 0, removed: 0 }, position: HLC1 };
+const now = { nodes, edges: {}, removedCount: 1, position: HLC2 };
+const past = { ...now, nodes: {}, removedCount: 0, position: HLC1 };
 const routes: Record<string, unknown> = {
   "/api/positions": [HLC1, HLC2],
   "/api/schema": {
@@ -133,7 +133,7 @@ it("opens history from the status bar and shows removed items on request", async
   fireEvent.click(screen.getByText("Ghost"));
   expect(await screen.findByText("Ghost", { selector: "h3" })).toBeTruthy();
   fireEvent.click(screen.getByLabelText("Show removed (1)"));
-  await waitFor(() => expect(calls.some((c) => c.url.includes("statuses=active,removed"))).toBe(true));
+  await waitFor(() => expect(calls.some((c) => c.url.includes("removed=1"))).toBe(true));
 });
 
 it("drops selected items that leave the graph", async () => {

@@ -94,15 +94,15 @@ function revisionDrafts(revision: Revision, actor: ActorId, session: string, add
     .map((target) => ({
       actor,
       session,
-      type: "StatusChanged" as const,
-      body: { target, status: "superseded" as const, reason: "no longer supported by the edited entry" },
+      type: "Marked" as const,
+      body: { target, removed: true, reason: "no longer supported by the edited entry" },
     }));
   return [...revision.updates.map((u) => amendmentDraft(u, actor, session)), ...retractions, ...graphDrafts(revision.added, actor, session)];
 }
 
 function allLive(state: ProjectionState): ContextNode[] {
   return Object.values(state.graph.nodes)
-    .filter((n) => n.status === "hypothesis" || n.status === "accepted")
+    .filter((n) => !n.removed)
     .map(({ id, type, label }) => ({ id, type, label }));
 }
 

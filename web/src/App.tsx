@@ -47,7 +47,7 @@ function useSelection(view: GraphView | undefined) {
 
 /** Every item and how its kind looks, kept live, so chips and tool cards name what they touched. */
 function useMapItems() {
-  const view = useAsync(() => api.view(["active", "removed"]));
+  const view = useAsync(() => api.view(true));
   const schema = useAsync(api.schema);
   useLive(view.reload);
   const items = useMemo(() => ({ view: view.data, schema: schema.data ?? null }), [view.data, schema.data]);

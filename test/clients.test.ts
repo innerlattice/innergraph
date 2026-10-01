@@ -54,7 +54,7 @@ describe("HTTP client", () => {
     expect((await call(app, `/api/jobs/${added.json.session}`)).json.state).toBe("done");
     const changes = (await call(app, "/api/changes?limit=5")).json;
     expect(changes[0]).toMatchObject({ session: added.json.session, purpose: "ingest" });
-    expect((await call(app, "/api/view?statuses=active,removed,bogus")).json.counts).toEqual({ active: 9, removed: 0 });
+    expect((await call(app, "/api/view?removed=1")).json.removedCount).toBe(0);
 
     const graph = (await call(app, "/api/graph")).json;
     const shame = Object.values(graph.nodes as Record<string, { id: string; label: string }>).find((n) => n.label === "Shame") as { id: string };
@@ -91,7 +91,7 @@ describe("HTTP client", () => {
 
     await call(app, `/api/items/${shame.id}/attributes`, { label: "Shame (social)" });
     await call(app, "/api/confirm", { ids: [shame.id] });
-    expect((await call(app, `/api/nodes/${shame.id}`)).json.node).toMatchObject({ label: "Shame (social)", status: "active", confirmed: true });
+    expect((await call(app, `/api/nodes/${shame.id}`)).json.node).toMatchObject({ label: "Shame (social)", removed: false, confirmed: true });
     expect((await call(app, "/api/remove", { ids: [shame.id] })).json.removed).toEqual([shame.id]);
     expect((await call(app, "/api/undo-session", { session: added.json.session })).status).toBe(200);
     expect((await call(app, "/api/undo-session", {})).status).toBe(404);

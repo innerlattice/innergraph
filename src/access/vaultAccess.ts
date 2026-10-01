@@ -5,7 +5,7 @@ import { HlcClock } from "../utilities/hlc.js";
 import type { Db } from "./database.js";
 import { checkDraft } from "./invariants.js";
 import { applyEvent, fold } from "./projection.js";
-import { VIEW_STATUSES, materialize } from "./view.js";
+import { materialize } from "./view.js";
 
 interface EventRow {
   id: string;
@@ -176,19 +176,19 @@ export class VaultAccess {
     return value;
   }
 
-  /** Writes the materialized View (all statuses) for SQL consumers; a disposable cache. */
+  /** Writes the materialized View (removed items too) for SQL consumers; a disposable cache. */
   private writeDerived(state: ProjectionState): void {
-    const view = materialize(state, VIEW_STATUSES);
+    const view = materialize(state, true);
     this.db.exec("DELETE FROM view_nodes; DELETE FROM view_edges; DELETE FROM view_evidence;");
     const node = this.db.prepare("INSERT INTO view_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     const edge = this.db.prepare("INSERT INTO view_edges VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
     const evidence = this.db.prepare("INSERT INTO view_evidence VALUES (?, ?, ?, ?)");
     for (const n of Object.values(view.nodes)) {
-      node.run(n.id, n.type, n.label, n.status, Number(n.confirmed), n.confidence, JSON.stringify(n.attributes), JSON.stringify(n.derivedFrom));
+      node.run(n.id, n.type, n.label, Number(n.removed), Number(n.confirmed), n.confidence, JSON.stringify(n.attributes), JSON.stringify(n.derivedFrom));
       for (const ev of n.evidence) evidence.run(n.id, ev.entry, ev.start, ev.end);
     }
     for (const e of Object.values(view.edges)) {
-      edge.run(e.id, e.type, e.from, e.to, e.sign ?? null, e.status, Number(e.confirmed), e.confidence, JSON.stringify(e.attributes));
+      edge.run(e.id, e.type, e.from, e.to, e.sign ?? null, Number(e.removed), Number(e.confirmed), e.confidence, JSON.stringify(e.attributes));
       for (const ev of e.evidence) evidence.run(e.id, ev.entry, ev.start, ev.end);
     }
   }

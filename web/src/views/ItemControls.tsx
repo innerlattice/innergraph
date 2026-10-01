@@ -2,7 +2,7 @@
 // Nothing waits for approval: every change lands at once and can be undone.
 import { Check, type LucideIcon, RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { type ViewStatus, api } from "../api";
+import { api } from "../api";
 import { IconButton } from "../components/IconButton";
 import { ErrorNote } from "../components/ui";
 
@@ -28,13 +28,13 @@ const HINTS: Record<ActionKind, string> = {
 };
 
 export interface ItemState {
-  status: ViewStatus;
+  removed: boolean;
   confirmed: boolean;
 }
 
 /** What makes sense for a set of items: restore if all are removed; otherwise remove, and confirm while any is unconfirmed. */
 export function kindsFor(items: ItemState[]): ActionKind[] {
-  const active = items.filter((i) => i.status === "active");
+  const active = items.filter((i) => !i.removed);
   if (items.length > 0 && active.length === 0) return ["restore"];
   return active.some((i) => !i.confirmed) ? ["confirm", "remove"] : ["remove"];
 }

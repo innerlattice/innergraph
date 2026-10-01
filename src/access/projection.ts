@@ -10,7 +10,6 @@ import {
   type GraphNode,
   type ProjectionState,
   type SpanMove,
-  type Status,
   type VaultEvent,
   GRAPH_EVENT_TYPES,
   USER,
@@ -83,8 +82,9 @@ function migrateGraph(graph: Graph, nodeMap: Record<string, string>, edgeMap: Re
 
 // ---- graph events ----------------------------------------------------------------
 
-function statusFor(actor: ActorId): Status {
-  return actor === USER ? "accepted" : "hypothesis";
+/** A new item is on the map, and confirmed when the person made it. */
+function freshState(actor: ActorId): { removed: boolean; confirmed: boolean } {
+  return { removed: false, confirmed: actor === USER };
 }
 
 export function mergeEvidence(a: Evidence[], b: Evidence[]): Evidence[] {
@@ -102,9 +102,12 @@ const graphHandlers: GraphHandlers = {
   NodeAsserted: assertNode,
   EdgeAsserted: assertEdge,
   AttributesChanged: changeAttributes,
-  StatusChanged: (graph, e) => {
+  Marked: (graph, e) => {
     const target = graph.nodes[e.body.target] ?? graph.edges[e.body.target];
-    if (target) touch(target, e).status = e.body.status;
+    if (!target) return;
+    if (e.body.removed !== undefined) target.removed = e.body.removed;
+    if (e.body.confirmed !== undefined) target.confirmed = e.body.confirmed;
+    touch(target, e);
   },
   NodesSplit: splitNode,
   NodesMerged: mergeNodes,
@@ -128,7 +131,7 @@ function assertNode(graph: Graph, e: VaultEvent<"NodeAsserted">): void {
   const { similarTo: _hint, ...body } = e.body;
   graph.nodes[e.body.id] = {
     ...body,
-    status: statusFor(e.actor),
+    ...freshState(e.actor),
     derivedFrom: [],
     assertedBy: e.actor,
     assertedAt: e.hlc,
@@ -153,7 +156,7 @@ function assertEdge(graph: Graph, e: VaultEvent<"EdgeAsserted">): void {
   if (!graph.nodes[e.body.from] || !graph.nodes[e.body.to]) return;
   graph.edges[e.body.id] = {
     ...e.body,
-    status: statusFor(e.actor),
+    ...freshState(e.actor),
     assertedBy: e.actor,
     assertedAt: e.hlc,
     updatedAt: e.hlc,
@@ -195,7 +198,7 @@ function splitNode(graph: Graph, e: VaultEvent<"NodesSplit">): void {
       label: part.label,
       type: part.type ?? source.type,
       attributes: { ...source.attributes, ...part.attributes },
-      status: statusFor(e.actor),
+      ...freshState(e.actor),
       evidence: part.evidence,
       derivedFrom: [source.id],
       assertedBy: e.actor,
@@ -204,7 +207,7 @@ function splitNode(graph: Graph, e: VaultEvent<"NodesSplit">): void {
     };
     for (const edgeId of part.edges) reattach(graph.edges[edgeId], source.id, part.id);
   }
-  touch(source, e).status = "superseded";
+  touch(source, e).removed = true;
 }
 
 function mergeNodes(graph: Graph, e: VaultEvent<"NodesMerged">): void {
@@ -213,7 +216,7 @@ function mergeNodes(graph: Graph, e: VaultEvent<"NodesMerged">): void {
   graph.nodes[e.body.into.id] = {
     ...e.body.into,
     confidence: Math.max(...sources.map((s) => s.confidence)),
-    status: statusFor(e.actor),
+    ...freshState(e.actor),
     evidence: sources.reduce<Evidence[]>((acc, s) => mergeEvidence(acc, s.evidence), []),
     derivedFrom: sources.map((s) => s.id),
     assertedBy: e.actor,
@@ -221,7 +224,7 @@ function mergeNodes(graph: Graph, e: VaultEvent<"NodesMerged">): void {
     updatedAt: e.hlc,
   };
   for (const source of sources) {
-    touch(source, e).status = "superseded";
+    touch(source, e).removed = true;
     for (const edge of Object.values(graph.edges)) reattach(edge, source.id, e.body.into.id);
   }
 }

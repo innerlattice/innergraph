@@ -6,7 +6,7 @@ import type { AnyEvent, EntryRecord, Evidence, Graph, GraphNode, ProjectionState
 import { type AnalysisEngine, type Loop, type LoopDetail, type LoopStep, type RootTrace, activeGraph } from "../engines/analysisEngine.js";
 import type { RecallEngine, Reranker, SearchHit } from "../engines/recallEngine.js";
 import { toPosition } from "../utilities/hlc.js";
-import { ACTIVE, type GraphView, VIEW_STATUSES, type ViewEdge, type ViewNode, type ViewStatus, materialize, normaliseEvidence } from "../access/view.js";
+import { type GraphView, type ViewEdge, type ViewNode, materialize, withMeta } from "../access/view.js";
 import type { Embedder } from "../utilities/modelGateway.js";
 import { cachedVectors, graphDocs } from "./graphSearch.js";
 import { byteOffset } from "../utilities/crypto.js";
@@ -25,9 +25,7 @@ export interface ExploreDeps {
 }
 
 export interface ViewOptions {
-  /** Which statuses to materialize (default: active). */
-  statuses?: readonly ViewStatus[];
-  /** Shorthand: also materialize removed items. */
+  /** Also materialize removed items. */
   removed?: boolean;
   /** A past position (ISO date or HLC). */
   at?: string;
@@ -36,7 +34,7 @@ export interface ViewOptions {
 interface GraphSearchHit extends SearchHit {
   label: string;
   type: string;
-  status: string;
+  removed: boolean;
   evidence?: string;
 }
 
@@ -117,7 +115,7 @@ export interface SelectionItem {
   kind: "node" | "edge";
   type: string;
   label: string;
-  status: string;
+  removed: boolean;
   confirmed: boolean;
 }
 
@@ -129,9 +127,9 @@ export interface Selection {
 
 function describeItem(view: GraphView, id: string): SelectionItem | undefined {
   const node = view.nodes[id];
-  if (node) return { id, kind: "node", type: node.type, label: node.label, status: node.status, confirmed: node.confirmed };
+  if (node) return { id, kind: "node", type: node.type, label: node.label, removed: node.removed, confirmed: node.confirmed };
   const edge = view.edges[id];
-  return edge ? { id, kind: "edge", type: edge.type, label: edgeTextIn(view, edge), status: edge.status, confirmed: edge.confirmed } : undefined;
+  return edge ? { id, kind: "edge", type: edge.type, label: edgeTextIn(view, edge), removed: edge.removed, confirmed: edge.confirmed } : undefined;
 }
 
 export interface LoopStepView extends LoopStep {
@@ -150,21 +148,14 @@ export interface LoopView extends Omit<LoopDetail, "steps" | "inputs" | "outputs
 function describeHit(vault: VaultAccess, view: GraphView, hit: SearchHit): GraphSearchHit {
   const item = describeItem(view, hit.id) as SelectionItem;
   const first = (view.nodes[hit.id] ?? view.edges[hit.id])?.evidence[0];
-  return { ...hit, label: item.label, type: item.type, status: item.status, evidence: first ? vault.readSpan(first) : undefined };
+  return { ...hit, label: item.label, type: item.type, removed: item.removed, evidence: first ? vault.readSpan(first) : undefined };
 }
 
 /** Nodes merged or split away are history, not part of the View; lineage links still open them. */
 function replacedNode(state: ProjectionState, id: string): ViewNode | undefined {
   const node = state.graph.nodes[id];
   if (!node) return undefined;
-  const { evidence, stale } = normaliseEvidence(node.evidence, state);
-  const { status: _s, ...rest } = node;
-  return { ...rest, evidence, status: "removed", confirmed: false, staleEvidence: stale };
-}
-
-function filterFor(options: ViewOptions): readonly ViewStatus[] {
-  if (options.statuses && options.statuses.length > 0) return options.statuses;
-  return options.removed ? VIEW_STATUSES : ACTIVE;
+  return withMeta(node, state);
 }
 
 export class ExploreManager {
@@ -174,15 +165,15 @@ export class ExploreManager {
     return this.deps.vault.state().schema;
   }
 
-  graph(options: { includeSuperseded?: boolean } = {}): Graph {
+  graph(options: { includeRemoved?: boolean } = {}): Graph {
     const graph = this.deps.vault.state().graph;
-    return options.includeSuperseded ? graph : activeGraph(graph);
+    return options.includeRemoved ? graph : activeGraph(graph);
   }
 
-  /** The materialized View the graph display renders: one status per item, filtered. */
+  /** The materialized View the graph display renders. */
   view(options: ViewOptions = {}): GraphView {
     const state = options.at ? this.deps.vault.stateAt(toPosition(options.at)) : this.deps.vault.state();
-    return materialize(state, filterFor(options));
+    return materialize(state, options.removed);
   }
 
   /** What changed, grouped by Session, newest first; each Session can be undone as a whole. */
@@ -191,11 +182,11 @@ export class ExploreManager {
     return changeFeed(vault.events(), vault.state(), limit);
   }
 
-  /** A Node from the View (whatever its status), with Edges filtered like the View. */
+  /** A Node from the View (removed or not), with Edges filtered like the View. */
   node(id: string, options: ViewOptions = {}): NodeView {
     const state = this.deps.vault.state();
-    const node = requireFound(materialize(state, VIEW_STATUSES).nodes[id] ?? replacedNode(state, id), `Node ${id}`);
-    const shown = materialize(state, filterFor(options));
+    const node = requireFound(materialize(state, true).nodes[id] ?? replacedNode(state, id), `Node ${id}`);
+    const shown = materialize(state, options.removed);
     const edges = Object.values(shown.edges);
     return {
       node,
@@ -209,7 +200,7 @@ export class ExploreManager {
 
   edge(id: string): EdgeView {
     const state = this.deps.vault.state();
-    const all = materialize(state, VIEW_STATUSES);
+    const all = materialize(state, true);
     const edge = requireFound(all.edges[id], `Edge ${id}`);
     return {
       edge,
@@ -319,7 +310,7 @@ export class ExploreManager {
   /** What the user currently has selected in the graph view. */
   selection(): Selection {
     const stored = this.deps.vault.readSetting<{ ids: string[]; at: string }>("selection") ?? { ids: [], at: "" };
-    const view = materialize(this.deps.vault.state(), VIEW_STATUSES);
+    const view = materialize(this.deps.vault.state(), true);
     const items = stored.ids.map((id) => describeItem(view, id)).filter((i): i is SelectionItem => i !== undefined);
     return { ...stored, items };
   }

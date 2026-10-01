@@ -55,8 +55,8 @@ export function ErrorNote(props: { error?: string }) {
 }
 
 /** Only the exception is worth saying: removed. Confirmed is the expected case and shows nothing. */
-export function StatusPill(props: { status: string }) {
-  if (props.status === "removed") return <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-400 line-through">removed</span>;
+export function StatusPill(props: { removed: boolean }) {
+  if (props.removed) return <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-400 line-through">removed</span>;
   return null;
 }
 

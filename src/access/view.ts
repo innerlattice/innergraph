@@ -1,34 +1,22 @@
-// The materialized View: one read model every Client renders from. Each Node and Edge gets
-// exactly one user-facing status, evidence is normalised once, and a status filter decides
-// what is materialized ("Show declined" widens the filter; nothing else special-cases it).
+// The materialized View: one read model every Client renders from. Evidence is normalised
+// once, and one switch decides whether removed items are materialized too ("Show removed";
+// nothing else special-cases them). Items replaced by a refactor (merged or split away) are
+// history only, never materialized.
 import type { Evidence, GraphEdge, GraphNode, ProjectionState } from "../core/types.js";
 
-/**
- * - active: on the map (`confirmed` when the person has said it is right)
- * - removed: taken off the map; kept in history, restorable
- * Items replaced by a refactor (merged or split away) are history only, never materialized.
- */
-export type ViewStatus = "active" | "removed";
-
-export const VIEW_STATUSES: readonly ViewStatus[] = ["active", "removed"];
-export const ACTIVE: readonly ViewStatus[] = ["active"];
-
 interface ViewMeta {
-  status: ViewStatus;
-  /** The person confirmed it (or wrote it themselves). */
-  confirmed: boolean;
   /** Evidence that pointed into earlier versions of an Entry and is no longer shown. */
   staleEvidence: number;
 }
 
-export type ViewNode = Omit<GraphNode, "status"> & ViewMeta;
-export type ViewEdge = Omit<GraphEdge, "status"> & ViewMeta;
+export type ViewNode = GraphNode & ViewMeta;
+export type ViewEdge = GraphEdge & ViewMeta;
 
 export interface GraphView {
   nodes: Record<string, ViewNode>;
   edges: Record<string, ViewEdge>;
-  /** How many items have each status, whatever the filter. */
-  counts: Record<ViewStatus, number>;
+  /** How many items are removed, whether or not they are shown. */
+  removedCount: number;
   position: string;
   /** Nodes merged or split away, each with the nodes made from it, so old references can follow. */
   replaced: Record<string, string[]>;
@@ -54,7 +42,7 @@ export function normaliseEvidence(evidence: Evidence[], state: ProjectionState):
   return { evidence: kept.sort((a, b) => a.entry.localeCompare(b.entry) || a.start - b.start), stale: evidence.length - current.length };
 }
 
-// ---- status ---------------------------------------------------------------------------
+// ---- materializing --------------------------------------------------------------------
 
 function replacedIds(state: ProjectionState): Set<string> {
   return new Set(Object.values(state.graph.nodes).flatMap((n) => n.derivedFrom));
@@ -69,17 +57,16 @@ function replacements(state: ProjectionState): Record<string, string[]> {
   return out;
 }
 
-function withMeta<T extends GraphNode | GraphEdge>(item: T, state: ProjectionState): Omit<T, "status"> & ViewMeta {
+export function withMeta<T extends GraphNode | GraphEdge>(item: T, state: ProjectionState): T & ViewMeta {
   const { evidence, stale } = normaliseEvidence(item.evidence, state);
-  const { status, ...rest } = item;
-  return { ...rest, evidence, status: status === "superseded" ? "removed" : "active", confirmed: status === "accepted", staleEvidence: stale };
+  return Object.assign({}, item, { evidence, staleEvidence: stale });
 }
 
 /** Every item that could be materialized. Replaced items are left out. */
 function candidates(state: ProjectionState): (GraphNode | GraphEdge)[] {
   const replaced = replacedIds(state);
   const { nodes, edges } = state.graph;
-  return [...Object.values(nodes), ...Object.values(edges)].filter((i) => !(i.status === "superseded" && replaced.has(i.id)));
+  return [...Object.values(nodes), ...Object.values(edges)].filter((i) => !(i.removed && replaced.has(i.id)));
 }
 
 function isEdge(item: ViewNode | ViewEdge): item is ViewEdge {
@@ -87,18 +74,16 @@ function isEdge(item: ViewNode | ViewEdge): item is ViewEdge {
 }
 
 /**
- * Materializes the View: items whose status is in `include`, Edges only when both of their
- * Nodes are materialized too.
+ * Materializes the View: items on the map, and removed ones too when `includeRemoved`; Edges
+ * only when both of their Nodes are materialized too.
  */
-export function materialize(state: ProjectionState, include: readonly ViewStatus[] = ACTIVE): GraphView {
+export function materialize(state: ProjectionState, includeRemoved = false): GraphView {
   const all = candidates(state).map((item): ViewNode | ViewEdge => ("from" in item ? withMeta(item, state) : withMeta(item, state)));
-  const counts = { active: 0, removed: 0 };
-  for (const item of all) counts[item.status]++;
-  const wanted = new Set(include);
-  const chosen = all.filter((i) => wanted.has(i.status));
+  const removedCount = all.filter((i) => i.removed).length;
+  const chosen = all.filter((i) => includeRemoved || !i.removed);
   const nodes: Record<string, ViewNode> = {};
   for (const i of chosen) if (!isEdge(i)) nodes[i.id] = i;
   const edges: Record<string, ViewEdge> = {};
   for (const i of chosen) if (isEdge(i) && nodes[i.from] && nodes[i.to]) edges[i.id] = i;
-  return { nodes, edges, counts, position: state.position, replaced: replacements(state) };
+  return { nodes, edges, removedCount, position: state.position, replaced: replacements(state) };
 }

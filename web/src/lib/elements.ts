@@ -35,7 +35,7 @@ function nodeElement(n: ViewNode, schema: Schema | null): ElementDefinition {
       litW: lit.width,
       litH: lit.height,
     },
-    classes: `${n.status} style-${look.style}`,
+    classes: n.removed ? `removed style-${look.style}` : `style-${look.style}`,
   };
 }
 
@@ -47,7 +47,7 @@ export function edgeLabel(e: { type: string; sign?: number }, schema: Schema | n
 function edgeElement(e: ViewEdge, schema: Schema | null): ElementDefinition {
   return {
     data: { id: e.id, source: e.from, target: e.to, label: edgeLabel(e, schema) },
-    classes: `look-${edgeLookOf(roleOf(schema, e.type), e.sign)} ${e.status}`,
+    classes: `look-${edgeLookOf(roleOf(schema, e.type), e.sign)}${e.removed ? " removed" : ""}`,
   };
 }
 

@@ -4,7 +4,6 @@ import { streamSSE } from "hono/streaming";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { InvariantError } from "../access/invariants.js";
 import { SchemaError } from "../access/schemaAccess.js";
-import { VIEW_STATUSES, type ViewStatus } from "../access/view.js";
 import { ChatFullError } from "../managers/chatManager.js";
 import { ForbiddenError, NotFoundError, requireFound } from "../managers/sessions.js";
 import { ChatModelError } from "../utilities/chatModel.js";
@@ -41,10 +40,9 @@ function route(handler: Handler) {
 
 const body = (c: Context) => c.req.json();
 
-/** `?statuses=active,removed` → the View filter; unknown words are ignored. */
-function statusesOf(c: Context): ViewStatus[] | undefined {
-  const raw = c.req.query("statuses");
-  return raw ? raw.split(",").filter((s): s is ViewStatus => (VIEW_STATUSES as readonly string[]).includes(s)) : undefined;
+/** `?removed=1`: removed items are shown too. */
+function removedOf(c: Context): boolean {
+  return c.req.query("removed") === "1";
 }
 
 const STREAM_INTERVAL_MS = 400;
@@ -70,7 +68,7 @@ function registerReads(app: Hono, vault: Vault): void {
   );
   app.get(
     "/api/graph",
-    route((c) => explore.graph({ includeSuperseded: c.req.query("superseded") === "1" })),
+    route((c) => explore.graph({ includeRemoved: removedOf(c) })),
   );
   app.get(
     "/api/graph/at",
@@ -86,11 +84,11 @@ function registerReads(app: Hono, vault: Vault): void {
   );
   app.get(
     "/api/view",
-    route((c) => explore.view({ statuses: statusesOf(c), at: c.req.query("t") || undefined })),
+    route((c) => explore.view({ removed: removedOf(c), at: c.req.query("t") || undefined })),
   );
   app.get(
     "/api/nodes/:id",
-    route((c) => explore.node(c.req.param("id") ?? "", { statuses: statusesOf(c) })),
+    route((c) => explore.node(c.req.param("id") ?? "", { removed: removedOf(c) })),
   );
   app.get(
     "/api/edges/:id",

@@ -7,8 +7,8 @@ type Summary = UndoResult["summary"];
 
 const PHRASES: [keyof Summary, string, string][] = [
   ["retired", "remove", "item added since|items added since"],
-  ["restored", "restore", "status|statuses"],
-  ["changed", "undo", "edit|edits"],
+  ["restored", "bring back", "removed item|removed items"],
+  ["changed", "undo", "change|changes"],
 ];
 
 export function describeRevert(s: Summary): string {

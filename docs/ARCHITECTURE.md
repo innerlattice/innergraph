@@ -28,8 +28,8 @@ Layers follow SPEC.md; calls go down only, and every Client calls Managers.
 - **Every change is a Session.** Any Actor's graph Events apply as written; each Session
   (an ingest, a rename, a merge) can be undone as a whole. The person's own assertions are
   confirmed; agents' are unconfirmed until the person says "Looks right".
-- **One View.** Every item is `active` (optionally `confirmed`) or `removed`; clients render
-  the materialized View (`src/access/view.ts`) and "Show removed" only widens its filter.
+- **One View.** Every item carries two independent flags, `removed` and `confirmed`; clients
+  render the materialized View (`src/access/view.ts`) and "Show removed" only widens it.
 - **Roles, not type names.** Engines read only `derivational`, `causal`, `identity` from the
   Schema. Theory vocabulary lives only in `schema/author.yaml`.
 - **Evidence is verified.** Models cite verbatim quotes; `evidenceLocator` turns them into

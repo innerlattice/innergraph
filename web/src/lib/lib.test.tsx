@@ -18,13 +18,13 @@ const schema = {
 const base = { attributes: {}, confidence: 0.5, evidence: [], assertedBy: "user", assertedAt: "", updatedAt: "", confirmed: false, staleEvidence: 0 };
 const graph: Pick<GraphView, "nodes" | "edges"> = {
   nodes: {
-    n1: { ...base, id: "n1", type: "a", label: "One", status: "active", derivedFrom: [] },
-    n2: { ...base, id: "n2", type: "b", label: "Two", status: "active", confirmed: true, derivedFrom: [] },
+    n1: { ...base, id: "n1", type: "a", label: "One", removed: false, derivedFrom: [] },
+    n2: { ...base, id: "n2", type: "b", label: "Two", removed: false, confirmed: true, derivedFrom: [] },
   },
   edges: {
-    e1: { ...base, id: "e1", type: "c", from: "n1", to: "n2", sign: -1, status: "active", confirmed: true },
-    e2: { ...base, id: "e2", type: "d", from: "n2", to: "n1", sign: 1, status: "active" },
-    e3: { ...base, id: "e3", type: "x", from: "n2", to: "n1", status: "active" },
+    e1: { ...base, id: "e1", type: "c", from: "n1", to: "n2", sign: -1, removed: false, confirmed: true },
+    e2: { ...base, id: "e2", type: "d", from: "n2", to: "n1", sign: 1, removed: false },
+    e3: { ...base, id: "e3", type: "x", from: "n2", to: "n1", removed: false },
   },
 };
 
@@ -73,8 +73,9 @@ describe("format helpers", () => {
       ["EdgeAsserted", { type: "c", from: "n1", to: "n2", sign: -1, confidence: 0.5 }, "One —c (−)→ Two (50%)"],
       ["EdgeAsserted", { type: "c", from: "n1", to: "zzzzzzzz", sign: 1, confidence: 0.5 }, "One —c (+)→ zzzzzz (50%)"],
       ["EdgeAsserted", { type: "d", from: "n1", to: "n2", confidence: 1 }, "One —d→ Two (100%)"],
-      ["StatusChanged", { target: "n1", status: "superseded" }, "One → removed"],
-      ["StatusChanged", { target: "n1", status: "odd" }, "One → odd"],
+      ["Marked", { target: "n1", removed: true }, "One → removed"],
+      ["Marked", { target: "n1", removed: false, confirmed: true }, "One → restored, confirmed"],
+      ["Marked", { target: "n1", confirmed: false }, "One → unconfirmed"],
       ["AttributesChanged", { target: "n2" }, "edit Two"],
       ["NodesSplit", { source: "n1", into: [{ label: "A" }, { label: "B" }] }, "split One into A, B"],
       ["NodesMerged", { sources: ["n1", "n2"], into: { label: "M" } }, "merge One + Two into “M”"],
@@ -103,10 +104,10 @@ describe("graph elements", () => {
   it("draws nodes from Schema display hints and label styles", () => {
     const elements = toElements(graph, schema);
     const n1 = elements.find((e) => e.data.id === "n1");
-    expect(n1?.classes).toBe("active style-statement");
+    expect(n1?.classes).toBe("style-statement");
     expect(n1?.data).toMatchObject({ shape: "round-rectangle", color: "#123456" });
     const n2 = elements.find((e) => e.data.id === "n2");
-    expect(n2?.classes).toBe("active style-name");
+    expect(n2?.classes).toBe("style-name");
     expect(n2?.data.shape).toBe("ellipse");
     expect(n2?.data.image).toMatch(/^data:image\/svg\+xml/);
     expect(n2?.data.imageW).toBeGreaterThan(n2?.data.w);
@@ -119,9 +120,9 @@ describe("graph elements", () => {
 
   it("classes edges by role and sign, labelling causal edges by sign", () => {
     const elements = toElements(graph, schema);
-    expect(elements.find((e) => e.data.id === "e1")).toMatchObject({ classes: "look-decreases active", data: { label: "−" } });
-    expect(elements.find((e) => e.data.id === "e2")?.classes).toBe("look-builds-on active");
-    expect(elements.find((e) => e.data.id === "e3")?.classes).toBe("look-plain active");
+    expect(elements.find((e) => e.data.id === "e1")).toMatchObject({ classes: "look-decreases", data: { label: "−" } });
+    expect(elements.find((e) => e.data.id === "e2")?.classes).toBe("look-builds-on");
+    expect(elements.find((e) => e.data.id === "e3")?.classes).toBe("look-plain");
     expect(edgeLookOf("causal", 1)).toBe("increases");
     expect(edgeLookOf("identity")).toBe("part-of");
     expect(edgeLabel({ ...graph.edges.e1, sign: 1 }, schema)).toBe("+");

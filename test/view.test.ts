@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fold } from "../src/access/projection.js";
-import { ACTIVE, VIEW_STATUSES, materialize, normaliseEvidence } from "../src/access/view.js";
+import { materialize, normaliseEvidence } from "../src/access/view.js";
 import type { AnyEvent } from "../src/core/types.js";
 
 let clock = 0;
@@ -24,7 +24,7 @@ function scenario() {
     ev(node("approved")),
     ev({ ...node("proposed"), actor: "agent:a", session: "p1" }),
     ev(node("retired")),
-    ev({ type: "StatusChanged", body: { target: "retired", status: "superseded" } }),
+    ev({ type: "Marked", body: { target: "retired", removed: true } }),
     ev(node("a")),
     ev(node("b")),
     ev({ type: "NodesMerged", body: { sources: ["a", "b"], into: { id: "ab", label: "AB", type: "t", attributes: {} } } }),
@@ -34,24 +34,24 @@ function scenario() {
 }
 
 describe("materialized view", () => {
-  it("gives every item one status and leaves refactored-away items out", () => {
-    const view = materialize(scenario(), VIEW_STATUSES);
-    const status = Object.fromEntries(Object.values(view.nodes).map((n) => [n.id, [n.status, n.confirmed]]));
-    expect(status).toEqual({
-      approved: ["active", true],
-      proposed: ["active", false],
-      retired: ["removed", false],
-      ab: ["active", true],
+  it("says whether each item is removed and confirmed, and leaves refactored-away items out", () => {
+    const view = materialize(scenario(), true);
+    const state = Object.fromEntries(Object.values(view.nodes).map((n) => [n.id, [n.removed, n.confirmed]]));
+    expect(state).toEqual({
+      approved: [false, true],
+      proposed: [false, false],
+      retired: [true, true],
+      ab: [false, true],
     });
     expect(view.replaced).toEqual({ a: ["ab"], b: ["ab"] });
-    expect(view.counts).toEqual({ active: 3 + 2, removed: 1 });
+    expect(view.removedCount).toBe(1);
   });
 
-  it("materializes only the filtered statuses, and edges only between materialized nodes", () => {
-    const active = materialize(scenario(), ACTIVE);
+  it("materializes removed items only when asked, and edges only between materialized nodes", () => {
+    const active = materialize(scenario());
     expect(Object.keys(active.nodes).sort()).toEqual(["ab", "approved", "proposed"]);
     expect(Object.keys(active.edges)).toEqual(["x1"]);
-    expect(Object.keys(materialize(scenario(), VIEW_STATUSES).edges).sort()).toEqual(["x1", "x2"]);
+    expect(Object.keys(materialize(scenario(), true).edges).sort()).toEqual(["x1", "x2"]);
   });
 });
 
@@ -75,9 +75,9 @@ describe("view through ExploreManager", async () => {
     const restEdge = Object.values(view.edges).find((e) => e.from === rest)?.id as string;
     t.vault.map.remove([restEdge], "agent:x");
     expect(t.vault.explore.node(rest).outgoing).toEqual([]);
-    expect(t.vault.explore.node(rest, { statuses: ["active", "removed"] }).outgoing[0]).toMatchObject({ id: restEdge, status: "removed" });
-    expect(t.vault.explore.view({ removed: true }).edges[restEdge].status).toBe("removed");
-    expect(t.vault.explore.edge(restEdge).edge.status).toBe("removed");
+    expect(t.vault.explore.node(rest, { removed: true }).outgoing[0]).toMatchObject({ id: restEdge, removed: true });
+    expect(t.vault.explore.view({ removed: true }).edges[restEdge]?.removed).toBe(true);
+    expect(t.vault.explore.edge(restEdge).edge?.removed).toBe(true);
     expect(t.vault.explore.view({ at: "2020-01-01" }).nodes).toEqual({});
     t.cleanup();
   });
@@ -92,7 +92,7 @@ describe("view through ExploreManager", async () => {
       { label: "Merged" },
     );
     const old = t.vault.explore.node(nodes[0].id);
-    expect(old.node.status).toBe("removed");
+    expect(old.node?.removed).toBe(true);
     expect(old.derivedInto.map((n) => n.label)).toEqual(["Merged"]);
     expect(t.vault.explore.view().nodes[nodes[0].id]).toBeUndefined();
     t.cleanup();

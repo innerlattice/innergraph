@@ -1,6 +1,6 @@
 // "History": recent Sessions (an entry decomposed, a rename, a merge…), newest first, each
 // undoable as a whole, plus duplicates worth merging. Opened from the status bar.
-import { BookOpen, Check, FilePen, type LucideIcon, Merge, Minus, PenLine, Plus, Quote, RotateCcw, Split } from "lucide-react";
+import { BookOpen, Check, CircleDashed, FilePen, type LucideIcon, Merge, Minus, PenLine, Plus, Quote, RotateCcw, Split } from "lucide-react";
 import { useState } from "react";
 import { Chip } from "../components/Chip";
 import { ItemChip } from "../components/ItemChip";
@@ -21,6 +21,7 @@ const MARK: Record<ChangeAction, { icon: LucideIcon; word: string; tone: string;
   removed: { icon: Minus, word: "Removed", tone: "text-diff-remove" },
   restored: { icon: RotateCcw, word: "Restored", tone: "text-diff-add" },
   confirmed: { icon: Check, word: "Confirmed", tone: "text-sage-600" },
+  unconfirmed: { icon: CircleDashed, word: "No longer confirmed", tone: "text-stone-400" },
   merged: { icon: Merge, word: "Merged", tone: "text-stone-500", joiner: "from" },
   split: { icon: Split, word: "Split", tone: "text-stone-500", joiner: "into" },
   revised: { icon: FilePen, word: "Entry edited", tone: "text-clay-500" },

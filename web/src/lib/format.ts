@@ -73,12 +73,15 @@ function signMark(sign: number | undefined): string {
   return sign === 1 ? " (+)" : "";
 }
 
-const STATUS_WORDS: Record<string, string> = { superseded: "removed", accepted: "confirmed", hypothesis: "unconfirmed" };
+function markWords(b: { removed?: boolean; confirmed?: boolean }): string {
+  const words = [b.removed === undefined ? "" : b.removed ? "removed" : "restored", b.confirmed === undefined ? "" : b.confirmed ? "confirmed" : "unconfirmed"];
+  return words.filter(Boolean).join(", ");
+}
 
 const DESCRIBERS: Describers = {
   NodeAsserted: (b) => `${b.type}: “${b.label}” (${pct(b.confidence)})`,
   EdgeAsserted: (b, name) => `${name(b.from)} —${b.type}${signMark(b.sign)}→ ${name(b.to)} (${pct(b.confidence)})`,
-  StatusChanged: (b, name) => `${name(b.target)} → ${STATUS_WORDS[b.status] ?? b.status}`,
+  Marked: (b, name) => `${name(b.target)} → ${markWords(b)}`,
   AttributesChanged: (b, name) => `edit ${name(b.target)}`,
   NodesSplit: (b, name) => `split ${name(b.source)} into ${b.into.map((p) => p.label).join(", ")}`,
   NodesMerged: (b, name) => `merge ${b.sources.map(name).join(" + ")} into “${b.into.label}”`,

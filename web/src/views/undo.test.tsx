@@ -9,11 +9,11 @@ import { RevertControl, TimeBar, describeRevert } from "./TimeBar";
 
 const HLC = "001758800000000.000000.d";
 const base = { attributes: {}, confidence: 0.8, evidence: [], assertedBy: "agent:c", assertedAt: HLC, updatedAt: HLC, confirmed: false, staleEvidence: 0 };
-const change = (id: string, body: object, type = "StatusChanged") => ({
+const change = (id: string, body: object, type = "Marked") => ({
   event: { id, hlc: HLC, device: "d", actor: "model:g", session: "s", parents: [], type, body } as AnyEvent,
 });
 const edgeView = {
-  edge: { ...base, id: "e1", type: "reinforces", from: "a", to: "b", sign: 1 as number | undefined, status: "removed", staleEvidence: 2 },
+  edge: { ...base, id: "e1", type: "reinforces", from: "a", to: "b", sign: 1 as number | undefined, removed: true, staleEvidence: 2 },
   fromLabel: "A",
   toLabel: "B",
   evidence: [{ entry: "h", start: 0, end: 5, text: "quote", entryTitle: "T", before: "", after: "" }],
@@ -31,8 +31,8 @@ beforeEach(() => {
     if (call.path.startsWith("/api/revert/preview")) return { retired: 1, restored: 2, changed: 0 };
     if (call.path.startsWith("/api/timeline"))
       return [
-        change("x1", { target: "a", status: "accepted" }).event,
-        { ...change("bad", { target: "a", status: "superseded" }).event },
+        change("x1", { target: "a", confirmed: true }).event,
+        { ...change("bad", { target: "a", removed: true }).event },
         { id: "w", hlc: HLC, type: "SessionOpened", actor: "user", body: { purpose: "x" } },
       ];
     return { nodes: {}, edges: {} };
@@ -61,7 +61,7 @@ describe("edge panel", () => {
   });
 
   it("is read-only in the past and describes decreases", async () => {
-    edgeView.edge = { ...edgeView.edge, sign: -1, status: "active", confirmed: true };
+    edgeView.edge = { ...edgeView.edge, sign: -1, removed: false, confirmed: true };
     render(<EdgePanel id="e1" labels={{}} readOnly onDone={vi.fn()} onSelect={vi.fn()} navigate={vi.fn()} />);
     expect(await screen.findByText("decreases")).toBeTruthy();
     expect(screen.queryByText("confirmed")).toBeNull();
@@ -73,11 +73,11 @@ describe("edge panel", () => {
 describe("revert", () => {
   it("describes and confirms a revert, or cancels", async () => {
     expect(describeRevert({ retired: 0, restored: 0, changed: 0 })).toBe("Nothing has changed since this point.");
-    expect(describeRevert({ retired: 2, restored: 1, changed: 1 })).toBe("This will remove 2 items added since, restore 1 status, undo 1 edit.");
+    expect(describeRevert({ retired: 2, restored: 1, changed: 1 })).toBe("This will remove 2 items added since, bring back 1 removed item, undo 1 change.");
     const onReverted = vi.fn();
     render(<RevertControl position={HLC} onReverted={onReverted} />);
     fireEvent.click(screen.getByText("Revert to here…"));
-    expect(await screen.findByText(/remove 1 item added since, restore 2 statuses/)).toBeTruthy();
+    expect(await screen.findByText(/remove 1 item added since, bring back 2 removed items/)).toBeTruthy();
     fireEvent.click(screen.getByText("Cancel"));
     fireEvent.click(screen.getByText("Revert to here…"));
     fireEvent.click(await screen.findByText("Revert"));

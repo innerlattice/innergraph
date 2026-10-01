@@ -58,9 +58,9 @@ export interface GraphDiff {
   edges: ItemDiff<GraphEdge>;
 }
 
-const isLive = (item: { status: string }) => item.status !== "superseded";
+const isLive = (item: { removed: boolean }) => !item.removed;
 
-/** The Graph without superseded Nodes, and without Edges touching them. */
+/** The Graph without removed Nodes, and without Edges touching them. */
 export function activeGraph(graph: Graph): Graph {
   const nodes = Object.fromEntries(Object.entries(graph.nodes).filter(([, n]) => isLive(n)));
   const edges = Object.fromEntries(Object.entries(graph.edges).filter(([, e]) => isLive(e) && nodes[e.from] && nodes[e.to]));

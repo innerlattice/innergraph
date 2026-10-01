@@ -1,4 +1,4 @@
-// MapManager: Refactors, Schema migrations, Status changes and time travel.
+// MapManager: Refactors, Schema migrations, removing and confirming, and time travel.
 import { SchemaError } from "../access/schemaAccess.js";
 import { edgeTextIn } from "../core/edgeText.js";
 import type { SchemaAccess } from "../access/schemaAccess.js";
@@ -21,7 +21,7 @@ import { newId } from "../utilities/crypto.js";
 import { toPosition } from "../utilities/hlc.js";
 import { mergeEvidence } from "../access/projection.js";
 import { type DuplicateGroup, findDuplicates } from "./resolve.js";
-import { type RevertPlan, planRevert, targetsOf, withActor } from "./revert.js";
+import { type RevertPlan, assertionOf, planRevert, targetsOf, withActor } from "./revert.js";
 import { ForbiddenError, requireFound, runSession } from "./sessions.js";
 
 export interface MapDeps {
@@ -65,16 +65,19 @@ export class MapManager {
 
   /** Takes Nodes/Edges off the map; they stay in history and can be restored. */
   remove(ids: string[], actor: ActorId = USER, reason?: string): ChangeResult & { removed: string[] } {
-    const removed = [...new Set(ids)].filter((id) => this.item(id).status !== "superseded");
-    const drafts = removed.map((target) => ({ type: "StatusChanged" as const, body: { target, status: "superseded" as const, reason } }));
+    const removed = [...new Set(ids)].filter((id) => !this.item(id).removed);
+    const drafts = removed.map((target) => ({ type: "Marked" as const, body: { target, removed: true, reason } }));
     return { ...this.commit(actor, "remove", drafts), removed };
   }
 
   /** Marks items as right. Only the person can confirm; agents' additions stay unconfirmed. */
   confirm(ids: string[], actor: ActorId = USER): ChangeResult & { confirmed: string[] } {
     if (actor !== USER) throw new ForbiddenError("Only the person can confirm items");
-    const confirmed = [...new Set(ids)].filter((id) => this.item(id).status === "hypothesis");
-    const drafts = confirmed.map((target) => ({ type: "StatusChanged" as const, body: { target, status: "accepted" as const } }));
+    const confirmed = [...new Set(ids)].filter((id) => {
+      const item = this.item(id);
+      return !item.removed && !item.confirmed;
+    });
+    const drafts = confirmed.map((target) => ({ type: "Marked" as const, body: { target, confirmed: true } }));
     return { ...this.commit(actor, "confirm", drafts), confirmed };
   }
 
@@ -167,14 +170,14 @@ export class MapManager {
     return results;
   }
 
-  private edgeCleanup(group: DuplicateGroup): { type: "EdgeAsserted" | "StatusChanged"; body: unknown }[] {
+  private edgeCleanup(group: DuplicateGroup): { type: "EdgeAsserted" | "Marked"; body: unknown }[] {
     const graph = this.deps.vault.state().graph;
     const [keep, ...extra] = group.ids.map((id) => graph.edges[id]);
-    const { status: _s, assertedBy: _b, assertedAt: _a, updatedAt: _u, ...body } = keep;
+    const body = assertionOf(keep);
     const evidence = extra.reduce((acc, e) => mergeEvidence(acc, e.evidence), keep.evidence);
     return [
       { type: "EdgeAsserted", body: { ...body, evidence } },
-      ...extra.map((e) => ({ type: "StatusChanged" as const, body: { target: e.id, status: "superseded", reason: `duplicate of ${keep.id}` } })),
+      ...extra.map((e) => ({ type: "Marked" as const, body: { target: e.id, removed: true, reason: `duplicate of ${keep.id}` } })),
     ];
   }
 
@@ -220,9 +223,9 @@ export class MapManager {
     const item = this.item(id);
     const retiring = this.deps.vault
       .events()
-      .filter((e) => e.type === "StatusChanged" && e.body.target === id && e.body.status === "superseded")
+      .filter((e) => e.type === "Marked" && e.body.target === id && e.body.removed === true)
       .at(-1);
-    if (item.status !== "superseded" || !retiring) throw new Error(`${id} is not removed`);
+    if (!item.removed || !retiring) throw new Error(`${id} is not removed`);
     return this.undo(retiring.id, actor);
   }
 
@@ -233,7 +236,7 @@ export class MapManager {
 
   private liveNode(id: string): GraphNode {
     const node = requireFound(this.deps.vault.state().graph.nodes[id], `Node ${id}`);
-    if (node.status === "superseded") throw new Error(`Node ${id} is superseded; refactor its successors instead`);
+    if (node.removed) throw new Error(`Node ${id} is removed; refactor its successors instead`);
     return node;
   }
 
@@ -252,7 +255,7 @@ export class MapManager {
   private commit(
     actor: ActorId,
     purpose: string,
-    changes: { type: "StatusChanged" | "AttributesChanged" | "NodesSplit" | "NodesMerged" | "SchemaChanged" | "EdgeAsserted"; body: unknown }[],
+    changes: { type: "Marked" | "AttributesChanged" | "NodesSplit" | "NodesMerged" | "SchemaChanged" | "EdgeAsserted"; body: unknown }[],
   ): ChangeResult {
     const { session } = runSession(this.deps.vault, actor, purpose, (s) => changes.map((c) => ({ actor, session: s, type: c.type, body: c.body }) as never));
     return { session };

@@ -6,7 +6,7 @@ import { ENTRY_1, INTERPRETATION_1, type TestVault, makeVault } from "./helpers.
 let t: TestVault;
 
 function byLabel(label: string): GraphNode {
-  const node = Object.values(t.vault.explore.graph({ includeSuperseded: true }).nodes).find((n) => n.label === label);
+  const node = Object.values(t.vault.explore.graph({ includeRemoved: true }).nodes).find((n) => n.label === label);
   if (!node) throw new Error(`no node ${label}`);
   return node;
 }
@@ -32,7 +32,7 @@ describe("1. Ingest", () => {
       .map((n) => n.label)
       .sort();
     expect(labels).toEqual(["Father laughed when I cried", "Freezing", "Needing things makes people turn away", "Rest", "Shame"]);
-    expect(Object.values(graph.nodes).every((n) => n.status === "hypothesis")).toBe(true);
+    expect(Object.values(graph.nodes).every((n) => !n.removed && !n.confirmed)).toBe(true);
     expect(Object.values(graph.nodes).every((n) => n.assertedBy === "model:scripted")).toBe(true);
 
     const [latest] = t.vault.explore.changes();
@@ -52,7 +52,7 @@ describe("1. Ingest", () => {
     const result = await ingestFirst();
     t.vault.map.undoSession(result.session);
     expect(t.vault.explore.graph().nodes).toEqual({});
-    expect(t.vault.explore.view({ removed: true }).counts.removed).toBe(9);
+    expect(t.vault.explore.view({ removed: true }).removedCount).toBe(9);
     expect(() => t.vault.map.undoSession("nope")).toThrow("not found");
   });
 
@@ -61,7 +61,7 @@ describe("1. Ingest", () => {
     const result = t.vault.ingest.amend("agent:test", [{ id: byLabel("Father laughed when I cried").id, label: "Dinner table memory" }, { id: "missing" }]);
     expect(result.changed).toHaveLength(1);
     expect(result.dropped).toEqual(["missing: not found"]);
-    expect(byLabel("Dinner table memory").status).toBe("hypothesis");
+    expect(byLabel("Dinner table memory")).toMatchObject({ removed: false, confirmed: false });
   });
 
   it("records a failed interpretation and still closes the Session", async () => {
@@ -130,7 +130,7 @@ describe("5. Refactor", () => {
     });
     const result = await t.vault.map.split(shame.id, [{ label: "Social shame" }, { label: "Body shame" }]);
     expect(result.session).toBeTruthy();
-    expect(byLabel("Shame").status).toBe("superseded");
+    expect(byLabel("Shame")?.removed).toBe(true);
     const social = t.vault.explore.node(byLabel("Social shame").id);
     expect(social.derivedFrom.map((n) => n.id)).toEqual([shame.id]);
     expect(social.evidence).toHaveLength(1);
@@ -147,7 +147,7 @@ describe("5. Refactor", () => {
     const merged = byLabel("Arousal regulation");
     expect(merged.derivedFrom).toEqual([freezing.id, rest.id]);
     expect(merged.evidence).toHaveLength(2);
-    expect(t.vault.explore.graph({ includeSuperseded: true }).nodes[freezing.id].status).toBe("superseded");
+    expect(t.vault.explore.graph({ includeRemoved: true }).nodes[freezing.id]?.removed).toBe(true);
   });
 
   it("lands agents' refactors at once", async () => {
@@ -155,8 +155,8 @@ describe("5. Refactor", () => {
     const result = t.vault.map.merge([byLabel("Freezing").id, byLabel("Rest").id], { label: "X" }, "agent:test");
     expect(byLabel("X").assertedBy).toBe("agent:test");
     t.vault.map.undoSession(result.session);
-    expect(byLabel("Freezing").status).toBe("hypothesis");
-    expect(byLabel("X").status).toBe("superseded");
+    expect(byLabel("Freezing")).toMatchObject({ removed: false, confirmed: false });
+    expect(byLabel("X")?.removed).toBe(true);
   });
 
   it("rejects malformed refactors", async () => {
@@ -191,8 +191,12 @@ describe("7. Remove and confirm", () => {
     t.vault.map.restore(shame.id);
     expect(() => t.vault.map.confirm([shame.id], "agent:any")).toThrow("Only the person");
     expect(t.vault.map.confirm([shame.id, shame.id]).confirmed).toHaveLength(1);
-    expect(byLabel("Shame").status).toBe("accepted");
+    expect(byLabel("Shame")).toMatchObject({ removed: false, confirmed: true });
     expect(t.vault.explore.view().nodes[shame.id].confirmed).toBe(true);
+    t.vault.map.undoSession(t.vault.explore.changes()[0].session);
+    expect(byLabel("Shame")).toMatchObject({ removed: false, confirmed: false });
+    const actions = t.vault.explore.changes(4).map((c) => c.rows[0].action);
+    expect(actions).toEqual(["unconfirmed", "confirmed", "restored", "removed"]);
   });
 });
 

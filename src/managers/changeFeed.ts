@@ -3,7 +3,7 @@
 import { edgeTextIn } from "../core/edgeText.js";
 import type { ActorId, AnyEvent, EventBodies, ProjectionState, VaultEvent } from "../core/types.js";
 
-export type ChangeAction = "added" | "updated" | "renamed" | "edited" | "removed" | "restored" | "confirmed" | "merged" | "split" | "revised";
+export type ChangeAction = "added" | "updated" | "renamed" | "edited" | "removed" | "restored" | "confirmed" | "unconfirmed" | "merged" | "split" | "revised";
 
 interface ChangeRow {
   id: string;
@@ -43,7 +43,11 @@ function firstTime(ctx: FeedContext, id: string): ChangeAction {
   return seen ? "updated" : "added";
 }
 
-const STATUS_ACTION: Record<string, ChangeAction> = { superseded: "removed", accepted: "confirmed" };
+/** Taking off or putting back is what a person notices first; confirming comes after. */
+function markAction(b: EventBodies["Marked"]): ChangeAction {
+  if (b.removed !== undefined) return b.removed ? "removed" : "restored";
+  return b.confirmed ? "confirmed" : "unconfirmed";
+}
 
 type RowMaker<K extends keyof EventBodies> = (ctx: FeedContext, e: VaultEvent<K>) => ChangeRow[];
 const ROWS: { [K in keyof EventBodies]?: RowMaker<K> } = {
@@ -51,7 +55,7 @@ const ROWS: { [K in keyof EventBodies]?: RowMaker<K> } = {
   NodeAsserted: (ctx, e) => [{ id: e.body.id, kind: "node", label: ctx.state.graph.nodes[e.body.id]?.label ?? e.body.label, action: firstTime(ctx, e.body.id) }],
   EdgeAsserted: (ctx, e) => [{ id: e.body.id, kind: "edge", label: edgeTextIn(ctx.state.graph, e.body), action: firstTime(ctx, e.body.id) }],
   AttributesChanged: (ctx, e) => [{ id: e.body.target, ...itemLabel(ctx, e.body.target), action: e.body.label ? "renamed" : "edited", detail: e.body.label }],
-  StatusChanged: (ctx, e) => [{ id: e.body.target, ...itemLabel(ctx, e.body.target), action: STATUS_ACTION[e.body.status] ?? "restored" }],
+  Marked: (ctx, e) => [{ id: e.body.target, ...itemLabel(ctx, e.body.target), action: markAction(e.body) }],
   NodesMerged: (ctx, e) => {
     ctx.seen.add(e.body.into.id);
     return [{ id: e.body.into.id, kind: "node", label: e.body.into.label, action: "merged", detail: e.body.sources.map((id) => nodeLabel(ctx, id)).join(", ") }];

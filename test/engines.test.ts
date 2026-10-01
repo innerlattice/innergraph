@@ -18,7 +18,8 @@ function gNode(id: string, extra: Partial<GraphNode> = {}): GraphNode {
     label: id,
     attributes: {},
     confidence: 0.5,
-    status: "hypothesis",
+    removed: false,
+    confirmed: false,
     evidence: [],
     derivedFrom: [],
     assertedBy: "user",
@@ -29,7 +30,7 @@ function gNode(id: string, extra: Partial<GraphNode> = {}): GraphNode {
 }
 
 function gEdge(id: string, from: string, to: string, type: string, extra: Partial<GraphEdge> = {}): GraphEdge {
-  return { id, type, from, to, attributes: {}, confidence: 0.5, status: "hypothesis", evidence: [], assertedBy: "user", assertedAt: "", updatedAt: "", ...extra };
+  return { id, type, from, to, attributes: {}, confidence: 0.5, removed: false, confirmed: false, evidence: [], assertedBy: "user", assertedAt: "", updatedAt: "", ...extra };
 }
 
 function graphOf(nodes: string[], edges: GraphEdge[]): Graph {
@@ -163,7 +164,7 @@ describe("AnalysisEngine", () => {
     const graph = graphOf(["a", "b", "c"], [gEdge("1", "a", "b", "c", { sign: -1 }), gEdge("2", "b", "a", "c", { sign: 1 }), gEdge("3", "b", "c", "c"), gEdge("4", "c", "b", "c")]);
     const loops = engine.findLoops(graph, roles);
     expect(loops.map((l) => l.polarity)).toEqual(["balancing", "reinforcing"]);
-    graph.nodes.c.status = "superseded";
+    graph.nodes.c.removed = true;
     expect(engine.findLoops(graph, roles)).toHaveLength(1);
     expect(Object.keys(activeGraph(graph).edges)).toEqual(["1", "2"]);
   });

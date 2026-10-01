@@ -24,8 +24,8 @@ describe("projection fold", () => {
     const events = [makeEvent(node("a"), "01"), makeEvent({ ...node("b"), actor: "agent:x", session: "p" }, "02")];
     expect(Object.keys(fold(events, "01").graph.nodes)).toEqual(["a"]);
     const state = fold(events);
-    expect(state.graph.nodes.a.status).toBe("accepted");
-    expect(state.graph.nodes.b.status).toBe("hypothesis");
+    expect(state.graph.nodes.a).toMatchObject({ removed: false, confirmed: true });
+    expect(state.graph.nodes.b).toMatchObject({ removed: false, confirmed: false });
     expect(state.position).toBe("02");
   });
 
@@ -50,15 +50,15 @@ describe("projection fold", () => {
     expect(state.graph.edges.e1.updatedAt).toBe("04");
   });
 
-  it("patches attributes, labels, confidence and status", () => {
+  it("patches attributes, labels, confidence and whether an item is confirmed", () => {
     const state = fold([
       makeEvent(node("a", { attributes: { x: 1, y: 2 } }), "01"),
       makeEvent({ type: "AttributesChanged", body: { target: "a", patch: { x: null, z: 3 }, label: "A", confidence: 0.2 } }, "02"),
       makeEvent({ type: "AttributesChanged", body: { target: "missing", patch: {} } }, "03"),
-      makeEvent({ type: "StatusChanged", body: { target: "a", status: "accepted" } }, "04"),
-      makeEvent({ type: "StatusChanged", body: { target: "missing", status: "superseded" } }, "05"),
+      makeEvent({ type: "Marked", body: { target: "a", confirmed: true } }, "04"),
+      makeEvent({ type: "Marked", body: { target: "missing", removed: true } }, "05"),
     ]);
-    expect(state.graph.nodes.a).toMatchObject({ attributes: { y: 2, z: 3 }, label: "A", confidence: 0.2, status: "accepted" });
+    expect(state.graph.nodes.a).toMatchObject({ attributes: { y: 2, z: 3 }, label: "A", confidence: 0.2, removed: false, confirmed: true });
   });
 
   it("migrates types on SchemaChanged and tracks entries", () => {

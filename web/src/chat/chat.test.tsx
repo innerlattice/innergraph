@@ -75,13 +75,13 @@ beforeEach(() => {
     "GET /api/chats/old": () =>
       json({ chat: { id: "old", title: "Earlier", messages: [user("Earlier words", "u0")] }, budget: { contextTokens: 10, contextWindow: 32_000, level: "ok" } }),
     "POST /api/chat": () => sse(TURN),
-    "GET /api/selection": () => json({ ids: ["n7"], at: "1", items: [{ id: "n7", kind: "node", type: "part", label: "Freezing", status: "active", confirmed: false }] }),
+    "GET /api/selection": () => json({ ids: ["n7"], at: "1", items: [{ id: "n7", kind: "node", type: "part", label: "Freezing", removed: false, confirmed: false }] }),
     "PUT /api/selection": () => json({ ids: [], at: "2", items: [] }),
     "GET /api/view": () =>
       json({
-        nodes: { n7: { id: "n7", type: "part", label: "Freezing", status: "active", confirmed: false, attributes: {}, evidence: [], staleEvidence: 0 } },
+        nodes: { n7: { id: "n7", type: "part", label: "Freezing", removed: false, confirmed: false, attributes: {}, evidence: [], staleEvidence: 0 } },
         edges: {},
-        counts: { active: 1, removed: 0 },
+        removedCount: 0,
         position: "p",
       }),
     "POST /api/undo-session": () => json({ session: "u", summary: { retired: 1, restored: 0, changed: 0 } }),
@@ -233,8 +233,8 @@ describe("the composer", () => {
     const onSelect = vi.fn();
     const onClear = vi.fn();
     const items = [
-      { id: "a", kind: "node" as const, type: "part", label: "A", status: "active" as const, confirmed: false },
-      { id: "b", kind: "node" as const, type: "part", label: "B", status: "active" as const, confirmed: false },
+      { id: "a", kind: "node" as const, type: "part", label: "A", removed: false, confirmed: false },
+      { id: "b", kind: "node" as const, type: "part", label: "B", removed: false, confirmed: false },
     ];
     const { container } = render(<SelectionChips items={[]} onRemove={onRemove} onSelect={onSelect} onClear={onClear} />);
     expect(container.innerHTML).toBe("");

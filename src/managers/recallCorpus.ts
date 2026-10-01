@@ -1,6 +1,6 @@
 // Builds the Recall corpus from the head Projection. Parked Nodes are never included.
 import type { VaultAccess } from "../access/vaultAccess.js";
-import { ACTIVE, materialize } from "../access/view.js";
+import { materialize } from "../access/view.js";
 import type { ProjectionState } from "../core/types.js";
 import type { RecallDoc, RecallMatch } from "../engines/recallEngine.js";
 
@@ -14,7 +14,7 @@ export interface RelatedItem extends RecallMatch {
 
 /** Recall offers what is on the map; removed items never come back. */
 function recallable(state: ProjectionState) {
-  return Object.values(materialize(state, ACTIVE).nodes);
+  return Object.values(materialize(state).nodes);
 }
 
 export function buildCorpus(vault: VaultAccess, state: ProjectionState): RecallDoc[] {

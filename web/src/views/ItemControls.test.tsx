@@ -32,13 +32,13 @@ afterEach(() => {
 
 describe("item actions", () => {
   it("offer what fits the items: confirm while unconfirmed, remove while on the map, restore once removed", () => {
-    expect(kindsFor([{ status: "active", confirmed: false }])).toEqual(["confirm", "remove"]);
-    expect(kindsFor([{ status: "active", confirmed: true }])).toEqual(["remove"]);
-    expect(kindsFor([{ status: "removed", confirmed: false }])).toEqual(["restore"]);
+    expect(kindsFor([{ removed: false, confirmed: false }])).toEqual(["confirm", "remove"]);
+    expect(kindsFor([{ removed: false, confirmed: true }])).toEqual(["remove"]);
+    expect(kindsFor([{ removed: true, confirmed: false }])).toEqual(["restore"]);
     expect(
       kindsFor([
-        { status: "removed", confirmed: false },
-        { status: "active", confirmed: true },
+        { removed: true, confirmed: false },
+        { removed: false, confirmed: true },
       ]),
     ).toEqual(["remove"]);
     expect(kindsFor([])).toEqual(["remove"]);
@@ -46,14 +46,14 @@ describe("item actions", () => {
 
   it("run actions, count selections and report errors", async () => {
     const onDone = vi.fn();
-    render(<ItemActions ids={["a", "b"]} items={[{ status: "active", confirmed: false }]} onDone={onDone} count />);
+    render(<ItemActions ids={["a", "b"]} items={[{ removed: false, confirmed: false }]} onDone={onDone} count />);
     fireEvent.click(screen.getByLabelText("Looks right (2)"));
     await waitFor(() => expect(onDone).toHaveBeenCalledWith({ kind: "confirm", ids: ["a", "b"] }));
     expect(sent(calls)[0]).toEqual({ url: "/api/confirm", body: { ids: ["a", "b"] } });
     fireEvent.click(screen.getByLabelText("Remove (2)"));
     expect(await screen.findByText("nope")).toBeTruthy();
     cleanup();
-    render(<ItemActions ids={["a"]} items={[{ status: "removed", confirmed: false }]} onDone={onDone} />);
+    render(<ItemActions ids={["a"]} items={[{ removed: true, confirmed: false }]} onDone={onDone} />);
     fireEvent.click(screen.getByLabelText("Restore"));
     await waitFor(() => expect(onDone).toHaveBeenCalledWith({ kind: "restore", ids: ["a"] }));
   });

@@ -1,8 +1,6 @@
 // Ubiquitous language of the core (see SPEC.md). No theory vocabulary lives here.
 
 export type Role = "derivational" | "causal" | "identity";
-/** hypothesis: on the map, unconfirmed. accepted: confirmed by the person. superseded: removed. */
-export type Status = "hypothesis" | "accepted" | "superseded";
 export type ActorId = string; // "user" | `agent:${name}` | `model:${name}`
 export type Sign = 1 | -1;
 export type Attributes = Record<string, unknown>;
@@ -133,7 +131,8 @@ export interface EventBodies {
     label?: string;
     confidence?: number;
   };
-  StatusChanged: { target: string; status: Status; reason?: string };
+  /** Takes an item off the map or puts it back, and/or records whether the person has said it is right. */
+  Marked: { target: string; removed?: boolean; confirmed?: boolean; reason?: string };
   NodesSplit: { source: string; into: SplitPart[] };
   NodesMerged: {
     sources: string[];
@@ -169,7 +168,7 @@ interface EventDraft<T extends EventType = EventType> {
 export type AnyEvent = { [K in EventType]: VaultEvent<K> }[EventType];
 export type AnyDraft = { [K in EventType]: EventDraft<K> }[EventType];
 
-export const GRAPH_EVENT_TYPES: readonly EventType[] = ["NodeAsserted", "EdgeAsserted", "AttributesChanged", "StatusChanged", "NodesSplit", "NodesMerged"];
+export const GRAPH_EVENT_TYPES: readonly EventType[] = ["NodeAsserted", "EdgeAsserted", "AttributesChanged", "Marked", "NodesSplit", "NodesMerged"];
 
 // ---- Projection -------------------------------------------------------------
 
@@ -179,7 +178,10 @@ export interface GraphNode {
   label: string;
   attributes: Attributes;
   confidence: number;
-  status: Status;
+  /** Taken off the map; kept in history and restorable. */
+  removed: boolean;
+  /** The person said it is right, or wrote it themselves. */
+  confirmed: boolean;
   evidence: Evidence[];
   derivedFrom: string[];
   assertedBy: ActorId;
@@ -195,7 +197,10 @@ export interface GraphEdge {
   sign?: Sign;
   attributes: Attributes;
   confidence: number;
-  status: Status;
+  /** Taken off the map; kept in history and restorable. */
+  removed: boolean;
+  /** The person said it is right, or wrote it themselves. */
+  confirmed: boolean;
   evidence: Evidence[];
   assertedBy: ActorId;
   assertedAt: string;

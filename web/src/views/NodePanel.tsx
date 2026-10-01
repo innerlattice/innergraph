@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { Chip, EdgeLabel } from "../components/Chip";
 import { ItemChip } from "../components/ItemChip";
 import type { Navigate } from "../App";
-import { type NodeView, type RelatedItem, type RootTrace, type Schema, type ViewStatus, api } from "../api";
+import { type NodeView, type RelatedItem, type RootTrace, type Schema, api } from "../api";
 import { Button, ErrorNote, StatusPill, passageClass } from "../components/ui";
 import { humanise } from "../../../src/core/edgeText";
 import { entryFocus } from "../lib/format";
@@ -26,8 +26,8 @@ export interface NodePanelProps {
   navigate: Navigate;
   /** Changes when the Log moves, so the panel refreshes live. */
   version?: string;
-  /** Which statuses the map shows; the edge list follows the same filter. */
-  statuses?: ViewStatus[];
+  /** The map shows removed items too; the edge list follows it. */
+  showRemoved?: boolean;
   onSelect?: (id: string) => void;
   schema?: Schema | null;
 }
@@ -76,7 +76,7 @@ export function EvidenceCard(props: { evidence: NodeView["evidence"][number]; on
 
 interface EdgeRow {
   id: string;
-  status: string;
+  removed: boolean;
   text: ReactNode;
 }
 
@@ -97,7 +97,7 @@ function EdgeGroup(props: { title: string; rows: EdgeRow[]; onSelect?: (id: stri
       {props.rows.map((r) => (
         <li key={r.id} className="min-w-0 max-w-full">
           <Chip onClick={() => props.onSelect?.(r.id)}>
-            <span className={r.status === "removed" ? "text-stone-400 line-through" : ""}>{r.text}</span>
+            <span className={r.removed ? "text-stone-400 line-through" : ""}>{r.text}</span>
           </Chip>
         </li>
       ))}
@@ -129,8 +129,8 @@ function Lineage(props: { view: NodeView; onSelect?: (id: string) => void }) {
 /** A Node's Edges, split by direction so each row reads as a phrase with this Node implied. */
 function EdgeList(props: { view: NodeView; labels: Record<string, string>; onSelect?: (id: string) => void }) {
   const { view, labels } = props;
-  const outgoing = view.outgoing.map((e) => ({ id: e.id, status: e.status, text: <EdgeLabel type={e.type} sign={e.sign} to={labels[e.to] ?? e.to} /> }));
-  const incoming = view.incoming.map((e) => ({ id: e.id, status: e.status, text: <EdgeLabel from={labels[e.from] ?? e.from} type={e.type} sign={e.sign} /> }));
+  const outgoing = view.outgoing.map((e) => ({ id: e.id, removed: e.removed, text: <EdgeLabel type={e.type} sign={e.sign} to={labels[e.to] ?? e.to} /> }));
+  const incoming = view.incoming.map((e) => ({ id: e.id, removed: e.removed, text: <EdgeLabel from={labels[e.from] ?? e.from} type={e.type} sign={e.sign} /> }));
   if (outgoing.length + incoming.length === 0) return <p className="text-sm text-stone-400">Not linked to anything yet.</p>;
   return (
     <div className="space-y-2">
@@ -144,7 +144,7 @@ function StatusSection(props: { view: NodeView; readOnly: boolean; onDone: (done
   const { node } = props.view;
   return (
     <>
-      {node.status === "removed" ? <p className="text-sm text-stone-500">Removed. Restore puts it back as it was.</p> : null}
+      {node.removed ? <p className="text-sm text-stone-500">Removed. Restore puts it back as it was.</p> : null}
       {props.readOnly ? null : <ItemActions ids={[node.id]} items={[node]} onDone={props.onDone} />}
     </>
   );
@@ -210,7 +210,7 @@ function RootsList(props: { trace?: RootTrace; labels: Record<string, string>; o
 
 export function NodePanel(props: NodePanelProps) {
   const { id, labels, readOnly, onDone, onHighlight, navigate, version } = props;
-  const view = useAsync(() => api.node(id, props.statuses), [id, version, props.statuses?.join()]);
+  const view = useAsync(() => api.node(id, props.showRemoved), [id, version, props.showRemoved]);
   const [trace, setTrace] = useState<RootTrace>();
   const [related, setRelated] = useState<RelatedItem[]>();
   const [error, setError] = useState<string>();
@@ -243,7 +243,7 @@ export function NodePanel(props: NodePanelProps) {
           </div>
           <ExploreButton subject="node" kind={humanise(node.type)} name={node.label} target={node.id} />
         </div>
-        <StatusPill status={node.status} />
+        <StatusPill removed={node.removed} />
       </header>
       <ErrorNote error={error} />
       <StatusSection view={view.data} readOnly={readOnly} onDone={(done) => (view.reload(), onDone(done))} />

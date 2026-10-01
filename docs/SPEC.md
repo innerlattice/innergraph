@@ -8,7 +8,7 @@ Inner Graph (working name) is a local-first, versioned, typed graph of a person'
 
 v1 covers ingestion and the graph only: single device, offline, local model, one user-defined Schema. Activities, exercises, sync and hosting are designed for but not built.
 
-Design rules: the core is theory-agnostic (no IFS or CPM terms in code); agents write and changes land at once; the person steers by talking, confirming, removing and undoing (manual editing is a secondary escape hatch); nothing is ever destroyed, only superseded.
+Design rules: the core is theory-agnostic (no IFS or CPM terms in code); agents write and changes land at once; the person steers by talking, confirming, removing and undoing (manual editing is a secondary escape hatch); nothing is ever destroyed, only removed (and can be restored).
 
 ## Ubiquitous language
 
@@ -33,7 +33,7 @@ These terms are used identically in code, API, UI and conversation. Theory terms
 | Projection | Any read model derived from the Log (graph, loops, timeline) | Fold over events |
 | Snapshot | Cached Projection at a Log position | Checkpoint |
 | Confidence | Actor's certainty in a Node or Edge, 0–1 | Edge/vertex weight |
-| Status | `hypothesis` (on the map, unconfirmed), `accepted` (confirmed by the person), `superseded` (removed) | Enum state |
+| Removed / Confirmed | Two independent flags on every Node and Edge: `removed` takes it off the map (restorable); `confirmed` means the person has said it looks right. The person's own items start confirmed | Boolean state |
 
 ## Core model
 
@@ -59,7 +59,7 @@ Event {
 - `EntryAdded`: stores a blob hash and metadata.
 - `NodeAsserted` / `EdgeAsserted`: create with type, attributes, confidence, evidence.
 - `AttributesChanged`: patch on a Node or Edge.
-- `StatusChanged`: hypothesis → accepted (confirmed) or superseded (removed), and back.
+- `Marked`: sets `removed` and/or `confirmed` on a Node or Edge (remove, restore, confirm, undo).
 - `NodesSplit` / `NodesMerged`: Refactor with lineage and evidence reassignment.
 - `SchemaChanged`: new Schema version with a migration map.
 - `SessionOpened` / `SessionClosed`: workflow boundaries.

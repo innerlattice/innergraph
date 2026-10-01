@@ -1,6 +1,6 @@
 import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import type { Navigate } from "../App";
-import { type GraphView, type Schema, type ViewStatus, api } from "../api";
+import { type GraphView, type Schema, api } from "../api";
 import { GraphCanvas } from "../components/GraphCanvas";
 import { GraphKey } from "../components/GraphKey";
 import { Empty, ErrorNote } from "../components/ui";
@@ -17,15 +17,13 @@ import { SelectionPanel } from "./SelectionPanel";
 import { StatusBar } from "./StatusBar";
 import { TimeBar } from "./TimeBar";
 
-const statusesFor = (showRemoved: boolean): ViewStatus[] => (showRemoved ? ["active", "removed"] : ["active"]);
-
 /** The materialized View (now or at a past position), kept live. Everything renders from it. */
-function useMapData(index: number | undefined, filter: ViewStatus[]) {
+function useMapData(index: number | undefined, showRemoved: boolean) {
   const [version, setVersion] = useState("");
   const positions = useAsync(api.positions);
   const schemaState = useAsync(api.schema);
   const position = index === undefined ? undefined : positions.data?.[index];
-  const view = useAsync(() => api.view(filter, position), [position, filter.join()]);
+  const view = useAsync(() => api.view(showRemoved, position), [position, showRemoved]);
   const duplicates = useAsync(api.duplicates);
   const schema = schemaState.data ?? null;
   const elements = useMemo(() => (view.data ? toElements(view.data, schema) : []), [view.data, schema]);
@@ -49,7 +47,7 @@ interface PanelProps {
   selection: string[];
   view?: GraphView;
   duplicates?: ReturnType<typeof useMapData>["duplicates"];
-  filter: ViewStatus[];
+  showRemoved: boolean;
   labels: Record<string, string>;
   version: string;
   readOnly: boolean;
@@ -101,7 +99,7 @@ function panelFor(props: PanelProps) {
     navigate: props.navigate,
     onSelect: (id: string) => props.onSelect([id]),
   };
-  if (props.view?.nodes[only]) return <NodePanel key={only} id={only} {...common} statuses={props.filter} onHighlight={props.onHighlight} />;
+  if (props.view?.nodes[only]) return <NodePanel key={only} id={only} {...common} showRemoved={props.showRemoved} onHighlight={props.onHighlight} />;
   if (props.view?.edges[only]) return <EdgePanel key={only} id={only} {...common} />;
   return <SelectionPanel ids={selection} version={props.version} onClear={() => props.onSelect([])} onFocus={(id) => props.onSelect([id])} onDone={props.onDone} />;
 }
@@ -120,12 +118,11 @@ export function MapView(props: MapViewProps) {
   const [index, setIndex] = useState<number>();
   const [highlight, setHighlight] = useState<string[]>([]);
   const [showRemoved, setShowRemoved] = useState(false);
-  const filter = statusesFor(showRemoved);
   const [mode, setMode] = useState<"items" | "changes">("items");
   const [done, setDone] = useState<Done>();
   const [tidied, setTidied] = useState(0);
   const [query, setQuery] = useState("");
-  const { version, positions, view, error, duplicates, schema, elements, labels, refresh } = useMapData(index, filter);
+  const { version, positions, view, error, duplicates, schema, elements, labels, refresh } = useMapData(index, showRemoved);
   const empty = view && Object.keys(view.nodes).length === 0;
   const found = useMemo(() => (view ? searchHits(view, query) : null), [view, query]);
   const panel = useRef<HTMLElement>(null);
@@ -157,7 +154,7 @@ export function MapView(props: MapViewProps) {
     <div className="flex h-full flex-col">
       <TimeBar positions={positions.data ?? []} index={index} onChange={setIndex} onReverted={refresh} />
       <StatusBar
-        removed={view?.counts.removed}
+        removed={view?.removedCount}
         showRemoved={showRemoved}
         onShowRemoved={setShowRemoved}
         changesOpen={mode === "changes"}
@@ -187,7 +184,7 @@ export function MapView(props: MapViewProps) {
           view={view}
           schema={schema}
           duplicates={duplicates}
-          filter={filter}
+          showRemoved={showRemoved}
           labels={labels}
           version={`${version}:${props.synced}`}
           readOnly={index !== undefined}

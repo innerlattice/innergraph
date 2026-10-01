@@ -3,9 +3,8 @@ import { attributeRollback } from "../src/managers/revert.js";
 import { ENTRY_1, INTERPRETATION_1, type TestVault, makeVault } from "./helpers.js";
 
 let t: TestVault;
-const graph = () => t.vault.explore.graph({ includeSuperseded: true });
-const byLabel = (label: string) =>
-  Object.values(graph().nodes).find((n) => n.label === label && n.status !== "superseded") ?? Object.values(graph().nodes).find((n) => n.label === label);
+const graph = () => t.vault.explore.graph({ includeRemoved: true });
+const byLabel = (label: string) => Object.values(graph().nodes).find((n) => n.label === label && !n.removed) ?? Object.values(graph().nodes).find((n) => n.label === label);
 const edgeBetween = (a: string, b: string) => Object.values(graph().edges).find((e) => e.from === byLabel(a)?.id && e.to === byLabel(b)?.id);
 const lastEvent = () => t.vault.explore.timeline(1)[0];
 
@@ -23,7 +22,7 @@ describe("restore", () => {
     t.vault.map.remove([edge]);
     expect(t.vault.explore.graph().edges[edge]).toBeUndefined();
     t.vault.map.restore(edge);
-    expect(graph().edges[edge].status).toBe("accepted");
+    expect(graph().edges[edge]).toMatchObject({ removed: false, confirmed: true });
   });
 
   it("explains when there is nothing to restore", () => {
@@ -55,8 +54,8 @@ describe("undo", () => {
     const split = t.vault.explore.timeline(5).find((e) => e.type === "NodesSplit")?.id as string;
     const result = t.vault.map.undo(split);
     expect(result.summary.retired).toBeGreaterThan(0);
-    expect(graph().nodes[shame].status).toBe("hypothesis");
-    expect(byLabel("A")?.status).toBe("superseded");
+    expect(graph().nodes[shame]).toMatchObject({ removed: false, confirmed: false });
+    expect(byLabel("A")?.removed).toBe(true);
     expect(attached(shame).map((e) => `${e.from}|${e.type}|${e.to}`)).toEqual(before);
   });
 
@@ -76,10 +75,10 @@ describe("revert", () => {
       nodes: [{ ref: "m", type: "core_memory", label: "Manager meeting", confidence: 1, quotes: ["my manager asked a question"] }],
       edges: [],
     });
-    expect(t.vault.map.revertPreview(position)).toEqual({ retired: 1, restored: 1, changed: 1 });
+    expect(t.vault.map.revertPreview(position)).toEqual({ retired: 1, restored: 0, changed: 2 });
     t.vault.map.revert(position, "agent:claude");
-    expect(graph().nodes[shame]).toMatchObject({ label: "Shame", status: "hypothesis" });
-    expect(byLabel("Manager meeting")?.status).toBe("superseded");
+    expect(graph().nodes[shame]).toMatchObject({ label: "Shame", removed: false, confirmed: false });
+    expect(byLabel("Manager meeting")?.removed).toBe(true);
     expect(lastEvent()).toMatchObject({ type: "SessionClosed", actor: "agent:claude" });
   });
 
@@ -88,10 +87,10 @@ describe("revert", () => {
     const entry = t.vault.explore.entries()[0].id;
     t.vault.ingest.propose("user", entry, { nodes: [{ ref: "n", type: "event", label: "Later thing", confidence: 1, quotes: ["my manager asked a question"] }], edges: [] });
     const { session } = t.vault.map.revert(position);
-    expect(byLabel("Later thing")?.status).toBe("superseded");
-    const revertEvent = t.vault.explore.timeline(50).find((e) => e.session === session && e.type === "StatusChanged")?.id as string;
+    expect(byLabel("Later thing")?.removed).toBe(true);
+    const revertEvent = t.vault.explore.timeline(50).find((e) => e.session === session && e.type === "Marked")?.id as string;
     t.vault.map.undo(revertEvent);
-    expect(byLabel("Later thing")?.status).toBe("accepted");
+    expect(byLabel("Later thing")).toMatchObject({ removed: false, confirmed: true });
   });
 });
 

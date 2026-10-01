@@ -6,19 +6,19 @@ import type { ContextNode, Interpretation } from "../engines/interpretationEngin
 import { lexicalRanking } from "../engines/recallEngine.js";
 import { type KnownEdge, type KnownNode, type Resolved, SAME, bestMatch, resolve } from "../engines/resolution.js";
 import { graphDocs } from "./graphSearch.js";
-import { ACTIVE, materialize } from "../access/view.js";
+import { materialize } from "../access/view.js";
 
 /** Graphs up to this size are shown to the model whole; larger ones are narrowed by retrieval. */
 export const CONTEXT_LIMIT = 60;
 const PER_SENTENCE = 8;
 
 function live(n: GraphNode): boolean {
-  return n.status === "hypothesis" || n.status === "accepted";
+  return !n.removed;
 }
 
 /** Everything a write could duplicate: every item on the map. */
 function knownItems(state: ProjectionState): { nodes: KnownNode[]; edges: KnownEdge[] } {
-  const view = materialize(state, ACTIVE);
+  const view = materialize(state);
   return { nodes: Object.values(view.nodes), edges: Object.values(view.edges) };
 }
 
@@ -81,7 +81,7 @@ function isSame(a: GraphNode, b: GraphNode): boolean {
 
 function edgeGroups(state: ProjectionState): DuplicateGroup[] {
   const byKey = new Map<string, string[]>();
-  const live = Object.values(state.graph.edges).filter((e) => e.status !== "superseded");
+  const live = Object.values(state.graph.edges).filter((e) => !e.removed);
   for (const e of live.sort((a, b) => a.assertedAt.localeCompare(b.assertedAt))) {
     const key = `${e.from}|${e.type}|${e.to}`;
     byKey.set(key, [...(byKey.get(key) ?? []), e.id]);

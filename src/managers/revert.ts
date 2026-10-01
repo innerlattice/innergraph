@@ -20,8 +20,21 @@ export function attributeRollback(before: Attributes, now: Attributes): Attribut
   return patch;
 }
 
-function status(target: string, to: Item["status"], reason: string): Draft {
-  return { type: "StatusChanged", body: { target, status: to, reason } };
+/** An Edge as an assertion again: what it says, without its state or history. */
+export function assertionOf(edge: GraphEdge): Omit<GraphEdge, "removed" | "confirmed" | "assertedBy" | "assertedAt" | "updatedAt"> {
+  const { removed: _r, confirmed: _c, assertedBy: _b, assertedAt: _a, updatedAt: _u, ...body } = edge;
+  return body;
+}
+
+function retire(target: string, reason: string): Draft {
+  return { type: "Marked", body: { target, removed: true, reason } };
+}
+
+/** Puts `removed` and `confirmed` back as they were, when either differs. */
+function stateRollback(before: Item, now: Item, reason: string): Draft[] {
+  const removed = before.removed !== now.removed ? before.removed : undefined;
+  const confirmed = before.confirmed !== now.confirmed ? before.confirmed : undefined;
+  return removed === undefined && confirmed === undefined ? [] : [{ type: "Marked", body: { target: now.id, removed, confirmed, reason } }];
 }
 
 function fieldRollback(before: Item, now: Item): Draft[] {
@@ -35,16 +48,14 @@ function fieldRollback(before: Item, now: Item): Draft[] {
 /** Edges moved by a refactor cannot be moved back; retire them and re-create the original. */
 function endpointRollback(before: GraphEdge, now: GraphEdge, reason: string): Draft[] {
   if (before.from === now.from && before.to === now.to) return [];
-  const { status: _s, assertedBy: _b, assertedAt: _a, updatedAt: _u, ...body } = before;
-  return [status(now.id, "superseded", reason), { type: "EdgeAsserted", body: { ...body, id: newId() } }];
+  return [retire(now.id, reason), { type: "EdgeAsserted", body: { ...assertionOf(before), id: newId() } }];
 }
 
 function rollbackItem(before: Item | undefined, now: Item, reason: string): Draft[] {
-  if (!before) return now.status === "superseded" ? [] : [status(now.id, "superseded", reason)];
+  if (!before) return now.removed ? [] : [retire(now.id, reason)];
   const moved = "from" in before ? endpointRollback(before, now as GraphEdge, reason) : [];
   if (moved.length > 0) return moved;
-  const back = before.status !== now.status ? [status(now.id, before.status, reason)] : [];
-  return [...fieldRollback(before, now), ...back];
+  return [...fieldRollback(before, now), ...stateRollback(before, now, reason)];
 }
 
 function items(graph: Graph): Map<string, Item> {
@@ -52,11 +63,11 @@ function items(graph: Graph): Map<string, Item> {
 }
 
 function summarise(drafts: Draft[], before: Map<string, Item>): RevertPlan["summary"] {
-  const statuses = drafts.filter((d): d is Extract<Draft, { type: "StatusChanged" }> => d.type === "StatusChanged");
+  const marks = drafts.filter((d): d is Extract<Draft, { type: "Marked" }> => d.type === "Marked");
   return {
-    retired: statuses.filter((d) => d.body.status === "superseded").length,
-    restored: statuses.filter((d) => d.body.status !== "superseded" && before.has(d.body.target)).length,
-    changed: drafts.filter((d) => d.type === "AttributesChanged").length,
+    retired: marks.filter((d) => d.body.removed === true).length,
+    restored: marks.filter((d) => d.body.removed === false && before.has(d.body.target)).length,
+    changed: drafts.filter((d) => d.type === "AttributesChanged").length + marks.filter((d) => d.body.removed === undefined).length,
   };
 }
 

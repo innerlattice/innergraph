@@ -18,11 +18,11 @@ const HLC = "001758800000000.000000.d";
 const base = { attributes: {}, confidence: 0.5, evidence: [], assertedBy: "model:m", assertedAt: HLC, updatedAt: HLC, derivedFrom: [], confirmed: false, staleEvidence: 0 };
 const graph = {
   nodes: {
-    n1: { ...base, id: "n1", type: "belief", label: "Needing is unsafe", status: "active" },
-    n2: { ...base, id: "n2", type: "core_memory", label: "Dinner table", status: "active", confirmed: true },
+    n1: { ...base, id: "n1", type: "belief", label: "Needing is unsafe", removed: false },
+    n2: { ...base, id: "n2", type: "core_memory", label: "Dinner table", removed: false, confirmed: true },
   },
   edges: {},
-  counts: { active: 2, removed: 0 },
+  removedCount: 0,
   position: HLC,
 };
 const text = "I learned that needing things is unsafe.";
@@ -44,8 +44,8 @@ const entryView: EntryView = {
 const nodeView = {
   node: graph.nodes.n1,
   evidence: [{ entry: "h", start: 15, end: 39, text: "needing things is unsafe", entryTitle: "Tuesday" }],
-  outgoing: [{ id: "e1", type: "scaffolds", from: "n1", to: "n2", status: "active" }],
-  incoming: [{ id: "e2", type: "abduces", from: "n2", to: "n1", status: "removed" }],
+  outgoing: [{ id: "e1", type: "scaffolds", from: "n1", to: "n2", removed: false }],
+  incoming: [{ id: "e2", type: "abduces", from: "n2", to: "n1", removed: true }],
   derivedFrom: [{ ...graph.nodes.n2 }],
   derivedInto: [],
 } as unknown as NodeView;
@@ -119,8 +119,8 @@ describe("ui primitives", () => {
         <Empty>e</Empty>
         <ErrorNote error="bad" />
         <ErrorNote />
-        <StatusPill status="accepted" />
-        <StatusPill status="other" />
+        <StatusPill removed={false} />
+        <StatusPill removed />
         <Quote source="src">q</Quote>
         <Quote>q2</Quote>
       </Page>,
@@ -333,7 +333,7 @@ describe("NodePanel", () => {
   });
 
   it("is read-only in the past and offers Restore for removed nodes", async () => {
-    routes["/api/nodes/n1"] = { ...nodeView, node: { ...graph.nodes.n1, status: "removed" }, outgoing: [], incoming: [], derivedFrom: [] };
+    routes["/api/nodes/n1"] = { ...nodeView, node: { ...graph.nodes.n1, removed: true }, outgoing: [], incoming: [], derivedFrom: [] };
     const { unmount } = render(<NodePanel {...props} readOnly />);
     expect(await screen.findByText("Not linked to anything yet.")).toBeTruthy();
     expect(screen.queryByLabelText("Restore")).toBeNull();

@@ -1,7 +1,7 @@
 // Documents and cached vectors for graph search. Helpers for ExploreManager; not a Manager.
 import type { VaultAccess } from "../access/vaultAccess.js";
 import { humanise } from "../core/edgeText.js";
-import { ACTIVE, type GraphView, type ViewEdge, type ViewNode, materialize } from "../access/view.js";
+import { type GraphView, type ViewEdge, type ViewNode, materialize } from "../access/view.js";
 import type { ProjectionState } from "../core/types.js";
 import type { RecallDoc } from "../engines/recallEngine.js";
 import { sha256, utf8 } from "../utilities/crypto.js";
@@ -28,7 +28,7 @@ function nodeDoc(vault: VaultAccess, n: ViewNode): string {
 
 /** Searchable items: everything on the map. Removed items never are. */
 export function graphDocs(vault: VaultAccess, state: ProjectionState): RecallDoc[] {
-  const view = materialize(state, ACTIVE);
+  const view = materialize(state);
   const nodes = Object.values(view.nodes).map((n) => ({ id: n.id, kind: "node" as const, text: nodeDoc(vault, n) }));
   const edges = Object.values(view.edges).map((e) => ({ id: e.id, kind: "edge" as const, text: edgeDoc(vault, e, view) }));
   return [...nodes, ...edges];

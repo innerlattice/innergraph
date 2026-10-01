@@ -58,9 +58,9 @@ export function EdgePanel(props: EdgePanelProps) {
           </h3>
           <ExploreButton subject="edge" kind="Link" name={`${fromLabel} ${relation} ${toLabel}`} target={`${edge.id} from ${edge.from} to ${edge.to}`} />
         </div>
-        <StatusPill status={edge.status} />
+        <StatusPill removed={edge.removed} />
       </header>
-      {edge.status === "removed" ? <p className="text-sm text-stone-500">Removed. Restore puts it back as it was.</p> : null}
+      {edge.removed ? <p className="text-sm text-stone-500">Removed. Restore puts it back as it was.</p> : null}
       {props.readOnly ? null : <ItemActions ids={[edge.id]} items={[edge]} onDone={done} />}
       <section className="space-y-2">
         <h4 className="text-xs font-medium uppercase tracking-wide text-stone-400">Evidence</h4>

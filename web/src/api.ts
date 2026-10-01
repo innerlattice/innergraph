@@ -1,7 +1,7 @@
 // Typed client for the local HTTP API. Types come straight from the core.
 import type { RootTrace } from "../../src/engines/analysisEngine";
 import type { EdgeView, EntryView, EvidenceHit, LoopStepView, LoopView, NodeView, Selection } from "../../src/managers/exploreManager";
-import type { GraphView, ViewEdge, ViewNode, ViewStatus } from "../../src/access/view";
+import type { GraphView, ViewEdge, ViewNode } from "../../src/access/view";
 import type { ChangeResult, GraphAt, UndoResult } from "../../src/managers/mapManager";
 import type { ChangeAction, SessionChanges } from "../../src/managers/changeFeed";
 import type { DuplicateGroup } from "../../src/managers/resolve";
@@ -18,7 +18,7 @@ import type { ChatMessage } from "../../src/clients/chat";
 import type { SelectionItem } from "../../src/managers/exploreManager";
 import type { LinkStatus } from "../../src/managers/chatgptLink";
 
-export type { ChangeAction, DuplicateGroup, EdgeView, GraphView, LoopStepView, LoopView, SessionChanges, UndoResult, ViewEdge, ViewNode, ViewStatus };
+export type { ChangeAction, DuplicateGroup, EdgeView, GraphView, LoopStepView, LoopView, SessionChanges, UndoResult, ViewEdge, ViewNode };
 export type { AnyEvent, EntryRecord, EntryView, EvidenceHit, Graph, IngestResult, Job, NodeView, RelatedItem, RevisionResult, RootTrace, Schema, Selection };
 
 export { PLAN_MODELS } from "../../src/utilities/planModels";
@@ -64,7 +64,7 @@ const enc = encodeURIComponent;
 
 export const api = {
   schema: () => request<Schema | null>("/schema"),
-  graph: (withRemoved = false) => request<Graph>(withRemoved ? "/graph?superseded=1" : "/graph"),
+  graph: (withRemoved = false) => request<Graph>(withRemoved ? "/graph?removed=1" : "/graph"),
   edge: (id: string) => request<EdgeView>(`/edges/${enc(id)}`),
   duplicates: () => request<DuplicateGroup[]>("/duplicates"),
   mergeDuplicates: (groups?: DuplicateGroup[]) => request<unknown[]>("/duplicates/merge", { groups }),
@@ -74,8 +74,8 @@ export const api = {
   revert: (t: string) => request<UndoResult>("/revert", { t }),
   graphAt: (t: string) => request<GraphAt>(`/graph/at?t=${enc(t)}`),
   positions: () => request<string[]>("/positions"),
-  node: (id: string, statuses?: ViewStatus[]) => request<NodeView>(`/nodes/${enc(id)}${statuses ? `?statuses=${statuses.join(",")}` : ""}`),
-  view: (statuses?: ViewStatus[], t?: string) => request<GraphView>(`/view?${statuses ? `statuses=${statuses.join(",")}&` : ""}${t ? `t=${enc(t)}` : ""}`),
+  node: (id: string, withRemoved = false) => request<NodeView>(`/nodes/${enc(id)}${withRemoved ? "?removed=1" : ""}`),
+  view: (withRemoved = false, t?: string) => request<GraphView>(`/view?${withRemoved ? "removed=1&" : ""}${t ? `t=${enc(t)}` : ""}`),
   roots: (id: string) => request<RootTrace>(`/nodes/${enc(id)}/roots`),
   relatedToNode: (id: string) => request<RelatedItem[]>(`/nodes/${enc(id)}/related`),
   loops: () => request<LoopView[]>("/loops"),

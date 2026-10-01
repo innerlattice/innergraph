@@ -101,7 +101,7 @@ describe("chat settings", () => {
 describe("chat turns", () => {
   it("builds instructions with the selection and tools without add_entry", () => {
     expect(chatInstructions([], "SKILL")).toContain("SKILL");
-    expect(chatInstructions([{ id: "n1", kind: "node", type: "part", label: "The Hider", status: "active", confirmed: false }])).toContain("- The Hider (node part, id n1)");
+    expect(chatInstructions([{ id: "n1", kind: "node", type: "part", label: "The Hider", removed: false, confirmed: false }])).toContain("- The Hider (node part, id n1)");
     const opening = { id: "m", role: "user" as const, parts: [], metadata: { activity: { activity: "five_whys", subject: "node" as const, target: "n1", name: "Shame" } } };
     const withActivity = chatInstructions([], "SKILL", [opening, { id: "r", role: "assistant", parts: [] }]);
     expect(withActivity).toContain("Explore menu of one node on their map: “Shame” (read it with get_node with its id n1)");
