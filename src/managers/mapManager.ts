@@ -122,6 +122,15 @@ export class MapManager {
     return this.commit(actor, "schema", [{ type: "SchemaChanged", body: { schema, migration: map } }]);
   }
 
+  /** Moves the Vault onto a newer version of its own Schema, such as the one the app ships with.
+   *  A Vault already on that version or past it, or on a different Schema, is left alone. */
+  upgradeSchema(schema: Schema): boolean {
+    const current = this.deps.schemas.current();
+    if (current && (current.name !== schema.name || current.version >= schema.version)) return false;
+    this.changeSchema(schema);
+    return true;
+  }
+
   graphAt(at: string): GraphAt {
     const state = this.deps.vault.stateAt(toPosition(at));
     return { position: state.position, graph: state.graph };

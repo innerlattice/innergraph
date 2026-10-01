@@ -195,3 +195,14 @@ describe("7. Remove and confirm", () => {
     expect(t.vault.explore.view().nodes[shame.id].confirmed).toBe(true);
   });
 });
+
+describe("8. Schema upgrades", () => {
+  it("moves a Vault onto a newer version of its own Schema only", () => {
+    const schema = t.vault.explore.schema();
+    if (!schema) throw new Error("no schema");
+    expect(t.vault.map.upgradeSchema(schema)).toBe(false);
+    expect(t.vault.map.upgradeSchema({ ...schema, name: "other", version: schema.version + 1 })).toBe(false);
+    expect(t.vault.map.upgradeSchema({ ...schema, version: schema.version + 1 })).toBe(true);
+    expect(t.vault.explore.schema()?.version).toBe(schema.version + 1);
+  });
+});

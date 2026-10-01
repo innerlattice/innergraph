@@ -3,6 +3,7 @@
 import { existsSync } from "node:fs";
 import { type ServerType, serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
+import { loadSchemaFile } from "../access/schemaAccess.js";
 import { PATHS, VERSION } from "../paths.js";
 import type { Vault } from "../vault.js";
 import type { Runner } from "./connect.js";
@@ -34,6 +35,8 @@ function listen(fetch: (request: Request) => Response | Promise<Response>, port:
 
 export async function startServer(options: ServerOptions): Promise<LocalServer> {
   const { vault } = options;
+  // A Vault made by an earlier version keeps its Schema until the app brings it up to date.
+  vault.map.upgradeSchema(loadSchemaFile(PATHS.schema));
   const app = createApp(vault, { runner: options.runner, vaultDir: options.vaultDir, version: VERSION, platform: process.platform });
   const web = options.web ?? PATHS.web;
   if (existsSync(web)) app.use("/*", serveStatic({ root: web }));
