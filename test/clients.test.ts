@@ -1,4 +1,4 @@
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { InvariantError } from "../src/access/invariants.js";
 import { formatFor, runCli } from "../src/clients/cli.js";
 import { createApp, statusFor } from "../src/clients/http.js";
+import { serveWeb } from "../src/clients/server.js";
 import { allowedTools, connectionNotice, createMcpServer, tierOf, toolSpecs } from "../src/clients/mcp.js";
 import { ForbiddenError, NotFoundError } from "../src/managers/sessions.js";
 import { ScriptedGateway } from "../src/utilities/modelGateway.js";
@@ -43,6 +44,19 @@ describe("HTTP client", () => {
   it("sends null as null, not as { ok: true }", async () => {
     vi.spyOn(t.vault.explore, "schema").mockReturnValue(null);
     expect((await call(createApp(t.vault), "/api/schema")).json).toBeNull();
+  });
+
+  it("has browsers recheck index.html but keep hashed bundles", async () => {
+    const web = tempDir();
+    mkdirSync(join(web, "assets"));
+    writeFileSync(join(web, "index.html"), "<script src=/assets/index-abc.js></script>");
+    writeFileSync(join(web, "assets", "index-abc.js"), "");
+    const app = createApp(t.vault);
+    serveWeb(app, web);
+    for (const path of ["/", "/index.html"]) expect((await app.request(path)).headers.get("cache-control")).toBe("no-cache");
+    expect((await app.request("/assets/index-abc.js")).headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+    expect((await app.request("/api/schema")).headers.get("cache-control")).toBeNull();
+    rmSync(web, { recursive: true });
   });
 
   it("serves the ingest, change and explore workflow", async () => {

@@ -9,6 +9,8 @@ import type { Vault } from "../vault.js";
 import type { Runner } from "./connect.js";
 import { createApp } from "./http.js";
 
+type App = ReturnType<typeof createApp>;
+
 export interface ServerOptions {
   vault: Vault;
   /** The Vault's folder, for the MCP setup other agents are shown. */
@@ -33,13 +35,26 @@ function listen(fetch: (request: Request) => Response | Promise<Response>, port:
   });
 }
 
+/** Hashed bundles never change, so browsers keep them; index.html is rechecked on every load so a rebuild's new bundle is picked up. */
+function cacheControlFor(requestPath: string): string {
+  return requestPath.startsWith("/assets/") ? "public, max-age=31536000, immutable" : "no-cache";
+}
+
+export function serveWeb(app: App, web: string): void {
+  app.use("/*", async (c, next) => {
+    await next();
+    c.res.headers.set("Cache-Control", cacheControlFor(c.req.path));
+  });
+  app.use("/*", serveStatic({ root: web }));
+}
+
 export async function startServer(options: ServerOptions): Promise<LocalServer> {
   const { vault } = options;
   // A Vault made by an earlier version keeps its Schema until the app brings it up to date.
   vault.map.upgradeSchema(loadSchemaFile(PATHS.schema));
   const app = createApp(vault, { runner: options.runner, vaultDir: options.vaultDir, version: VERSION, platform: process.platform });
   const web = options.web ?? PATHS.web;
-  if (existsSync(web)) app.use("/*", serveStatic({ root: web }));
+  if (existsSync(web)) serveWeb(app, web);
   const open = await listen(app.fetch, options.port).catch((error: NodeJS.ErrnoException) => {
     if (options.anyPort && error.code === "EADDRINUSE") return listen(app.fetch, 0);
     throw error;
