@@ -3,6 +3,10 @@
 Every version of Inner Graph, newest first. `npm run ship` writes each section from the commits
 since the version before it.
 
+## 0.3.6 — 2026-10-02
+
+- Reloading after an update loads the new app instead of crashing: the browser rechecks index.html every time and keeps only the hashed bundles
+
 ## 0.3.5 — 2026-10-01
 
 - Removing and confirming are separate: restoring an item keeps its confirmation, and history shows when one is unconfirmed
