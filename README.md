@@ -14,7 +14,7 @@ Version <!-- version -->0.3.6<!-- /version -->. What changed in each version is 
 ## Install
 
 Download the installer for your computer from the
-[latest release](https://github.com/innerlattice/belief-graph/releases/latest):
+[latest release](https://github.com/innerlattice/innergraph/releases/latest):
 
 | Computer | File |
 | --- | --- |
