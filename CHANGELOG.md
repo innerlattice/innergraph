@@ -3,6 +3,10 @@
 Every version of Inner Graph, newest first. `npm run ship` writes each section from the commits
 since the version before it.
 
+## 0.3.8 — 2026-10-13
+
+- The assistant shares a crisis line and keeps talking when someone mentions self-harm, and never presents itself as a therapist
+
 ## 0.3.7 — 2026-10-11
 
 - Links point to the repository's new home, github.com/innerlattice/innergraph
