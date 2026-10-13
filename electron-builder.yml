@@ -14,7 +14,14 @@ files:
   - web/dist/**
   - schema/**
   - skill/**
+  - models/**
   - package.json
+  # Only the Node build of ONNX Runtime and the WebAssembly it runs (~15 MB of its ~140 MB).
+  - "!node_modules/onnxruntime-web/{lib,docs}/**"
+  - "!node_modules/onnxruntime-web/dist/*.map"
+  - "!node_modules/onnxruntime-web/dist/*.{jsep,jspi,asyncify}.*"
+  - "!node_modules/onnxruntime-web/dist/ort.{js,mjs,min.js,min.mjs}"
+  - "!node_modules/onnxruntime-web/dist/ort.{all,bundle,jspi,wasm,webgl,webgpu}*"
 artifactName: Inner-Graph-${version}-${os}-${arch}.${ext}
 mac:
   target:

@@ -83,12 +83,17 @@ bar; "Show removed" makes removed items selectable.
 ## Search and local models
 
 Interpretation from the CLI uses Ollama at `http://127.0.0.1:11434` with `gemma4:latest`
-(`INNER_GRAPH_MODEL`, `INNER_GRAPH_MODEL_URL`). Graph search embeds with
-`qwen3-embedding:0.6b` (`INNER_GRAPH_EMBED_MODEL`, or `off`) and can rerank with the chat model
+(`INNER_GRAPH_MODEL`, `INNER_GRAPH_MODEL_URL`). Graph search embeds in-process with the
+built-in model, multilingual-e5-small (MIT, int8, about 120 MB), run by ONNX Runtime's
+WebAssembly build so it works the same on every platform and needs no Ollama. It is chosen for
+handling languages besides English at the same English recall as the smaller English-only
+models. `npm run models` fetches it into `models/`, pinned by revision and checked against
+SHA-256 hashes, and the installers ship it, so the app never downloads it. Setting
+`INNER_GRAPH_EMBED_MODEL` to an Ollama model (e.g. `qwen3-embedding:0.6b`) uses Ollama
+instead; `off` turns dense search off. Search can also rerank with the chat model
 (`INNER_GRAPH_RERANK=llm` to enable; off by default because a general chat model is a slow,
-coarse reranker). Missing models degrade to lexical search with a note. The embedder is
-configurable; `qwen3-embedding:0.6b` was chosen as the default for its Apache-2.0 license and
-official Ollama support (jina-embeddings-v5-text-small scores higher but is CC BY-NC).
+coarse reranker). Missing models degrade to lexical search with a note. Vectors are cached in
+the Vault per model, so switching models re-embeds once.
 
 ## Open questions carried from the spec
 

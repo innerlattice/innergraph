@@ -43,6 +43,9 @@ The assistant needs a language model. Open Settings (bottom left) and pick one:
 With ChatGPT or OpenRouter, what you write and the parts of your map the assistant reads are
 sent to that provider. The app says so when a hosted model is in use.
 
+Searching your map always runs on your computer, with a small model that comes with the app
+and understands meaning in many languages, so finding "my father" also finds "Dad".
+
 ## Using it
 
 **Write.** Tell the assistant what happened or what you're thinking about, the way you would

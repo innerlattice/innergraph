@@ -15,7 +15,9 @@ import { ExploreManager } from "./managers/exploreManager.js";
 import { IngestManager } from "./managers/ingestManager.js";
 import { MapManager } from "./managers/mapManager.js";
 import { newKey } from "./utilities/crypto.js";
+import { PATHS } from "./paths.js";
 import { JobQueue } from "./utilities/jobQueue.js";
+import { BUILT_IN_MODEL, LocalEmbedder, loadRuntime } from "./utilities/localEmbedder.js";
 import { type Embedder, type ModelGateway, OllamaEmbedder, OllamaGateway } from "./utilities/modelGateway.js";
 
 export interface VaultOptions {
@@ -58,9 +60,12 @@ function resolveKey(dir: string, explicit?: string): string {
   return readFileSync(file, "utf8").trim();
 }
 
+/** The model that comes with the app, unless INNER_GRAPH_EMBED_MODEL names an Ollama model or is "off". */
 function defaultEmbedder(): Embedder | undefined {
   const model = process.env.INNER_GRAPH_EMBED_MODEL;
-  return model === "off" ? undefined : new OllamaEmbedder({ baseUrl: process.env.INNER_GRAPH_MODEL_URL, model });
+  if (model === "off") return undefined;
+  if (!model) return new LocalEmbedder(() => loadRuntime(join(PATHS.models, BUILT_IN_MODEL.name)));
+  return new OllamaEmbedder({ baseUrl: process.env.INNER_GRAPH_MODEL_URL, model });
 }
 
 /**

@@ -1,7 +1,11 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { LlmReranker, parseScores, rerankPrompt } from "../src/engines/llmReranker.js";
 import { denseCosine, fuse, hybridSearch } from "../src/engines/recallEngine.js";
 import type { RecallDoc, Reranker } from "../src/engines/recallEngine.js";
+import { PATHS } from "../src/paths.js";
+import { BUILT_IN_MODEL, type EmbeddingRuntime, LocalEmbedder, loadRuntime, meanPool, pad, truncate } from "../src/utilities/localEmbedder.js";
 import { type Embedder, OllamaEmbedder, ScriptedGateway } from "../src/utilities/modelGateway.js";
 import { initVault } from "../src/vault.js";
 import { ENTRY_1, INTERPRETATION_1, KEY, SCHEMA_FILE, steppingClock, tempDir } from "./helpers.js";
@@ -170,5 +174,65 @@ describe("query instructions", async () => {
     });
     expect(await embedder.embedQuery("hello")).toEqual([1]);
     expect(JSON.parse(bodies[0]).input[0]).toMatch(/^Instruct: .*\nQuery: hello$/s);
+  });
+});
+
+describe("built-in embedder", () => {
+  it("keeps the closing token when it truncates, pads with the pad id and pools only real tokens", () => {
+    expect(truncate([0, 5, 6, 7, 2], 3)).toEqual([0, 5, 2]);
+    expect(truncate([0, 5, 2], 3)).toEqual([0, 5, 2]);
+    const batch = pad([[7, 8], [9]], 1);
+    expect([...batch.ids]).toEqual([7n, 8n, 9n, 1n]);
+    expect([...batch.mask]).toEqual([1n, 1n, 1n, 0n]);
+    // Two texts, padded length 2, dim 2; the second text's padding (99s) must not count.
+    const hidden = Float32Array.from([3, 0, 1, 0, 0, 2, 99, 99]);
+    expect(meanPool(hidden, [2, 1], 2, 2)).toEqual([
+      [1, 0],
+      [0, 1],
+    ]);
+  });
+
+  /** Echoes each token id into a 1-d hidden state, so pooled vectors reveal what was fed in. */
+  const fake = (tokenized: string[]): EmbeddingRuntime => ({
+    padId: 0,
+    tokenize: (text) => (tokenized.push(text), [1, text.length]),
+    run: async ({ ids }) => ({ data: Float32Array.from(ids, Number), dim: 1 }),
+  });
+
+  it("prefixes passages and queries as e5 expects and loads the model once", async () => {
+    const tokenized: string[] = [];
+    let loads = 0;
+    const embedder = new LocalEmbedder(async () => (loads++, fake(tokenized)));
+    expect(await embedder.embed([])).toEqual([]);
+    expect(await embedder.embed(["a", "bb"])).toEqual([[1], [1]]);
+    expect(await embedder.embedQuery("c")).toEqual([1]);
+    expect(tokenized).toEqual(["passage: a", "passage: bb", "query: c"]);
+    expect(loads).toBe(1);
+    expect(embedder.name).toBe(BUILT_IN_MODEL.name);
+  });
+
+  it("tries loading again after a failure", async () => {
+    let attempt = 0;
+    const embedder = new LocalEmbedder(async () => {
+      if (attempt++ === 0) throw new Error("not yet");
+      return fake([]);
+    });
+    await expect(embedder.embed(["x"])).rejects.toThrow("not yet");
+    expect(await embedder.embed(["x"])).toEqual([[1]]);
+  });
+
+  it("explains how to fetch a missing model", async () => {
+    await expect(loadRuntime(tempDir())).rejects.toThrow("npm run models");
+  });
+
+  const modelDir = join(PATHS.models, BUILT_IN_MODEL.name);
+  it.skipIf(!existsSync(modelDir))("finds meaning across wording and languages", { timeout: 60_000 }, async () => {
+    const embedder = new LocalEmbedder(() => loadRuntime(modelDir));
+    const [dad, chest] = await embedder.embed(["Dad (person)", "Tight chest (interoceptive)\nmy chest gets tight"]);
+    const dot = (a: number[], b: number[]) => a.reduce((s, x, i) => s + x * b[i], 0);
+    for (const query of ["my father", "mon père"]) {
+      const q = await embedder.embedQuery(query);
+      expect(dot(q, dad)).toBeGreaterThan(dot(q, chest));
+    }
   });
 });

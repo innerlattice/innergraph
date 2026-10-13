@@ -13,12 +13,14 @@
     "@ai-sdk/openai": "^4.0.66",
     "@ai-sdk/openai-compatible": "^3.0.48",
     "@hono/node-server": "^2.1.1",
+    "@huggingface/tokenizers": "^0.2.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@openrouter/ai-sdk-provider": "^3.0.0",
     "ai": "^7.0.99",
     "better-sqlite3-multiple-ciphers": "^13.0.3",
     "diff": "^9.0.0",
     "hono": "^4.13.7",
+    "onnxruntime-web": "^1.30.0",
     "ulid": "^3.0.2",
     "yaml": "^2.9.1",
     "zod": "^4.6.2"
@@ -77,8 +79,9 @@
     "styles": "tsx scripts/auditStyles.ts",
     "fingerprint": "tsx scripts/fingerprint.ts",
     "bundle": "tsx scripts/bundle.ts",
-    "desktop": "npm run build && npm run bundle && electron .",
-    "dist": "npm run build && npm run bundle && electron-builder --publish never",
+    "models": "tsx scripts/models.ts",
+    "desktop": "npm run build && npm run bundle && npm run models && electron .",
+    "dist": "npm run build && npm run bundle && npm run models && electron-builder --publish never",
     "ship": "tsx scripts/ship.ts",
     "prepare": "git config core.hooksPath .githooks || true"
   }

@@ -20,6 +20,8 @@ export const PATHS = {
   schema: join(ROOT, "schema", "author.yaml"),
   skill: join(ROOT, "skill", "SKILL.md"),
   web: join(ROOT, "web", "dist"),
+  /** Built-in models, fetched by `npm run models` and shipped in the installers. */
+  models: join(ROOT, "models"),
 };
 
 export const VERSION: string = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
