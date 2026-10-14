@@ -6,7 +6,7 @@ import { denseCosine, fuse, hybridSearch } from "../src/engines/recallEngine.js"
 import type { RecallDoc, Reranker } from "../src/engines/recallEngine.js";
 import { PATHS } from "../src/paths.js";
 import { BUILT_IN_MODEL, type EmbeddingRuntime, LocalEmbedder, loadRuntime, meanPool, pad, truncate } from "../src/utilities/localEmbedder.js";
-import { type Embedder, OllamaEmbedder, ScriptedGateway } from "../src/utilities/modelGateway.js";
+import { type Embedder, ScriptedGateway } from "../src/utilities/modelGateway.js";
 import { initVault } from "../src/vault.js";
 import { ENTRY_1, INTERPRETATION_1, KEY, SCHEMA_FILE, steppingClock, tempDir } from "./helpers.js";
 
@@ -149,31 +149,6 @@ describe("LLM reranker", () => {
     const reranker = new LlmReranker(new ScriptedGateway([{ scores: [{ index: 0, score: 5 }] }]));
     expect(reranker.name).toBe("llm:scripted");
     expect(await reranker.rerank("q", docs)).toEqual([0.5, 0]);
-  });
-});
-
-describe("Ollama embedder", () => {
-  it("calls the embed endpoint and explains a missing model", async () => {
-    const ok = new OllamaEmbedder({ model: "m", fetchImpl: (async () => new Response(JSON.stringify({ embeddings: [[1, 2]] }))) as typeof fetch });
-    expect(await ok.embed(["x"])).toEqual([[1, 2]]);
-    expect(await ok.embed([])).toEqual([]);
-    const missing = new OllamaEmbedder({ fetchImpl: (async () => new Response("", { status: 404 })) as typeof fetch });
-    await expect(missing.embed(["x"])).rejects.toThrow("ollama pull qwen3-embedding:0.6b");
-  });
-});
-
-describe("query instructions", async () => {
-  const { queryInstructionFor } = await import("../src/utilities/modelGateway.js");
-  it("prefixes queries only for instruction-tuned models", async () => {
-    expect(queryInstructionFor("qwen3-embedding:0.6b")).toContain("Instruct:");
-    expect(queryInstructionFor("embeddinggemma")).toBe("");
-    const bodies: string[] = [];
-    const embedder = new OllamaEmbedder({
-      model: "qwen3-embedding:0.6b",
-      fetchImpl: (async (_u: string, init: RequestInit) => (bodies.push(String(init.body)), new Response(JSON.stringify({ embeddings: [[1]] })))) as typeof fetch,
-    });
-    expect(await embedder.embedQuery("hello")).toEqual([1]);
-    expect(JSON.parse(bodies[0]).input[0]).toMatch(/^Instruct: .*\nQuery: hello$/s);
   });
 });
 

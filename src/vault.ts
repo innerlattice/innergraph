@@ -18,7 +18,7 @@ import { newKey } from "./utilities/crypto.js";
 import { PATHS } from "./paths.js";
 import { JobQueue } from "./utilities/jobQueue.js";
 import { BUILT_IN_MODEL, LocalEmbedder, loadRuntime } from "./utilities/localEmbedder.js";
-import { type Embedder, type ModelGateway, OllamaEmbedder, OllamaGateway } from "./utilities/modelGateway.js";
+import { type Embedder, type ModelGateway, OllamaGateway } from "./utilities/modelGateway.js";
 
 export interface VaultOptions {
   dir: string;
@@ -60,12 +60,10 @@ function resolveKey(dir: string, explicit?: string): string {
   return readFileSync(file, "utf8").trim();
 }
 
-/** The model that comes with the app, unless INNER_GRAPH_EMBED_MODEL names an Ollama model or is "off". */
+/** The model that comes with the app; INNER_GRAPH_EMBED=off turns dense search off. */
 function defaultEmbedder(): Embedder | undefined {
-  const model = process.env.INNER_GRAPH_EMBED_MODEL;
-  if (model === "off") return undefined;
-  if (!model) return new LocalEmbedder(() => loadRuntime(join(PATHS.models, BUILT_IN_MODEL.name)));
-  return new OllamaEmbedder({ baseUrl: process.env.INNER_GRAPH_MODEL_URL, model });
+  if (process.env.INNER_GRAPH_EMBED === "off") return undefined;
+  return new LocalEmbedder(() => loadRuntime(join(PATHS.models, BUILT_IN_MODEL.name)));
 }
 
 /**

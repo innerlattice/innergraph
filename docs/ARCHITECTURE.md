@@ -88,17 +88,17 @@ built-in model, multilingual-e5-small (MIT, int8, about 120 MB), run by ONNX Run
 WebAssembly build so it works the same on every platform and needs no Ollama. It is chosen for
 handling languages besides English at the same English recall as the smaller English-only
 models. `npm run models` fetches it into `models/`, pinned by revision and checked against
-SHA-256 hashes, and the installers ship it, so the app never downloads it. Setting
-`INNER_GRAPH_EMBED_MODEL` to an Ollama model (e.g. `qwen3-embedding:0.6b`) uses Ollama
-instead; `off` turns dense search off. Search can also rerank with the chat model
+SHA-256 hashes, and the installers ship it, so the app never downloads it.
+`INNER_GRAPH_EMBED=off` turns dense search off. Search can also rerank with the chat model
 (`INNER_GRAPH_RERANK=llm` to enable; off by default because a general chat model is a slow,
 coarse reranker). Missing models degrade to lexical search with a note. Vectors are cached in
-the Vault per model, so switching models re-embeds once.
+the Vault by model and content, so only new or changed items are embedded.
 
 ## Open questions carried from the spec
 
 - Real journal Entries are still pending as fixtures; `test/fixtures/entry-1.md` is synthetic.
-- Recall uses TF-IDF; embeddings (and whether to use sqlite-vec) are undecided.
+- Search keeps vectors in the Vault and compares them all; whether to use sqlite-vec once maps
+  grow large is undecided.
 - Sessions are inferred per Entry; explicit sessions are not built.
 - Small local models may create near-duplicate Nodes; identical type+label is merged
   automatically, anything else is left to Merge in the UI.

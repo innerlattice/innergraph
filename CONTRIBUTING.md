@@ -35,7 +35,7 @@ Every command takes `--vault <dir>` (or `INNER_GRAPH_VAULT`); `serve` takes `--p
 | `INNER_GRAPH_VAULT` | the Vault folder (default `~/.inner-graph/default`) |
 | `INNER_GRAPH_KEY` | the Vault's key, instead of `<vault>/vault.key` |
 | `INNER_GRAPH_MODEL`, `INNER_GRAPH_MODEL_URL` | the local model and its server (Ollama by default) |
-| `INNER_GRAPH_EMBED_MODEL` | an Ollama embedding model instead of the built-in one, or `off` |
+| `INNER_GRAPH_EMBED` | `off` to search without the built-in embedding model |
 | `INNER_GRAPH_RERANK` | `llm` to rerank search with the chat model |
 | `OPENROUTER_API_KEY` | an OpenRouter key, instead of one saved in Settings |
 

@@ -83,38 +83,6 @@ export interface Embedder {
   readonly name: string;
   /** Embeds documents (the things being searched). */
   embed(texts: string[]): Promise<number[][]>;
-  /** Embeds a search query; instruction-tuned models get their query instruction here. */
+  /** Embeds a search query; models trained with a query prefix add it here. */
   embedQuery?(text: string): Promise<number[]>;
-}
-
-/** Qwen3-Embedding is trained with an instruction on the query side only. */
-const QUERY_INSTRUCTION =
-  "Instruct: Given what a person is describing, retrieve the items in their graph (things, beliefs, patterns and the relations between them) that it refers to\nQuery: ";
-
-export function queryInstructionFor(model: string): string {
-  return model.startsWith("qwen3-embedding") ? QUERY_INSTRUCTION : "";
-}
-
-export class OllamaEmbedder implements Embedder {
-  readonly name: string;
-  private readonly baseUrl: string;
-  private readonly fetchImpl: typeof fetch;
-
-  constructor(options: OllamaOptions = {}) {
-    this.baseUrl = options.baseUrl ?? OLLAMA_URL;
-    this.name = options.model ?? "qwen3-embedding:0.6b";
-    this.fetchImpl = options.fetchImpl ?? fetch;
-  }
-
-  async embed(texts: string[]): Promise<number[][]> {
-    if (texts.length === 0) return [];
-    const response = await postJson(this.fetchImpl, `${this.baseUrl}/api/embed`, { model: this.name, input: texts });
-    if (!response.ok) throw new Error(`Embedding model ${this.name} unavailable (${response.status}); try: ollama pull ${this.name}`);
-    return ((await response.json()) as { embeddings: number[][] }).embeddings;
-  }
-
-  async embedQuery(text: string): Promise<number[]> {
-    const [vector] = await this.embed([`${queryInstructionFor(this.name)}${text}`]);
-    return vector;
-  }
 }
