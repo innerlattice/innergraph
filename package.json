@@ -36,7 +36,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
-    "@vitest/coverage-istanbul": "^5.0.0",
+    "@vitest/coverage-istanbul": "^5.0.3",
     "concurrently": "^10.0.5",
     "cytoscape": "^3.34.3",
     "cytoscape-fcose": "^2.2.0",
@@ -54,7 +54,7 @@
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.3"
   },
   "bin": {
     "inner-graph": "src/bin.ts"
@@ -84,5 +84,8 @@
     "dist": "npm run build && npm run bundle && npm run models && electron-builder --publish never",
     "ship": "tsx scripts/ship.ts",
     "prepare": "git config core.hooksPath .githooks || true"
+  },
+  "overrides": {
+    "shell-quote": "1.12.0"
   }
 }
