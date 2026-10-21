@@ -3,6 +3,10 @@
 Every version of Inner Graph, newest first. `npm run ship` writes each section from the commits
 since the version before it.
 
+## 0.4.2 — 2026-10-21
+
+- Patch shell-quote, vitest and MCP SDK advisories
+
 ## 0.4.1 — 2026-10-14
 
 - Search always uses the built-in model; the Ollama embedding option is gone (INNER_GRAPH_EMBED=off still turns it off)
