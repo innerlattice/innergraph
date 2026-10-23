@@ -102,11 +102,41 @@ commit isn't a version, however the push names it (`HEAD:main` included); `git p
 npm run dist      # installers for this platform → release/
 ```
 
-`npm run dist` on a Mac builds both `.dmg`s (ad-hoc signed, so they run on Apple silicon;
-nothing is signed with a developer identity yet). Configuration is in `electron-builder.yml`;
-the app is packed without asar so other agents can run its bundled CLI.
+`npm run dist` on a Mac builds both `.dmg`s. Configuration is in `electron-builder.ts`; the app
+is packed without asar so other agents can run its bundled CLI.
 
 Releases are cut by hand: the [Installers](.github/workflows/installers.yml) workflow runs only
 when started (Actions → Installers → Run workflow). Run on a version tag, it builds the macOS
 and Windows installers and publishes a GitHub release with them and that version's changelog.
 Run on a branch, it only uploads the installers as build artifacts.
+
+### Signing
+
+Signing turns on when its credentials are in the environment; without them the `.dmg`s get an
+ad-hoc signature (enough to run on Apple silicon) and the Windows installer is unsigned. In CI
+the credentials are repository secrets (Settings → Secrets and variables → Actions), and once
+they're set the workflow fails unless the signatures check out.
+
+macOS, from an Apple Developer account:
+
+| Secret | What it is |
+| --- | --- |
+| `CSC_LINK` | The Developer ID Application certificate and its private key, exported from Keychain Access as a `.p12` and base64-encoded (`base64 -i cert.p12 \| pbcopy`) |
+| `CSC_KEY_PASSWORD` | The password you gave the `.p12` |
+| `APPLE_API_KEY_P8` | The text of an App Store Connect API key's `.p8` file (Users and Access → Integrations → Team Keys, Developer access), used to notarize |
+| `APPLE_API_KEY_ID` | That key's ID |
+| `APPLE_API_ISSUER` | The Issuer ID shown above the keys |
+
+Windows, from [Azure Artifact Signing](https://learn.microsoft.com/azure/artifact-signing/):
+
+| Secret | What it is |
+| --- | --- |
+| `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET` | An app registration with the Artifact Signing Certificate Profile Signer role on the signing account |
+| `AZURE_SIGNING_ENDPOINT` | The account's regional endpoint, such as `https://eus.codesigning.azure.net` |
+| `AZURE_SIGNING_ACCOUNT` | The Artifact Signing account's name |
+| `AZURE_SIGNING_PROFILE` | The Public Trust certificate profile's name |
+| `WIN_PUBLISHER_NAME` | The certificate's subject name, the legal name your identity was validated under |
+
+To sign a Mac build locally, set `CSC_NAME` to the certificate's name in your keychain
+(`Developer ID Application: Name (TEAMID)`), and to notarize it set `APPLE_API_KEY` to the
+`.p8` file's path along with `APPLE_API_KEY_ID` and `APPLE_API_ISSUER`.

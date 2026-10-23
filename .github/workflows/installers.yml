@@ -1,6 +1,7 @@
 # Builds the desktop installers, only when asked: Actions → Installers → Run workflow. Run it on a
 # release tag (vX.Y.Z, made by `npm run ship`) to also publish a GitHub release with the
-# installers and that version's changelog; on a branch it just uploads them as artifacts.
+# installers and that version's changelog; on a branch it just uploads them as artifacts. The installers are signed when the signing secrets are set
+# (CONTRIBUTING.md lists them), and then the build fails unless the signatures check out.
 name: Installers
 
 on:
@@ -20,6 +21,9 @@ jobs:
           - os: windows-latest
             files: release/*.exe
     runs-on: ${{ matrix.os }}
+    env:
+      MAC_SIGNED: ${{ matrix.os == 'macos-latest' && secrets.CSC_LINK != '' }}
+      WIN_SIGNED: ${{ matrix.os == 'windows-latest' && secrets.AZURE_CLIENT_ID != '' }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -30,7 +34,43 @@ jobs:
       - run: npm run build
       - run: npm run bundle
       - run: npm run models
+      - name: Write the notarization key
+        if: env.MAC_SIGNED == 'true'
+        env:
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        shell: bash
+        run: |
+          printf '%s' "$APPLE_API_KEY_P8" > "$RUNNER_TEMP/apple-api-key.p8"
+          echo "APPLE_API_KEY=$RUNNER_TEMP/apple-api-key.p8" >> "$GITHUB_ENV"
       - run: npx electron-builder --publish never
+        env:
+          CSC_LINK: ${{ env.MAC_SIGNED == 'true' && secrets.CSC_LINK || '' }}
+          CSC_KEY_PASSWORD: ${{ env.MAC_SIGNED == 'true' && secrets.CSC_KEY_PASSWORD || '' }}
+          APPLE_API_KEY_ID: ${{ env.MAC_SIGNED == 'true' && secrets.APPLE_API_KEY_ID || '' }}
+          APPLE_API_ISSUER: ${{ env.MAC_SIGNED == 'true' && secrets.APPLE_API_ISSUER || '' }}
+          AZURE_TENANT_ID: ${{ env.WIN_SIGNED == 'true' && secrets.AZURE_TENANT_ID || '' }}
+          AZURE_CLIENT_ID: ${{ env.WIN_SIGNED == 'true' && secrets.AZURE_CLIENT_ID || '' }}
+          AZURE_CLIENT_SECRET: ${{ env.WIN_SIGNED == 'true' && secrets.AZURE_CLIENT_SECRET || '' }}
+          AZURE_SIGNING_ENDPOINT: ${{ env.WIN_SIGNED == 'true' && secrets.AZURE_SIGNING_ENDPOINT || '' }}
+          AZURE_SIGNING_ACCOUNT: ${{ env.WIN_SIGNED == 'true' && secrets.AZURE_SIGNING_ACCOUNT || '' }}
+          AZURE_SIGNING_PROFILE: ${{ env.WIN_SIGNED == 'true' && secrets.AZURE_SIGNING_PROFILE || '' }}
+          WIN_PUBLISHER_NAME: ${{ env.WIN_SIGNED == 'true' && secrets.WIN_PUBLISHER_NAME || '' }}
+      - name: Check the Mac signatures and notarization
+        if: env.MAC_SIGNED == 'true'
+        run: |
+          for app in release/mac*/"Inner Graph.app"; do
+            codesign --verify --deep --strict --verbose=2 "$app"
+            spctl --assess --type execute --verbose=2 "$app"
+          done
+      - name: Check the Windows signature
+        if: env.WIN_SIGNED == 'true'
+        shell: pwsh
+        run: |
+          foreach ($file in Get-ChildItem release/*.exe) {
+            $signature = Get-AuthenticodeSignature $file.FullName
+            if ($signature.Status -ne 'Valid') { throw "$($file.Name) is not signed: $($signature.Status)" }
+            Write-Output "$($file.Name): $($signature.SignerCertificate.Subject)"
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: installers-${{ matrix.os }}
