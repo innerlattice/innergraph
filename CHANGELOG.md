@@ -3,6 +3,11 @@
 Every version of Inner Graph, newest first. `npm run ship` writes each section from the commits
 since the version before it.
 
+## 0.4.7 — 2026-10-23
+
+- A release's notes list the changes in every version since the previous release
+- Installers are signed and notarized once the signing secrets are set, and the build checks the signatures
+
 ## 0.4.6 — 2026-10-23
 
 - The pre-push hook also refuses unreleased pushes written as HEAD:main
