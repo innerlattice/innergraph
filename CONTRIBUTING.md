@@ -93,8 +93,8 @@ the last version to [CHANGELOG.md](CHANGELOG.md) (so write commit subjects as th
 person would notice), stamps the version in the README, then commits `Release vX.Y.Z`, tags it
 (the tag's message lists the same changes) and pushes with the tag. It warns when the README,
 docs and skill haven't changed since the last version; check they still describe the app. The
-`.githooks/pre-push` hook (installed by `npm install`) refuses a push whose commit isn't a
-version; `git push --no-verify` skips it.
+`.githooks/pre-push` hook (installed by `npm install`) refuses a push to any branch whose
+commit isn't a version, however the push names it (`HEAD:main` included); `git push --no-verify` skips it.
 
 ## Building installers
 

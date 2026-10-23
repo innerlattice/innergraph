@@ -1,12 +1,13 @@
 #!/bin/sh
 # Every push is a version: the commit pushed to a branch must carry a vX.Y.Z tag, which
 # `npm run ship -- patch|minor|major` makes after the checks pass. Bypass with --no-verify.
+# It checks the branch being pushed to, so `git push origin HEAD:main` is checked too.
 zero=0000000000000000000000000000000000000000
 while read -r local_ref local_sha remote_ref remote_sha; do
-  case "$local_ref" in refs/heads/*) ;; *) continue ;; esac
+  case "$remote_ref" in refs/heads/*) ;; *) continue ;; esac
   [ "$local_sha" = "$zero" ] && continue
   if [ -z "$(git tag --points-at "$local_sha" --list 'v*')" ]; then
-    echo "pre-push: $local_ref isn't a release. Ship it with: npm run ship -- patch|minor|major" >&2
+    echo "pre-push: $local_ref → ${remote_ref#refs/heads/} isn't a release. Ship it with: npm run ship -- patch|minor|major" >&2
     exit 1
   fi
 done
