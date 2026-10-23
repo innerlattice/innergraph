@@ -3,6 +3,10 @@
 Every version of Inner Graph, newest first. `npm run ship` writes each section from the commits
 since the version before it.
 
+## 0.4.6 — 2026-10-23
+
+- The pre-push hook also refuses unreleased pushes written as HEAD:main
+
 ## 0.4.5 — 2026-10-23
 
 - The README names what each pronoun means and uses serial commas throughout

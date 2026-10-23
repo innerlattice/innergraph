@@ -24,7 +24,7 @@ points back to your own words, and every change can be undone.
 It runs on your computer. Your writing and your map are kept in an encrypted file on your own
 disk.
 
-Version <!-- version -->0.4.5<!-- /version -->. What changed in each version is in the
+Version <!-- version -->0.4.6<!-- /version -->. What changed in each version is in the
 [changelog](CHANGELOG.md).
 
 ## What it's like
