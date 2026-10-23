@@ -35,27 +35,41 @@ jobs:
       - run: npm run build
       - run: npm run bundle
       - run: npm run models
-      - name: Write the notarization key
+      # Exported only when set: electron-builder reads an empty CSC_LINK as a path.
+      - name: Use the Mac signing credentials
         if: env.MAC_SIGNED == 'true'
         env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
-        shell: bash
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
           printf '%s' "$APPLE_API_KEY_P8" > "$RUNNER_TEMP/apple-api-key.p8"
-          echo "APPLE_API_KEY=$RUNNER_TEMP/apple-api-key.p8" >> "$GITHUB_ENV"
-      - run: npx electron-builder --publish never
+          {
+            echo "CSC_LINK=$CSC_LINK"
+            echo "CSC_KEY_PASSWORD=$CSC_KEY_PASSWORD"
+            echo "APPLE_API_KEY=$RUNNER_TEMP/apple-api-key.p8"
+            echo "APPLE_API_KEY_ID=$APPLE_API_KEY_ID"
+            echo "APPLE_API_ISSUER=$APPLE_API_ISSUER"
+          } >> "$GITHUB_ENV"
+      - name: Use the Windows signing credentials
+        if: env.WIN_SIGNED == 'true'
+        shell: bash
         env:
-          CSC_LINK: ${{ env.MAC_SIGNED == 'true' && secrets.CSC_LINK || '' }}
-          CSC_KEY_PASSWORD: ${{ env.MAC_SIGNED == 'true' && secrets.CSC_KEY_PASSWORD || '' }}
-          APPLE_API_KEY_ID: ${{ env.MAC_SIGNED == 'true' && secrets.APPLE_API_KEY_ID || '' }}
-          APPLE_API_ISSUER: ${{ env.MAC_SIGNED == 'true' && secrets.APPLE_API_ISSUER || '' }}
-          AZURE_TENANT_ID: ${{ env.WIN_SIGNED == 'true' && secrets.AZURE_TENANT_ID || '' }}
-          AZURE_CLIENT_ID: ${{ env.WIN_SIGNED == 'true' && secrets.AZURE_CLIENT_ID || '' }}
-          AZURE_CLIENT_SECRET: ${{ env.WIN_SIGNED == 'true' && secrets.AZURE_CLIENT_SECRET || '' }}
-          AZURE_SIGNING_ENDPOINT: ${{ env.WIN_SIGNED == 'true' && secrets.AZURE_SIGNING_ENDPOINT || '' }}
-          AZURE_SIGNING_ACCOUNT: ${{ env.WIN_SIGNED == 'true' && secrets.AZURE_SIGNING_ACCOUNT || '' }}
-          AZURE_SIGNING_PROFILE: ${{ env.WIN_SIGNED == 'true' && secrets.AZURE_SIGNING_PROFILE || '' }}
-          WIN_PUBLISHER_NAME: ${{ env.WIN_SIGNED == 'true' && secrets.WIN_PUBLISHER_NAME || '' }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SIGNING_ENDPOINT: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          AZURE_SIGNING_ACCOUNT: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+          AZURE_SIGNING_PROFILE: ${{ secrets.AZURE_SIGNING_PROFILE }}
+          WIN_PUBLISHER_NAME: ${{ secrets.WIN_PUBLISHER_NAME }}
+        run: |
+          for name in AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_SECRET AZURE_SIGNING_ENDPOINT \
+            AZURE_SIGNING_ACCOUNT AZURE_SIGNING_PROFILE WIN_PUBLISHER_NAME; do
+            echo "$name=${!name}" >> "$GITHUB_ENV"
+          done
+      - run: npx electron-builder --publish never
       - name: Check the Mac signatures and notarization
         if: env.MAC_SIGNED == 'true'
         run: |
