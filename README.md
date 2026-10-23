@@ -1,7 +1,7 @@
 <h1 align="center">Inner Graph</h1>
 
 <p align="center">
-  <strong>A map of how your inner life fits together, built from what you write.</strong>
+  <strong>A map of your inner life, automatically built from your writing.</strong>
 </p>
 
 <p align="center">
@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/write-and-map.webp" alt="A journal entry about doomscrolling until 2am. The assistant saves it, adds The Scroller, Doomscrolling and Exhaustion to the map, and the map shows The Scroller with the passages it came from." width="900">
+  <img src="docs/images/write-and-map.webp" alt="A journal entry about doomscrolling until 2 a.m. The assistant saves it, adds The Scroller, Doomscrolling and Exhaustion to the map, and the map shows The Scroller with the passages it came from." width="900">
 </p>
 
 You write to an assistant about what is going on, the way you would in a journal. It picks out
@@ -31,8 +31,8 @@ Version <!-- version -->0.4.3<!-- /version -->. What changed in each version is 
 
 - **Your words, not a diagnosis.** Every part, belief and link on the map quotes the passage it
   came from. Click any of them to read what you actually wrote.
-- **Suggestions you confirm.** What the assistant adds is a guess until you say it "Looks
-  right". Tell it what's wrong in plain words and it fixes the map.
+- **Suggestions you confirm.** What the assistant adds is a guess until you say it “Looks
+  right”. Tell it what's wrong in plain words and it fixes the map.
 - **Loops you can see.** It finds the patterns that keep themselves going, and the ones that
   settle themselves, and walks you through them step by step.
 - **Nothing is lost.** Every change is kept. Undo one change, undo a whole set at once, or take
@@ -55,14 +55,14 @@ Download the installer for your computer from the
 
 The installers aren't signed yet, so your system warns you the first time you open the app:
 
-- **macOS** says the app "can't be opened" or is "damaged". Right-click the app in
+- **macOS** says the app “can't be opened” or is “damaged”. Right-click the app in
   Applications and choose Open. If that doesn't work, run this in Terminal:
 
   ```bash
   xattr -dr com.apple.quarantine "/Applications/Inner Graph.app"
   ```
 
-- **Windows** says it "protected your PC". Choose More info, then Run anyway.
+- **Windows** says it “protected your PC”. Choose More info, then Run anyway.
 
 ## Choose a model
 
@@ -82,7 +82,7 @@ sent to that provider. The app says so under the message box whenever a hosted m
 use.
 
 Searching your map always runs on your computer, with a small model that comes with the app
-and understands meaning in many languages, so finding "my father" also finds "Dad".
+and understands meaning in many languages, so finding “my father” also finds “Dad”.
 
 <br clear="right">
 
@@ -107,7 +107,7 @@ bring things back.
   <img src="docs/images/correct.webp" alt="Asking the assistant to merge two nodes, split 'Exhausted and ashamed' in two and rename 'Protected parts', each change shown with an Undo button." width="400">
 </p>
 
-What the assistant adds is a suggestion until you say it "Looks right". You can also rename,
+What the assistant adds is a suggestion until you say it “Looks right”. You can also rename,
 merge, remove and restore things yourself.
 
 ### Look at the map
@@ -117,7 +117,7 @@ The views are in the rail on the right.
 **Map**: everything and how it connects. Each kind of thing has its own shape and colour, and
 increases and decreases are drawn differently, so you can read it at a glance. Click to
 select, shift-click or drag a box to select several. What you select appears above the
-message box, so you can ask the assistant about "these". The timeline at the top shows the map
+message box, so you can ask the assistant about “these”. The timeline at the top shows the map
 at any earlier moment, and What changed shows what's new.
 
 <p align="center">
@@ -143,7 +143,7 @@ highlighted passage to open what it supports.
 ### Explore
 
 Each item has an Explore button with things to do about it with the assistant: make sense of
-how it fits, answer a few questions to fill in the map around it, ask "why" five times, or look
+how it fits, answer a few questions to fill in the map around it, ask “why” five times, or look
 for where a loop could ease.
 
 ### Undo anything
@@ -158,7 +158,7 @@ then ends; start a new one and carry on, since the map keeps everything.
 ## Use it from other assistants
 
 Claude Desktop, Claude Code, Codex and Hermes Agent can read and add to the same map. Open
-Settings, find "Connect other agents", pick your assistant and copy the snippet to where it
+Settings, find “Connect other agents”, pick your assistant and copy the snippet to where it
 says. The assistant then knows how to work with your map, and its changes are recorded under
 its own name, so you can see and undo them like any others. The map in the app updates live
 while it works.
