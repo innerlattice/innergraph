@@ -3,6 +3,10 @@
 Every version of Inner Graph, newest first. `npm run ship` writes each section from the commits
 since the version before it.
 
+## 0.4.8 — 2026-10-23
+
+- Mac installers build again when no signing secrets are set
+
 ## 0.4.7 — 2026-10-23
 
 - A release's notes list the changes in every version since the previous release
