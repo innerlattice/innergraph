@@ -1,6 +1,7 @@
 # Builds the desktop installers, only when asked: Actions → Installers → Run workflow. Run it on a
 # release tag (vX.Y.Z, made by `npm run ship`) to also publish a GitHub release with the
-# installers and that version's changelog; on a branch it just uploads them as artifacts. The installers are signed when the signing secrets are set
+# installers and the changelog of every version since the last release; on a branch it just
+# uploads them as artifacts. The installers are signed when the signing secrets are set
 # (CONTRIBUTING.md lists them), and then the build fails unless the signatures check out.
 name: Installers
 
@@ -92,5 +93,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          awk -v v="## ${TAG#v} " 'index($0, v) == 1 { on = 1; next } /^## / { on = 0 } on' CHANGELOG.md > notes.md
+          # Every changelog section from this version down to the previous release, not included.
+          PREVIOUS=$(gh api "repos/$GITHUB_REPOSITORY/releases" --jq "[.[] | select((.draft | not) and .tag_name != \"$TAG\")][0].tag_name // empty")
+          awk -v from="## ${TAG#v} " -v to="${PREVIOUS:+## ${PREVIOUS#v} }" '
+            index($0, from) == 1 { on = 1 }
+            to != "" && index($0, to) == 1 { on = 0 }
+            on' CHANGELOG.md > notes.md
           gh release create "$TAG" installers/* --latest --title "Inner Graph ${TAG#v}" --notes-file notes.md

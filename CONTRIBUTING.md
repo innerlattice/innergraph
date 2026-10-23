@@ -107,8 +107,9 @@ is packed without asar so other agents can run its bundled CLI.
 
 Releases are cut by hand: the [Installers](.github/workflows/installers.yml) workflow runs only
 when started (Actions → Installers → Run workflow). Run on a version tag, it builds the macOS
-and Windows installers and publishes a GitHub release with them and that version's changelog.
-Run on a branch, it only uploads the installers as build artifacts.
+and Windows installers and publishes a GitHub release with them and the changelog of every
+version since the previous release. Run on a branch, it only uploads the installers as build
+artifacts.
 
 ### Signing
 
