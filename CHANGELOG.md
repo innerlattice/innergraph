@@ -3,6 +3,10 @@
 Every version of Inner Graph, newest first. `npm run ship` writes each section from the commits
 since the version before it.
 
+## 0.4.10 — 2026-10-24
+
+- Mac installers are signed and notarized, so the README no longer needs a Gatekeeper workaround
+
 ## 0.4.9 — 2026-10-24
 
 - The Mac disk images are signed, notarized and stapled too, not just the app inside
