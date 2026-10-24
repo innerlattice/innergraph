@@ -29,7 +29,7 @@ Version <!-- version -->0.4.10<!-- /version -->. What changed in each version is
 
 ## What it's like
 
-- **Your words, not a diagnosis.** On the map, every part, belief, and link quotes your own
+- **Built from your words.** On the map, every part, belief, and link quotes your own
   words as evidence. Click any one to read what you actually wrote.
 - **Suggestions you confirm.** What the assistant adds is a guess until you say it “Looks
   right”. Tell it what's wrong in plain words and it fixes the map.
@@ -56,8 +56,8 @@ Download the installer for your computer from the
 On a Mac, open the `.dmg` and drag Inner Graph to Applications. The app is signed and checked
 by Apple, so it opens like any other app.
 
-The Windows installer isn't signed yet, so Windows says it “protected your PC” the first time
-you run it. Choose More info, then Run anyway. If Smart App Control is on, Windows blocks the
+The Windows installer isn't signed yet, so the first time you run the installer, Windows shows a
+“Windows protected your PC” warning. Choose More info, then Run anyway. If Smart App Control is on, Windows blocks the
 installer until it's signed.
 
 ## Choose a model
