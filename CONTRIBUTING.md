@@ -113,10 +113,18 @@ artifacts.
 
 ### Signing
 
-Signing turns on when its credentials are in the environment; without them the `.dmg`s get an
-ad-hoc signature (enough to run on Apple silicon) and the Windows installer is unsigned. In CI
-the credentials are repository secrets (Settings → Secrets and variables → Actions), and once
-they're set the workflow fails unless the signatures check out.
+The installers are signed whenever the signing credentials are in the environment; without the
+credentials the `.dmg`s get an ad-hoc signature (enough to run on Apple silicon) and the Windows
+installer is unsigned. In CI the credentials are repository secrets (Settings → Secrets and
+variables → Actions), and once they're set the workflow fails unless the signatures pass
+verification.
+
+The installers are published as **Inner Lattice**. Showing that name takes organization
+identities: Inner Lattice registered as a legal entity, an Apple Developer membership enrolled as
+an organization (with a D-U-N-S number), and an Azure Artifact Signing identity validated as an
+organization. Until then, the Mac app is signed under the account holder's own legal name.
+Switching only means new secrets. The app has no auto-update and keeps nothing in the
+keychain, so installs signed under either name keep working.
 
 macOS, from an Apple Developer account:
 
@@ -136,9 +144,9 @@ Windows, from [Azure Artifact Signing](https://learn.microsoft.com/azure/artifac
 | `AZURE_SIGNING_ENDPOINT` | The account's regional endpoint, such as `https://eus.codesigning.azure.net` |
 | `AZURE_SIGNING_ACCOUNT` | The Artifact Signing account's name |
 | `AZURE_SIGNING_PROFILE` | The Public Trust certificate profile's name |
-| `WIN_PUBLISHER_NAME` | The certificate's subject name, the legal name your identity was validated under |
+| `WIN_PUBLISHER_NAME` | The certificate's subject name: `Inner Lattice`, once that identity is validated |
 
 To sign a Mac build locally, set `CSC_NAME` to the certificate's name in your keychain
-(`Developer ID Application: Name (TEAMID)`), and to notarize it set `APPLE_API_KEY` to the
+(`Developer ID Application: Name (TEAMID)`), and to notarize the build set `APPLE_API_KEY` to the
 `.p8` file's path along with `APPLE_API_KEY_ID` and `APPLE_API_ISSUER`. The `.dmg` around the app
 is signed only when it can be notarized too, because macOS rejects a signed disk image that isn't.
