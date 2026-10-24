@@ -1,7 +1,7 @@
 {
   "name": "inner-graph",
   "productName": "Inner Graph",
-  "version": "0.4.11",
+  "version": "0.4.12",
   "description": "A map of your inner life, automatically built from your writing.",
   "author": "Inner Lattice",
   "homepage": "https://github.com/innerlattice/innergraph",

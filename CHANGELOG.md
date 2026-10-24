@@ -3,6 +3,10 @@
 Every version of Inner Graph, newest first. `npm run ship` writes each section from the commits
 since the version before it.
 
+## 0.4.12 — 2026-10-24
+
+- Installers are published as Inner Lattice; CONTRIBUTING says what that takes and that switching names is safe
+
 ## 0.4.11 — 2026-10-24
 
 - The README's Windows note says which warning appears, and its first highlight is Built from your words
