@@ -140,4 +140,5 @@ Windows, from [Azure Artifact Signing](https://learn.microsoft.com/azure/artifac
 
 To sign a Mac build locally, set `CSC_NAME` to the certificate's name in your keychain
 (`Developer ID Application: Name (TEAMID)`), and to notarize it set `APPLE_API_KEY` to the
-`.p8` file's path along with `APPLE_API_KEY_ID` and `APPLE_API_ISSUER`.
+`.p8` file's path along with `APPLE_API_KEY_ID` and `APPLE_API_ISSUER`. The `.dmg` around the app
+is signed only when it can be notarized too, because macOS rejects a signed disk image that isn't.

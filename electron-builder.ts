@@ -2,6 +2,7 @@
 // Signing turns on by itself when its credentials are in the environment (CONTRIBUTING.md lists
 // them); without them, macOS gets an ad-hoc signature so it runs on Apple silicon and Windows
 // stays unsigned.
+import { execFileSync } from "node:child_process";
 import type { Configuration } from "electron-builder";
 
 type AzureSignOptions = NonNullable<NonNullable<Configuration["win"]>["azureSignOptions"]>;
@@ -11,6 +12,19 @@ const env = (name: string): string | undefined => process.env[name] || undefined
 // A Developer ID certificate from CSC_LINK (CI) or the keychain (CSC_NAME). Notarization follows
 // when APPLE_API_KEY, APPLE_API_KEY_ID and APPLE_API_ISSUER are set too.
 const macSigned = Boolean(env("CSC_LINK") || env("CSC_NAME"));
+const macNotarized = macSigned && Boolean(env("APPLE_API_KEY") && env("APPLE_API_KEY_ID") && env("APPLE_API_ISSUER"));
+
+// electron-builder notarizes the app but not the disk image around it, and a signed disk image
+// that isn't notarized is rejected when opened. So the .dmg is signed only when it can be
+// notarized here, and gets its ticket stapled so it opens offline.
+function notarizeDiskImages({ artifactPaths }: { artifactPaths: string[] }): string[] {
+  for (const dmg of artifactPaths.filter((path) => path.endsWith(".dmg"))) {
+    const key = ["--key", env("APPLE_API_KEY"), "--key-id", env("APPLE_API_KEY_ID"), "--issuer", env("APPLE_API_ISSUER")];
+    execFileSync("xcrun", ["notarytool", "submit", dmg, ...(key as string[]), "--wait"], { stdio: "inherit" });
+    execFileSync("xcrun", ["stapler", "staple", dmg], { stdio: "inherit" });
+  }
+  return [];
+}
 
 // Azure Artifact Signing, authenticated by AZURE_TENANT_ID, AZURE_CLIENT_ID and AZURE_CLIENT_SECRET.
 function azureSignOptions(): { azureSignOptions?: AzureSignOptions } {
@@ -62,6 +76,8 @@ const config: Configuration = {
     target: [{ target: "nsis", arch: ["x64"] }],
     ...azureSignOptions(),
   },
+  dmg: { sign: macNotarized },
+  ...(macNotarized ? { afterAllArtifactBuild: notarizeDiskImages } : {}),
   nsis: { oneClick: false, perMachine: false, allowToChangeInstallationDirectory: true },
   publish: null,
 };

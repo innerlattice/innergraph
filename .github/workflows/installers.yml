@@ -77,6 +77,10 @@ jobs:
             codesign --verify --deep --strict --verbose=2 "$app"
             spctl --assess --type execute --verbose=2 "$app"
           done
+          for dmg in release/*.dmg; do
+            spctl --assess --type open --context context:primary-signature --verbose=2 "$dmg"
+            xcrun stapler validate "$dmg"
+          done
       - name: Check the Windows signature
         if: env.WIN_SIGNED == 'true'
         shell: pwsh
