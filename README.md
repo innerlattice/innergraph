@@ -53,16 +53,12 @@ Download the installer for your computer from the
 | Mac with an Intel chip | `Inner-Graph-…-mac-x64.dmg` |
 | Windows | `Inner-Graph-…-win-x64.exe` |
 
-The installers aren't signed yet, so your system warns you the first time you open the app:
+On a Mac, open the `.dmg` and drag Inner Graph to Applications. The app is signed and checked
+by Apple, so it opens like any other app.
 
-- **macOS** says the app “can't be opened” or is “damaged”. Right-click the app in
-  Applications and choose Open. If that doesn't work, run this in Terminal:
-
-  ```bash
-  xattr -dr com.apple.quarantine "/Applications/Inner Graph.app"
-  ```
-
-- **Windows** says it “protected your PC”. Choose More info, then Run anyway.
+The Windows installer isn't signed yet, so Windows says it “protected your PC” the first time
+you run it. Choose More info, then Run anyway. If Smart App Control is on, Windows blocks the
+installer until it's signed.
 
 ## Choose a model
 
