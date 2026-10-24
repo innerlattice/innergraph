@@ -3,6 +3,10 @@
 Every version of Inner Graph, newest first. `npm run ship` writes each section from the commits
 since the version before it.
 
+## 0.4.11 — 2026-10-24
+
+- The README's Windows note says which warning appears, and its first highlight is Built from your words
+
 ## 0.4.10 — 2026-10-24
 
 - Mac installers are signed and notarized, so the README no longer needs a Gatekeeper workaround
